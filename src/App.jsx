@@ -71,7 +71,7 @@ export default function App() {
       ar: "AR",
 
       companyPhoneLabel: "Company",
-      doctorPhoneLabel: "Dr. Osama",
+      doctorPhoneLabel: "Dr. Osama Nbhan",
       infoEmail: "info@zomorodmedical.com",
     };
 
@@ -139,7 +139,7 @@ export default function App() {
       ar: "AR",
 
       companyPhoneLabel: "هاتف الشركة",
-      doctorPhoneLabel: "د. أسامة",
+      doctorPhoneLabel: " د. أسامه نبهان",
       infoEmail: "info@zomorodmedical.com",
     };
 
@@ -336,3 +336,4 @@ export default function App() {
     </div>
   );
 }
+
