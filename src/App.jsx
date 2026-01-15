@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import logo from "./logo.png";
 
 export default function App() {
   const [lang, setLang] = useState("en"); // "en" | "ar"
@@ -98,12 +99,21 @@ export default function App() {
           gap: 12,
         }}
       >
-        <div>
-          <h1 style={{ margin: 0, fontSize: 26, letterSpacing: 0.2 }}>
-            {content.brand}
-          </h1>
-          <p style={{ margin: "8px 0 0", opacity: 0.8 }}>{content.tagline}</p>
-        </div>
+<div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+  <img
+    src={logo}
+    alt="Zomorod Medical Supplies LLC"
+    style={{ height: 48, width: "auto" }}
+  />
+  <div>
+    <h1 style={{ margin: 0, fontSize: 26, letterSpacing: 0.2 }}>
+      {content.brand}
+    </h1>
+    <p style={{ margin: "8px 0 0", opacity: 0.8 }}>
+      {content.tagline}
+    </p>
+  </div>
+</div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 12, opacity: 0.7 }}>{content.langLabel}</span>
@@ -225,6 +235,26 @@ export default function App() {
             <p style={{ ...valueStyle, marginTop: 10 }}>{content.noteBody}</p>
           </section>
         </div>
+<a
+  href="https://wa.me/962791752686"
+  target="_blank"
+  rel="noopener noreferrer"
+  style={{
+    position: "fixed",
+    bottom: 18,
+    right: 18,
+    background: "#25D366",
+    color: "#fff",
+    padding: "12px 16px",
+    borderRadius: 999,
+    textDecoration: "none",
+    fontWeight: 600,
+    boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+    zIndex: 1000,
+  }}
+>
+  WhatsApp
+</a>
 
         <footer style={{ marginTop: 22, opacity: 0.7, fontSize: 12 }}>
           {content.footer}
@@ -233,3 +263,4 @@ export default function App() {
     </div>
   );
 }
+
