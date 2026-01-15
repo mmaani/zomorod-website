@@ -28,10 +28,18 @@ export default function App() {
       mdTitle: "Managing Director — Mohammad Maani (MBA)",
       mdBio:
         "MBA-qualified Managing Director with 12+ years of experience across the private sector and international NGOs (INGOs). Experienced in the medical field and in leading operations and partnerships across the MENA region and West Africa.",
+      mdEmailLabel: "Email",
+      mdEmail: "m.maani@zomorodmedical.com",
 
       osamaTitle: "Dr. Osama Waleed Alakhras — Technical Expert",
       osamaBio:
         "PharmaD with 15+ years of professional experience as a medical representative. Worked with well-known pharmaceutical companies across psychiatric medications, antibiotics, dietary supplements, and medical cosmetic products (body, hair, and dental care).",
+      osamaEmailLabel: "Email",
+      osamaEmail: "o.nbhan@zomorodmedical.com",
+
+      complianceTitle: "Regulatory & Compliance Notice",
+      complianceBody:
+        "Zomorod Medical Supplies LLC supplies medical consumer goods and related products. Product availability, specifications, labeling, and import/distribution requirements may vary. We provide information upon request and support customers with documentation where applicable. This website is for general information only and does not constitute medical advice.",
 
       locationLabel: "Location",
       locationValue: "Amman, Jordan",
@@ -64,6 +72,7 @@ export default function App() {
 
       companyPhoneLabel: "Company",
       doctorPhoneLabel: "Dr. Osama",
+      infoEmail: "info@zomorodmedical.com",
     };
 
     const ar = {
@@ -87,10 +96,18 @@ export default function App() {
       mdTitle: "المدير العام — محمد المعاني (MBA)",
       mdBio:
         "مدير عام حاصل على ماجستير إدارة أعمال (MBA) بخبرة تزيد عن 12 عامًا في القطاع الخاص والمنظمات الدولية غير الحكومية. لديه خبرة في المجال الطبي وقيادة العمليات وبناء الشراكات في منطقة الشرق الأوسط وشمال أفريقيا وغرب أفريقيا.",
+      mdEmailLabel: "البريد الإلكتروني",
+      mdEmail: "m.maani@zomorodmedical.com",
 
       osamaTitle: "د. أسامة وليد الأخرس — الخبير الفني",
       osamaBio:
         "حاصل على بكالوريس دكتور في الصيدلة بخبرة مهنية تزيد عن 15 عامًا كمندوب طبي. عمل مع شركات دوائية معروفة في مجالات تشمل أدوية الطب النفسي، والمضادات الحيوية، والمكملات الغذائية، ومنتجات التجميل الطبية (العناية بالجسم والشعر والأسنان).",
+      osamaEmailLabel: "البريد الإلكتروني",
+      osamaEmail: "o.nbhan@zomorodmedical.com",
+
+      complianceTitle: "إشعار تنظيمي والالتزام",
+      complianceBody:
+        "تقوم Zomorod Medical Supplies LLC بتوريد المنتجات الطبية الاستهلاكية وما يرتبط بها. قد تختلف التوفر والمواصفات والملصقات ومتطلبات الاستيراد/التوزيع حسب المنتج والجهات المعنية. نقدم المعلومات عند الطلب وندعم العملاء بالمستندات عند الاقتضاء. هذا الموقع مخصص للمعلومات العامة فقط ولا يُعد نصيحة طبية.",
 
       locationLabel: "الموقع",
       locationValue: "عمّان، الأردن",
@@ -123,6 +140,7 @@ export default function App() {
 
       companyPhoneLabel: "هاتف الشركة",
       doctorPhoneLabel: "د. أسامة",
+      infoEmail: "info@zomorodmedical.com",
     };
 
     return isAr ? ar : en;
@@ -132,7 +150,11 @@ export default function App() {
     <div dir={isAr ? "rtl" : "ltr"} lang={isAr ? "ar" : "en"} className="page">
       <header className="header">
         <div className="brand">
-          <img src={logo} alt="Zomorod Medical Supplies LLC" className="brand__logo" />
+          <img
+            src={logo}
+            alt="Zomorod Medical Supplies LLC"
+            className="brand__logo"
+          />
           <div>
             <h1 className="brand__title">{content.brand}</h1>
             <p className="brand__tagline">{content.tagline}</p>
@@ -141,7 +163,11 @@ export default function App() {
 
         <div className="lang">
           <span className="lang__label">{content.langLabel}</span>
-          <div className="lang__toggle" role="group" aria-label={content.langLabel}>
+          <div
+            className="lang__toggle"
+            role="group"
+            aria-label={content.langLabel}
+          >
             <button
               onClick={() => setLang("en")}
               className={`lang__button ${!isAr ? "is-active" : ""}`}
@@ -168,7 +194,10 @@ export default function App() {
             <p className="hero__body">{content.heroBody}</p>
 
             <div className="hero__actions">
-              <a className="button button--primary" href="mailto:info@zomorodmedical.com">
+              <a
+                className="button button--primary"
+                href={`mailto:${content.infoEmail}`}
+              >
                 {content.heroPrimary}
               </a>
               <a className="button button--ghost" href="tel:+962791752686">
@@ -190,11 +219,13 @@ export default function App() {
         </section>
 
         <div className="grid">
+          {/* Location */}
           <section className="card">
             <div className="card__label">{content.locationLabel}</div>
             <p className="card__value">{content.locationValue}</p>
           </section>
 
+          {/* Contact (general only) */}
           <section className="card">
             <div className="card__label">{content.contactLabel}</div>
 
@@ -216,24 +247,15 @@ export default function App() {
 
             <div className="stack">
               <div className="card__label">{content.emailsLabel}</div>
-              <p className="card__value card__value--spaced">
-                <a href="mailto:info@zomorodmedical.com" className="link">
-                  info@zomorodmedical.com
-                </a>
-              </p>
-              <p className="card__value card__value--spaced">
-                <a href="mailto:m.maani@zomorodmedical.com" className="link">
-                  m.maani@zomorodmedical.com
-                </a>
-              </p>
               <p className="card__value">
-                <a href="mailto:o.nbhan@zomorodmedical.com" className="link">
-                  o.nbhan@zomorodmedical.com
+                <a href={`mailto:${content.infoEmail}`} className="link">
+                  {content.infoEmail}
                 </a>
               </p>
             </div>
           </section>
 
+          {/* Products */}
           <section className="card">
             <div className="card__label">{content.productsLabel}</div>
             <ul className="list">
@@ -243,31 +265,59 @@ export default function App() {
             </ul>
           </section>
 
+          {/* CTA */}
           <section className="card">
             <div className="card__label">{content.ctaTitle}</div>
             <p className="card__value card__value--top">{content.ctaBody}</p>
           </section>
 
+          {/* Availability */}
           <section className="card">
             <div className="card__label">{content.noteTitle}</div>
             <p className="card__value card__value--top">{content.noteBody}</p>
           </section>
 
-          {/* NEW: Leadership section */}
+          {/* Leadership (emails here) */}
           <section className="card">
             <div className="card__label">{content.aboutTitle}</div>
 
-            <p className="card__value card__value--top" style={{ fontWeight: 800 }}>
+            <p
+              className="card__value card__value--top"
+              style={{ fontWeight: 900 }}
+            >
               {content.mdTitle}
             </p>
             <p className="card__value card__value--top">{content.mdBio}</p>
+            <p className="card__value card__value--top">
+              <strong>{content.mdEmailLabel}: </strong>
+              <a href={`mailto:${content.mdEmail}`} className="link">
+                {content.mdEmail}
+              </a>
+            </p>
 
-            <div style={{ height: 10 }} />
+            <div style={{ height: 12 }} />
 
-            <p className="card__value card__value--top" style={{ fontWeight: 800 }}>
+            <p
+              className="card__value card__value--top"
+              style={{ fontWeight: 900 }}
+            >
               {content.osamaTitle}
             </p>
             <p className="card__value card__value--top">{content.osamaBio}</p>
+            <p className="card__value card__value--top">
+              <strong>{content.osamaEmailLabel}: </strong>
+              <a href={`mailto:${content.osamaEmail}`} className="link">
+                {content.osamaEmail}
+              </a>
+            </p>
+          </section>
+
+          {/* Compliance notice */}
+          <section className="card">
+            <div className="card__label">{content.complianceTitle}</div>
+            <p className="card__value card__value--top">
+              {content.complianceBody}
+            </p>
           </section>
         </div>
 
@@ -286,5 +336,3 @@ export default function App() {
     </div>
   );
 }
-
-
