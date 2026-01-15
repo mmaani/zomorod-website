@@ -102,8 +102,11 @@ export default function App() {
 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
   <img
     src={logo}
-    alt="Zomorod Medical Supplies LLC"
-    style={{ height: 48, width: "auto" }}
+  alt="Zomorod Medical Supplies LLC"
+  style={{
+    height: 72,
+    width: "auto",
+    objectFit: "contain", }}
   />
   <div>
     <h1 style={{ margin: 0, fontSize: 26, letterSpacing: 0.2 }}>
@@ -263,4 +266,5 @@ export default function App() {
     </div>
   );
 }
+
 
