@@ -129,7 +129,7 @@ export default function App() {
               <a className="button button--primary" href="mailto:info@zomorodmedical.com">
                 {content.heroPrimary}
               </a>
-              <a className="button button--ghost" href="tel:+962791752686">
+              <a className="button button--ghost" href="tel:+962790554065">
                 {content.heroSecondary}
               </a>
             </div>
@@ -227,3 +227,4 @@ export default function App() {
     </div>
   );
 }
+
