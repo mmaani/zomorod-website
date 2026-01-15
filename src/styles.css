@@ -12,6 +12,272 @@
 body {
   margin: 0;
   min-height: 100vh;
+  background: #f5f7fb;
 }
 
 a { color: inherit; }
+
+.page {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #eef2ff 0%, #f8f9fb 40%, #ffffff 100%);
+  color: #111;
+}
+
+.header {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 28px 18px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand__logo {
+  height: 52px;
+  width: auto;
+}
+
+.brand__title {
+  margin: 0;
+  font-size: 26px;
+  letter-spacing: 0.2px;
+}
+
+.brand__tagline {
+  margin: 8px 0 0;
+  opacity: 0.7;
+}
+
+.lang {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lang__label {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.lang__toggle {
+  display: inline-flex;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.lang__button {
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: #111;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.lang__button.is-active {
+  background: #111;
+  color: #fff;
+}
+
+.main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 12px 18px 36px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.hero__title {
+  font-size: clamp(28px, 3vw, 36px);
+  margin: 6px 0 12px;
+}
+
+.hero__body {
+  margin: 0 0 18px;
+  color: #2d2d2d;
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hero__panel {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel__title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #374151;
+}
+
+.panel__list {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  color: #2d2d2d;
+}
+
+.panel__list li {
+  margin-bottom: 10px;
+}
+
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #5b6b82;
+  margin: 0;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.button--primary {
+  background: #111827;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(17, 24, 39, 0.2);
+}
+
+.button--ghost {
+  border-color: rgba(17, 24, 39, 0.2);
+  color: #111827;
+  background: #fff;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+}
+
+.card__label {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-bottom: 6px;
+}
+
+.card__value {
+  font-size: 14px;
+  margin: 0;
+}
+
+.card__value--spaced {
+  margin-bottom: 6px;
+}
+
+.card__value--top {
+  margin-top: 10px;
+}
+
+.list {
+  margin: 10px 0 0;
+  padding-inline-start: 18px;
+}
+
+.list li {
+  margin-bottom: 8px;
+}
+
+.stack {
+  margin-top: 10px;
+}
+
+.link {
+  text-decoration: none;
+}
+
+.note {
+  margin: 18px 0 6px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.footer {
+  margin-top: 8px;
+  opacity: 0.7;
+  font-size: 12px;
+}
+
+.whatsapp {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  background: #25d366;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
+
+[dir="rtl"] .hero__actions {
+  justify-content: flex-end;
+}
+
+[dir="rtl"] .panel__list {
+  padding-right: 18px;
+  padding-left: 0;
+}
+
+[dir="rtl"] .whatsapp {
+  right: auto;
+  left: 18px;
+}
+
+@media (max-width: 600px) {
+  .brand__title {
+    font-size: 22px;
+  }
+
+  .hero__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
