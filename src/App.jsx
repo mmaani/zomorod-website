@@ -10,77 +10,119 @@ export default function App() {
     const en = {
       brand: "Zomorod Medical Supplies LLC",
       tagline: "Medical consumer goods supply & distribution — based in Amman, Jordan.",
-      heroTitle: "Reliable medical supply, delivered with care.",
+
+      heroTitle: "Reliable supply of essential medical consumer goods.",
       heroBody:
-        "We focus on essential medical consumer goods and respond quickly to your requested quantities and delivery locations.",
+        "We focus on everyday medical consumer products and respond quickly to requested quantities and delivery locations.",
       heroPrimary: "Email us",
       heroSecondary: "Call us",
+
       highlightsTitle: "Why Zomorod",
       highlights: [
-        "Responsive, small-scale fulfillment for local demand",
-        "Clear communication by phone, email, and WhatsApp",
-        "Jordan-based distribution with quality-focused sourcing",
+        "Clear availability and lead-time communication",
+        "Quality-focused sourcing and careful handling",
+        "Fast response via phone, email, and WhatsApp",
       ],
+
+      aboutTitle: "Leadership",
+      mdTitle: "Managing Director — Mohammad Maani (MBA)",
+      mdBio:
+        "MBA-qualified Managing Director with 12+ years of experience across the private sector and international NGOs (INGOs). Experienced in the medical field and in leading operations and partnerships across the MENA region and West Africa.",
+
+      osamaTitle: "Dr. Osama Waleed Alakhras — Pharmacy Graduate",
+      osamaBio:
+        "Graduate of the Faculty of Pharmacy with 15+ years of professional experience as a medical representative. Worked with well-known pharmaceutical companies across psychiatric medications, antibiotics, dietary supplements, and medical cosmetic products (body, hair, and dental care).",
+
       locationLabel: "Location",
       locationValue: "Amman, Jordan",
+
       contactLabel: "Contact",
       phonesLabel: "Phone",
       emailsLabel: "Email",
+
       productsLabel: "Current Products (Small Scale)",
       products: [
         "Toothpaste & Toothbrushes",
-        "Condoms (sexual protection)",
+        "Personal protection products (condoms)",
         "Baby feeding bottle with silicone pacifier",
       ],
+
       noteTitle: "Availability",
       noteBody:
         "We operate at a small scale and supply based on demand. For inquiries, please contact us by phone or email.",
+
       ctaTitle: "Request a Quote",
       ctaBody:
         "Send your quantity and delivery location to info@zomorodmedical.com and we will respond promptly.",
+
       contactNote: "Prefer WhatsApp? Tap the button to message us instantly.",
       footer: `© ${new Date().getFullYear()} Zomorod Medical Supplies LLC. All rights reserved.`,
+
       langLabel: "Language",
       en: "EN",
       ar: "AR",
+
+      companyPhoneLabel: "Company",
+      doctorPhoneLabel: "Dr. Osama",
     };
 
     const ar = {
       brand: "Zomorod Medical Supplies LLC",
       tagline: "توريد وتوزيع المنتجات الطبية الاستهلاكية — مقرّنا عمّان، الأردن.",
-      heroTitle: "توريد طبي موثوق بعناية واهتمام.",
+
+      heroTitle: "توريد موثوق للمنتجات الطبية الاستهلاكية الأساسية.",
       heroBody:
-        "نركّز على المنتجات الطبية الاستهلاكية الأساسية ونستجيب بسرعة للكميات المطلوبة ومواقع التسليم.",
+        "نركّز على المنتجات الطبية الاستهلاكية اليومية ونستجيب بسرعة للكميات المطلوبة ومواقع التسليم.",
       heroPrimary: "راسلنا بالبريد",
       heroSecondary: "اتصل بنا",
+
       highlightsTitle: "لماذا زمرد؟",
       highlights: [
-        "توريد مرن وعلى نطاق صغير لتلبية الطلب المحلي",
-        "تواصل واضح عبر الهاتف والبريد الإلكتروني وواتساب",
-        "توزيع محلي في الأردن مع اهتمام بالجودة",
+        "وضوح في التوفر ووقت التوريد",
+        "اهتمام بالجودة وحسن التعامل مع المنتجات",
+        "استجابة سريعة عبر الهاتف والبريد وواتساب",
       ],
+
+      aboutTitle: "الإدارة",
+      mdTitle: "المدير العام — محمد معاني (MBA)",
+      mdBio:
+        "مدير عام حاصل على ماجستير إدارة أعمال (MBA) بخبرة تزيد عن 12 عامًا في القطاع الخاص والمنظمات الدولية غير الحكومية. لديه خبرة في المجال الطبي وقيادة العمليات وبناء الشراكات في منطقة الشرق الأوسط وشمال أفريقيا وغرب أفريقيا.",
+
+      osamaTitle: "د. أسامة وليد الأخرس — خريج كلية الصيدلة",
+      osamaBio:
+        "خريج كلية الصيدلة بخبرة مهنية تزيد عن 15 عامًا كمندوب طبي. عمل مع شركات دوائية معروفة في مجالات تشمل أدوية الطب النفسي، والمضادات الحيوية، والمكملات الغذائية، ومنتجات التجميل الطبية (العناية بالجسم والشعر والأسنان).",
+
       locationLabel: "الموقع",
       locationValue: "عمّان، الأردن",
+
       contactLabel: "التواصل",
       phonesLabel: "الهاتف",
       emailsLabel: "البريد الإلكتروني",
+
       productsLabel: "المنتجات الحالية (على نطاق صغير)",
       products: [
-        "معجون الأسنان وفراشي الأسنان",
-        "واقيات (كوندوم)",
-        "رضّاعات أطفال مع لهاية سيليكون",
+        "معجون الأسنان وفرش الأسنان",
+        "منتجات حماية شخصية (واقيات)",
+        "رضّاعة أطفال مع لهاية سيليكون",
       ],
+
       noteTitle: "التوفر",
       noteBody:
         "نعمل حاليًا على نطاق صغير ويتم التوريد حسب الطلب. للاستفسارات، يرجى التواصل عبر الهاتف أو البريد الإلكتروني.",
+
       ctaTitle: "طلب عرض سعر",
       ctaBody:
         "أرسل الكمية وموقع التسليم إلى info@zomorodmedical.com وسنقوم بالرد في أقرب وقت.",
+
       contactNote: "تفضّل واتساب؟ اضغط الزر لإرسال رسالة مباشرة.",
       footer: `© ${new Date().getFullYear()} Zomorod Medical Supplies LLC. جميع الحقوق محفوظة.`,
+
       langLabel: "اللغة",
       en: "EN",
       ar: "AR",
+
+      companyPhoneLabel: "هاتف الشركة",
+      doctorPhoneLabel: "د. أسامة",
     };
 
     return isAr ? ar : en;
@@ -129,7 +171,7 @@ export default function App() {
               <a className="button button--primary" href="mailto:info@zomorodmedical.com">
                 {content.heroPrimary}
               </a>
-              <a className="button button--ghost" href="tel:+962790554065">
+              <a className="button button--ghost" href="tel:+962791752686">
                 {content.heroSecondary}
               </a>
             </div>
@@ -159,13 +201,13 @@ export default function App() {
             <div className="stack">
               <div className="card__label">{content.phonesLabel}</div>
               <p className="card__value card__value--spaced">
-                <strong>{isAr ? "هاتف الشركة: " : "Company: "}</strong>
+                <strong>{content.companyPhoneLabel}: </strong>
                 <a href="tel:+962791752686" className="link">
                   +962 79 175 2686
                 </a>
               </p>
               <p className="card__value">
-                <strong>{isAr ? "د. أسامة: " : "Dr. Osama: "}</strong>
+                <strong>{content.doctorPhoneLabel}: </strong>
                 <a href="tel:+962790554065" className="link">
                   +962 79 055 4065
                 </a>
@@ -210,6 +252,23 @@ export default function App() {
             <div className="card__label">{content.noteTitle}</div>
             <p className="card__value card__value--top">{content.noteBody}</p>
           </section>
+
+          {/* NEW: Leadership section */}
+          <section className="card">
+            <div className="card__label">{content.aboutTitle}</div>
+
+            <p className="card__value card__value--top" style={{ fontWeight: 800 }}>
+              {content.mdTitle}
+            </p>
+            <p className="card__value card__value--top">{content.mdBio}</p>
+
+            <div style={{ height: 10 }} />
+
+            <p className="card__value card__value--top" style={{ fontWeight: 800 }}>
+              {content.osamaTitle}
+            </p>
+            <p className="card__value card__value--top">{content.osamaBio}</p>
+          </section>
         </div>
 
         <p className="note">{content.contactNote}</p>
@@ -227,5 +286,3 @@ export default function App() {
     </div>
   );
 }
-
-
