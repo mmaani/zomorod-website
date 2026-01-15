@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import logo from "./logo.png";
+import "./styles.css";
 
 export default function App() {
-  const [lang, setLang] = useState("en"); // "en" | "ar"
+  const [lang, setLang] = useState("en");
   const isAr = lang === "ar";
 
   const content = useMemo(() => {
@@ -34,14 +35,11 @@ export default function App() {
       noteTitle: "Availability",
       noteBody:
         "We operate at a small scale and supply based on demand. For inquiries, please contact us by phone or email.",
-      footer:
-        "© " +
-        new Date().getFullYear() +
-        " Zomorod Medical Supplies LLC. All rights reserved.",
       ctaTitle: "Request a Quote",
       ctaBody:
         "Send your quantity and delivery location to info@zomorodmedical.com and we will respond promptly.",
-      contactNote: "Prefer WhatsApp? Tap the green button to message us instantly.",
+      contactNote: "Prefer WhatsApp? Tap the button to message us instantly.",
+      footer: `© ${new Date().getFullYear()} Zomorod Medical Supplies LLC. All rights reserved.`,
       langLabel: "Language",
       en: "EN",
       ar: "AR",
@@ -75,14 +73,11 @@ export default function App() {
       noteTitle: "التوفر",
       noteBody:
         "نعمل حاليًا على نطاق صغير ويتم التوريد حسب الطلب. للاستفسارات، يرجى التواصل عبر الهاتف أو البريد الإلكتروني.",
-      footer:
-        "© " +
-        new Date().getFullYear() +
-        " Zomorod Medical Supplies LLC. جميع الحقوق محفوظة.",
       ctaTitle: "طلب عرض سعر",
       ctaBody:
         "أرسل الكمية وموقع التسليم إلى info@zomorodmedical.com وسنقوم بالرد في أقرب وقت.",
-      contactNote: "تفضّل واتساب؟ اضغط الزر الأخضر لإرسال رسالة مباشرة.",
+      contactNote: "تفضّل واتساب؟ اضغط الزر لإرسال رسالة مباشرة.",
+      footer: `© ${new Date().getFullYear()} Zomorod Medical Supplies LLC. جميع الحقوق محفوظة.`,
       langLabel: "اللغة",
       en: "EN",
       ar: "AR",
@@ -92,11 +87,7 @@ export default function App() {
   }, [isAr]);
 
   return (
-    <div
-      dir={isAr ? "rtl" : "ltr"}
-      lang={isAr ? "ar" : "en"}
-      className="page"
-    >
+    <div dir={isAr ? "rtl" : "ltr"} lang={isAr ? "ar" : "en"} className="page">
       <header className="header">
         <div className="brand">
           <img src={logo} alt="Zomorod Medical Supplies LLC" className="brand__logo" />
@@ -112,14 +103,14 @@ export default function App() {
             <button
               onClick={() => setLang("en")}
               className={`lang__button ${!isAr ? "is-active" : ""}`}
-              aria-label="Switch to English"
+              type="button"
             >
               {content.en}
             </button>
             <button
               onClick={() => setLang("ar")}
               className={`lang__button ${isAr ? "is-active" : ""}`}
-              aria-label="Switch to Arabic"
+              type="button"
             >
               {content.ar}
             </button>
@@ -133,6 +124,7 @@ export default function App() {
             <p className="eyebrow">{content.contactLabel}</p>
             <h2 className="hero__title">{content.heroTitle}</h2>
             <p className="hero__body">{content.heroBody}</p>
+
             <div className="hero__actions">
               <a className="button button--primary" href="mailto:info@zomorodmedical.com">
                 {content.heroPrimary}
@@ -142,6 +134,7 @@ export default function App() {
               </a>
             </div>
           </div>
+
           <div className="hero__panel">
             <div className="panel__header">
               <span className="panel__title">{content.highlightsTitle}</span>
@@ -218,9 +211,11 @@ export default function App() {
             <p className="card__value card__value--top">{content.noteBody}</p>
           </section>
         </div>
+
         <p className="note">{content.contactNote}</p>
         <footer className="footer">{content.footer}</footer>
       </main>
+
       <a
         href="https://wa.me/962791752686"
         target="_blank"
