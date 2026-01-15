@@ -29,9 +29,9 @@ export default function App() {
       mdBio:
         "MBA-qualified Managing Director with 12+ years of experience across the private sector and international NGOs (INGOs). Experienced in the medical field and in leading operations and partnerships across the MENA region and West Africa.",
 
-      osamaTitle: "Dr. Osama Waleed Alakhras — Pharmacy Graduate",
+      osamaTitle: "Dr. Osama Waleed Alakhras — Technical Expert",
       osamaBio:
-        "Graduate of the Faculty of Pharmacy with 15+ years of professional experience as a medical representative. Worked with well-known pharmaceutical companies across psychiatric medications, antibiotics, dietary supplements, and medical cosmetic products (body, hair, and dental care).",
+        "PharmaD with 15+ years of professional experience as a medical representative. Worked with well-known pharmaceutical companies across psychiatric medications, antibiotics, dietary supplements, and medical cosmetic products (body, hair, and dental care).",
 
       locationLabel: "Location",
       locationValue: "Amman, Jordan",
@@ -84,13 +84,13 @@ export default function App() {
       ],
 
       aboutTitle: "الإدارة",
-      mdTitle: "المدير العام — محمد معاني (MBA)",
+      mdTitle: "المدير العام — محمد المعاني (MBA)",
       mdBio:
         "مدير عام حاصل على ماجستير إدارة أعمال (MBA) بخبرة تزيد عن 12 عامًا في القطاع الخاص والمنظمات الدولية غير الحكومية. لديه خبرة في المجال الطبي وقيادة العمليات وبناء الشراكات في منطقة الشرق الأوسط وشمال أفريقيا وغرب أفريقيا.",
 
       osamaTitle: "د. أسامة وليد الأخرس — خريج كلية الصيدلة",
       osamaBio:
-        "خريج كلية الصيدلة بخبرة مهنية تزيد عن 15 عامًا كمندوب طبي. عمل مع شركات دوائية معروفة في مجالات تشمل أدوية الطب النفسي، والمضادات الحيوية، والمكملات الغذائية، ومنتجات التجميل الطبية (العناية بالجسم والشعر والأسنان).",
+        "حاصل على بكالوريس دكتور في الصيدلة بخبرة مهنية تزيد عن 15 عامًا كمندوب طبي. عمل مع شركات دوائية معروفة في مجالات تشمل أدوية الطب النفسي، والمضادات الحيوية، والمكملات الغذائية، ومنتجات التجميل الطبية (العناية بالجسم والشعر والأسنان).",
 
       locationLabel: "الموقع",
       locationValue: "عمّان، الأردن",
@@ -286,3 +286,4 @@ export default function App() {
     </div>
   );
 }
+
