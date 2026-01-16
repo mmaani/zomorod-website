@@ -15,9 +15,9 @@ export default function App() {
       nav: {
         home: "Home",
         products: "Products",
-        approach: "Approach",
         leadership: "Leadership",
         contact: "Contact",
+        approach: "Approach",
         compliance: "Compliance",
       },
 
