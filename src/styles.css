@@ -361,6 +361,35 @@ body {
 .card__value--top { margin-top: 10px; }
 .card__value--spaced { margin-bottom: 6px; }
 
+/* Map block inside cards */
+.map {
+  margin-top: 12px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(15,23,42,0.10);
+  box-shadow: 0 10px 24px rgba(15,23,42,0.06);
+  background: rgba(255,255,255,0.9);
+}
+
+.map iframe {
+  display: block;
+  width: 100%;
+  height: 220px;
+  border: 0;
+}
+
+/* Better spacing for "location details" lines */
+.card__value strong {
+  font-weight: 950;
+}
+
+/* Mobile: slightly shorter map */
+@media (max-width: 520px) {
+  .map iframe {
+    height: 190px;
+  }
+}
+
 .stack { margin-top: 10px; }
 
 /* Links */
@@ -463,5 +492,6 @@ a:focus-visible {
     margin-bottom: 10px;
   }
 }
+
 
 
