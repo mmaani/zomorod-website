@@ -382,11 +382,59 @@ export default function App() {
             </p>
           </section>
 
-          {/* LOCATION */}
-          <section className="card">
-            <div className="card__label">{content.locationLabel}</div>
-            <p className="card__value">{content.locationValue}</p>
-          </section>
+{/* LOCATION */}
+<section className="card">
+  <div className="card__label">{content.locationLabel}</div>
+
+  <p className="card__value" style={{ fontWeight: 900 }}>
+    {content.locationDetails}
+  </p>
+
+  <p className="card__value card__value--top">
+    <strong>{content.zipLabel}: </strong>
+    {content.zipValue}
+  </p>
+
+  <p className="card__value card__value--top">
+    <strong>{content.coordsLabel}: </strong>
+    {content.coordsValue}
+  </p>
+
+  <div style={{ height: 12 }} />
+
+  {/* Map embed (no API key needed) */}
+  <div
+    style={{
+      borderRadius: 14,
+      overflow: "hidden",
+      border: "1px solid rgba(15,23,42,0.10)",
+      boxShadow: "0 10px 24px rgba(15,23,42,0.06)",
+    }}
+  >
+    <iframe
+      title="Zomorod location map"
+      src="https://www.google.com/maps?q=31.985555,35.897777&z=15&output=embed"
+      width="100%"
+      height="220"
+      loading="lazy"
+      referrerPolicy="no-referrer-when-downgrade"
+      style={{ border: 0, display: "block" }}
+      allowFullScreen
+    />
+  </div>
+
+  <p className="card__value card__value--top">
+    <a
+      className="link"
+      href="https://www.google.com/maps?q=31.985555,35.897777"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {content.mapOpenLabel}
+    </a>
+  </p>
+</section>
+
 
           {/* CONTACT */}
           <section id="contact" className="card">
@@ -479,4 +527,5 @@ export default function App() {
     </div>
   );
 }
+
 
