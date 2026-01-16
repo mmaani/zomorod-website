@@ -275,14 +275,14 @@ export default function App() {
             <button className="nav__link" type="button" onClick={() => scrollToId("products")}>
               {content.nav.products}
             </button>
-            <button className="nav__link" type="button" onClick={() => scrollToId("approach")}>
-              {content.nav.approach}
-            </button>
-            <button className="nav__link" type="button" onClick={() => scrollToId("leadership")}>
+                 <button className="nav__link" type="button" onClick={() => scrollToId("leadership")}>
               {content.nav.leadership}
             </button>
             <button className="nav__link" type="button" onClick={() => scrollToId("contact")}>
               {content.nav.contact}
+            </button>
+                   <button className="nav__link" type="button" onClick={() => scrollToId("approach")}>
+              {content.nav.approach}
             </button>
             <button className="nav__link" type="button" onClick={() => scrollToId("compliance")}>
               {content.nav.compliance}
@@ -541,6 +541,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
