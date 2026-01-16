@@ -11,9 +11,20 @@ export default function App() {
       brand: "Zomorod Medical Supplies LLC",
       tagline: "Medical consumer goods supply & distribution — based in Amman, Jordan.",
 
-      heroTitle: "Reliable supply of essential medical consumer goods.",
+      // Navigation
+      nav: {
+        home: "Home",
+        products: "Products",
+        approach: "Approach",
+        leadership: "Leadership",
+        contact: "Contact",
+        compliance: "Compliance",
+      },
+
+      // Hero
+      heroTitle: "Medical consumer goods sourcing & distribution in Jordan.",
       heroBody:
-        "We focus on everyday medical consumer products and respond quickly to requested quantities and delivery locations.",
+        "We support private clinics, pharmacies, and laboratories with a focused range of essential medical consumer products. Share your required quantities and delivery location — we’ll confirm availability, lead time, and next steps.",
       heroPrimary: "Email us",
       heroSecondary: "Call us",
 
@@ -24,6 +35,50 @@ export default function App() {
         "Fast response via phone, email, and WhatsApp",
       ],
 
+      // Market + sourcing (website-safe)
+      marketTitle: "Market Focus",
+      marketBody:
+        "Jordan’s private healthcare sector relies significantly on imported medical consumables. Zomorod Medical Supplies LLC focuses on serving local private-sector demand with practical, small-scale fulfillment.",
+      sourcingTitle: "Sourcing Approach",
+      sourcingBody:
+        "We evaluate quality consistency, documentation readiness, regulatory requirements, logistics feasibility, and market suitability when selecting supply options. Documentation support is provided where applicable.",
+
+      // NEW: Quality & Value Methodology
+      qvTitle: "Quality & Value Methodology",
+      qvBody:
+        "We compare sourcing options using defined criteria: product specifications, quality consistency, documentation readiness, regulatory requirements, and total landed cost. This helps us provide reliable products with competitive quotes based on volume and delivery needs.",
+
+      // How to order
+      orderTitle: "How to Order",
+      orderSteps: [
+        "Send your request: product, quantity, and delivery location (email or WhatsApp).",
+        "We confirm availability, pricing, and estimated lead time.",
+        "We arrange delivery upon confirmation.",
+      ],
+
+      // Products (6 + additional generic categories)
+      productsTitle: "Products",
+      productsSubtitle: "Current products (small scale)",
+      products: [
+        "Toothpaste",
+        "Toothbrushes",
+        "Personal protection products (condoms)",
+        "Baby feeding bottle",
+        "Silicone pacifier",
+        "Selected oral-care items (on request)",
+      ],
+      additionalTitle: "Additional medical consumables (on request / expanding)",
+      additional: [
+        "Wound care consumables",
+        "Examination & clinic consumables",
+        "Personal protective equipment (PPE)",
+        "Laboratory consumables (selected items)",
+        "Hygiene and infection-prevention items",
+      ],
+      productsNote:
+        "Availability depends on demand, quantities, and regulatory requirements. Contact us for a quote and lead time.",
+
+      // Leadership
       aboutTitle: "Leadership",
       mdTitle: "Managing Director — Mohammad Maani (MBA)",
       mdBio:
@@ -37,31 +92,30 @@ export default function App() {
       osamaEmailLabel: "Email",
       osamaEmail: "o.nbhan@zomorodmedical.com",
 
-      complianceTitle: "Regulatory & Compliance Notice",
-      complianceBody:
-        "Zomorod Medical Supplies LLC supplies medical consumer goods and related products. Product availability, specifications, labeling, and import/distribution requirements may vary. We provide information upon request and support customers with documentation where applicable. This website is for general information only and does not constitute medical advice.",
-
+      // Contact
+      contactTitle: "Contact",
       locationLabel: "Location",
       locationValue: "Amman, Jordan",
-
-      contactLabel: "Contact",
       phonesLabel: "Phone",
       emailsLabel: "Email",
+      companyPhoneLabel: "Company",
+      doctorPhoneLabel: "Dr. Osama Nbhan",
+      infoEmail: "info@zomorodmedical.com",
 
-      productsLabel: "Current Products (Small Scale)",
-      products: [
-        "Toothpaste & Toothbrushes",
-        "Personal protection products (condoms)",
-        "Baby feeding bottle with silicone pacifier",
-      ],
+      // CTA
+      ctaTitle: "Request a Quote",
+      ctaBody:
+        "Send your required items, quantities, and delivery location to info@zomorodmedical.com and we will respond promptly.",
 
+      // Availability
       noteTitle: "Availability",
       noteBody:
         "We operate at a small scale and supply based on demand. For inquiries, please contact us by phone or email.",
 
-      ctaTitle: "Request a Quote",
-      ctaBody:
-        "Send your quantity and delivery location to info@zomorodmedical.com and we will respond promptly.",
+      // Compliance
+      complianceTitle: "Regulatory & Compliance Notice",
+      complianceBody:
+        "Zomorod Medical Supplies LLC supplies medical consumer goods and related products. Product availability, specifications, labeling, and import/distribution requirements may vary. We provide information upon request and support customers with documentation where applicable. This website is for general information only and does not constitute medical advice.",
 
       contactNote: "Prefer WhatsApp? Tap the button to message us instantly.",
       footer: `© ${new Date().getFullYear()} Zomorod Medical Supplies LLC. All rights reserved.`,
@@ -69,19 +123,24 @@ export default function App() {
       langLabel: "Language",
       en: "EN",
       ar: "AR",
-
-      companyPhoneLabel: "Company",
-      doctorPhoneLabel: "Dr. Osama Nbhan",
-      infoEmail: "info@zomorodmedical.com",
     };
 
     const ar = {
       brand: "Zomorod Medical Supplies LLC",
       tagline: "توريد وتوزيع المنتجات الطبية الاستهلاكية — مقرّنا عمّان، الأردن.",
 
-      heroTitle: "توريد موثوق للمنتجات الطبية الاستهلاكية الأساسية.",
+      nav: {
+        home: "الرئيسية",
+        products: "المنتجات",
+        approach: "المنهجية",
+        leadership: "الإدارة",
+        contact: "التواصل",
+        compliance: "الالتزام",
+      },
+
+      heroTitle: "توريد وتوزيع المنتجات الطبية الاستهلاكية في الأردن.",
       heroBody:
-        "نركّز على المنتجات الطبية الاستهلاكية اليومية ونستجيب بسرعة للكميات المطلوبة ومواقع التسليم.",
+        "ندعم العيادات الخاصة والصيدليات والمختبرات بمجموعة مركّزة من المنتجات الطبية الاستهلاكية الأساسية. أرسل الكمية المطلوبة وموقع التسليم — وسنؤكد التوفر ووقت التوريد والخطوات التالية.",
       heroPrimary: "راسلنا بالبريد",
       heroSecondary: "اتصل بنا",
 
@@ -91,6 +150,45 @@ export default function App() {
         "اهتمام بالجودة وحسن التعامل مع المنتجات",
         "استجابة سريعة عبر الهاتف والبريد وواتساب",
       ],
+
+      marketTitle: "السوق المستهدف",
+      marketBody:
+        "يعتمد القطاع الصحي الخاص في الأردن بشكل كبير على استيراد المستلزمات الطبية. تركز زمرد للمستلزمات الطبية على تلبية الطلب المحلي في القطاع الخاص من خلال توريد عملي وعلى نطاق مناسب.",
+      sourcingTitle: "نهج التوريد",
+      sourcingBody:
+        "نعتمد على تقييم ثبات الجودة وجاهزية المستندات والمتطلبات التنظيمية وجدوى الخدمات اللوجستية وملاءمة السوق عند اختيار خيارات التوريد. ويتم دعم العملاء بالمستندات عند الاقتضاء.",
+
+      qvTitle: "منهجية الجودة والقيمة",
+      qvBody:
+        "نقارن خيارات التوريد وفق معايير واضحة تشمل المواصفات، وثبات الجودة، وجاهزية المستندات، والمتطلبات التنظيمية، والتكلفة الإجمالية بعد الشحن. يتيح ذلك تقديم منتجات موثوقة مع عروض أسعار تنافسية حسب الكمية وموقع التسليم.",
+
+      orderTitle: "كيفية الطلب",
+      orderSteps: [
+        "إرسال الطلب: نوع المنتج والكمية وموقع التسليم (بريد أو واتساب).",
+        "نؤكد التوفر والسعر ووقت التوريد المتوقع.",
+        "ترتيب التسليم بعد التأكيد.",
+      ],
+
+      productsTitle: "المنتجات",
+      productsSubtitle: "المنتجات الحالية (على نطاق صغير)",
+      products: [
+        "معجون أسنان",
+        "فرش أسنان",
+        "منتجات حماية شخصية (واقيات)",
+        "رضّاعة أطفال",
+        "لهاية سيليكون",
+        "منتجات عناية فموية مختارة (عند الطلب)",
+      ],
+      additionalTitle: "مستلزمات طبية إضافية (عند الطلب / ضمن التوسع)",
+      additional: [
+        "مستلزمات العناية بالجروح",
+        "مستلزمات العيادات والفحص",
+        "معدات الوقاية الشخصية (PPE)",
+        "مستلزمات مختبرات (مواد مختارة)",
+        "مستلزمات النظافة والوقاية من العدوى",
+      ],
+      productsNote:
+        "يعتمد التوفر على الطلب والكميات والمتطلبات التنظيمية. تواصل معنا للحصول على عرض سعر ووقت توريد.",
 
       aboutTitle: "الإدارة",
       mdTitle: "المدير العام — محمد المعاني (MBA)",
@@ -105,31 +203,26 @@ export default function App() {
       osamaEmailLabel: "البريد الإلكتروني",
       osamaEmail: "o.nbhan@zomorodmedical.com",
 
-      complianceTitle: "إشعار تنظيمي والالتزام",
-      complianceBody:
-        "تقوم Zomorod Medical Supplies LLC بتوريد المنتجات الطبية الاستهلاكية وما يرتبط بها. قد تختلف التوفر والمواصفات والملصقات ومتطلبات الاستيراد/التوزيع حسب المنتج والجهات المعنية. نقدم المعلومات عند الطلب وندعم العملاء بالمستندات عند الاقتضاء. هذا الموقع مخصص للمعلومات العامة فقط ولا يُعد نصيحة طبية.",
-
+      contactTitle: "التواصل",
       locationLabel: "الموقع",
       locationValue: "عمّان، الأردن",
-
-      contactLabel: "التواصل",
       phonesLabel: "الهاتف",
       emailsLabel: "البريد الإلكتروني",
+      companyPhoneLabel: "هاتف الشركة",
+      doctorPhoneLabel: "د. أسامه نبهان",
+      infoEmail: "info@zomorodmedical.com",
 
-      productsLabel: "المنتجات الحالية (على نطاق صغير)",
-      products: [
-        "معجون الأسنان وفرش الأسنان",
-        "منتجات حماية شخصية (واقيات)",
-        "رضّاعة أطفال مع لهاية سيليكون",
-      ],
+      ctaTitle: "طلب عرض سعر",
+      ctaBody:
+        "أرسل الأصناف المطلوبة والكميات وموقع التسليم إلى info@zomorodmedical.com وسنقوم بالرد في أقرب وقت.",
 
       noteTitle: "التوفر",
       noteBody:
         "نعمل حاليًا على نطاق صغير ويتم التوريد حسب الطلب. للاستفسارات، يرجى التواصل عبر الهاتف أو البريد الإلكتروني.",
 
-      ctaTitle: "طلب عرض سعر",
-      ctaBody:
-        "أرسل الكمية وموقع التسليم إلى info@zomorodmedical.com وسنقوم بالرد في أقرب وقت.",
+      complianceTitle: "إشعار تنظيمي والالتزام",
+      complianceBody:
+        "تقوم Zomorod Medical Supplies LLC بتوريد المنتجات الطبية الاستهلاكية وما يرتبط بها. قد تختلف التوفر والمواصفات والملصقات ومتطلبات الاستيراد/التوزيع حسب المنتج والجهات المعنية. نقدم المعلومات عند الطلب وندعم العملاء بالمستندات عند الاقتضاء. هذا الموقع مخصص للمعلومات العامة فقط ولا يُعد نصيحة طبية.",
 
       contactNote: "تفضّل واتساب؟ اضغط الزر لإرسال رسالة مباشرة.",
       footer: `© ${new Date().getFullYear()} Zomorod Medical Supplies LLC. جميع الحقوق محفوظة.`,
@@ -137,67 +230,83 @@ export default function App() {
       langLabel: "اللغة",
       en: "EN",
       ar: "AR",
-
-      companyPhoneLabel: "هاتف الشركة",
-      doctorPhoneLabel: " د. أسامه نبهان",
-      infoEmail: "info@zomorodmedical.com",
     };
 
     return isAr ? ar : en;
   }, [isAr]);
 
+  // Simple in-page navigation (still a single page / landing page)
+  const scrollToId = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <div dir={isAr ? "rtl" : "ltr"} lang={isAr ? "ar" : "en"} className="page">
       <header className="header">
-        <div className="brand">
-          <img
-            src={logo}
-            alt="Zomorod Medical Supplies LLC"
-            className="brand__logo"
-          />
+        <div className="brand" onClick={() => scrollToId("home")} role="button" tabIndex={0}>
+          <img src={logo} alt="Zomorod Medical Supplies LLC" className="brand__logo" />
           <div>
             <h1 className="brand__title">{content.brand}</h1>
             <p className="brand__tagline">{content.tagline}</p>
           </div>
         </div>
 
-        <div className="lang">
-          <span className="lang__label">{content.langLabel}</span>
-          <div
-            className="lang__toggle"
-            role="group"
-            aria-label={content.langLabel}
-          >
-            <button
-              onClick={() => setLang("en")}
-              className={`lang__button ${!isAr ? "is-active" : ""}`}
-              type="button"
-            >
-              {content.en}
+        <div className="header__right">
+          <nav className="nav" aria-label="Primary">
+            <button className="nav__link" type="button" onClick={() => scrollToId("home")}>
+              {content.nav.home}
             </button>
-            <button
-              onClick={() => setLang("ar")}
-              className={`lang__button ${isAr ? "is-active" : ""}`}
-              type="button"
-            >
-              {content.ar}
+            <button className="nav__link" type="button" onClick={() => scrollToId("products")}>
+              {content.nav.products}
             </button>
+            <button className="nav__link" type="button" onClick={() => scrollToId("approach")}>
+              {content.nav.approach}
+            </button>
+            <button className="nav__link" type="button" onClick={() => scrollToId("leadership")}>
+              {content.nav.leadership}
+            </button>
+            <button className="nav__link" type="button" onClick={() => scrollToId("contact")}>
+              {content.nav.contact}
+            </button>
+            <button className="nav__link" type="button" onClick={() => scrollToId("compliance")}>
+              {content.nav.compliance}
+            </button>
+          </nav>
+
+          <div className="lang">
+            <span className="lang__label">{content.langLabel}</span>
+            <div className="lang__toggle" role="group" aria-label={content.langLabel}>
+              <button
+                onClick={() => setLang("en")}
+                className={`lang__button ${!isAr ? "is-active" : ""}`}
+                type="button"
+              >
+                {content.en}
+              </button>
+              <button
+                onClick={() => setLang("ar")}
+                className={`lang__button ${isAr ? "is-active" : ""}`}
+                type="button"
+              >
+                {content.ar}
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="main">
-        <section className="hero">
+        {/* HOME */}
+        <section id="home" className="hero">
           <div>
-            <p className="eyebrow">{content.contactLabel}</p>
+            <p className="eyebrow">{content.contactTitle ?? content.contactLabel}</p>
             <h2 className="hero__title">{content.heroTitle}</h2>
             <p className="hero__body">{content.heroBody}</p>
 
             <div className="hero__actions">
-              <a
-                className="button button--primary"
-                href={`mailto:${content.infoEmail}`}
-              >
+              <a className="button button--primary" href={`mailto:${content.infoEmail}`}>
                 {content.heroPrimary}
               </a>
               <a className="button button--ghost" href="tel:+962791752686">
@@ -219,15 +328,69 @@ export default function App() {
         </section>
 
         <div className="grid">
-          {/* Location */}
+          {/* APPROACH */}
+          <section id="approach" className="card">
+            <div className="card__label">{content.marketTitle}</div>
+            <p className="card__value card__value--top">{content.marketBody}</p>
+
+            <div style={{ height: 10 }} />
+
+            <div className="card__label">{content.sourcingTitle}</div>
+            <p className="card__value card__value--top">{content.sourcingBody}</p>
+
+            <div style={{ height: 10 }} />
+
+            <div className="card__label">{content.qvTitle}</div>
+            <p className="card__value card__value--top">{content.qvBody}</p>
+          </section>
+
+          {/* HOW TO ORDER */}
+          <section className="card">
+            <div className="card__label">{content.orderTitle}</div>
+            <ul className="list">
+              {content.orderSteps.map((s) => (
+                <li key={s}>{s}</li>
+              ))}
+            </ul>
+          </section>
+
+          {/* PRODUCTS */}
+          <section id="products" className="card">
+            <div className="card__label">{content.productsTitle}</div>
+            <p className="card__value card__value--top" style={{ fontWeight: 800 }}>
+              {content.productsSubtitle}
+            </p>
+            <ul className="list">
+              {content.products.map((p) => (
+                <li key={p}>{p}</li>
+              ))}
+            </ul>
+
+            <div style={{ height: 10 }} />
+
+            <p className="card__value card__value--top" style={{ fontWeight: 800 }}>
+              {content.additionalTitle}
+            </p>
+            <ul className="list">
+              {content.additional.map((p) => (
+                <li key={p}>{p}</li>
+              ))}
+            </ul>
+
+            <p className="note" style={{ marginTop: 10 }}>
+              {content.productsNote}
+            </p>
+          </section>
+
+          {/* LOCATION */}
           <section className="card">
             <div className="card__label">{content.locationLabel}</div>
             <p className="card__value">{content.locationValue}</p>
           </section>
 
-          {/* Contact (general only) */}
-          <section className="card">
-            <div className="card__label">{content.contactLabel}</div>
+          {/* CONTACT */}
+          <section id="contact" className="card">
+            <div className="card__label">{content.contactTitle}</div>
 
             <div className="stack">
               <div className="card__label">{content.phonesLabel}</div>
@@ -253,38 +416,23 @@ export default function App() {
                 </a>
               </p>
             </div>
-          </section>
 
-          {/* Products */}
-          <section className="card">
-            <div className="card__label">{content.productsLabel}</div>
-            <ul className="list">
-              {content.products.map((p) => (
-                <li key={p}>{p}</li>
-              ))}
-            </ul>
-          </section>
+            <div style={{ height: 10 }} />
 
-          {/* CTA */}
-          <section className="card">
             <div className="card__label">{content.ctaTitle}</div>
             <p className="card__value card__value--top">{content.ctaBody}</p>
-          </section>
 
-          {/* Availability */}
-          <section className="card">
+            <div style={{ height: 10 }} />
+
             <div className="card__label">{content.noteTitle}</div>
             <p className="card__value card__value--top">{content.noteBody}</p>
           </section>
 
-          {/* Leadership (emails here) */}
-          <section className="card">
+          {/* LEADERSHIP */}
+          <section id="leadership" className="card">
             <div className="card__label">{content.aboutTitle}</div>
 
-            <p
-              className="card__value card__value--top"
-              style={{ fontWeight: 900 }}
-            >
+            <p className="card__value card__value--top" style={{ fontWeight: 900 }}>
               {content.mdTitle}
             </p>
             <p className="card__value card__value--top">{content.mdBio}</p>
@@ -297,10 +445,7 @@ export default function App() {
 
             <div style={{ height: 12 }} />
 
-            <p
-              className="card__value card__value--top"
-              style={{ fontWeight: 900 }}
-            >
+            <p className="card__value card__value--top" style={{ fontWeight: 900 }}>
               {content.osamaTitle}
             </p>
             <p className="card__value card__value--top">{content.osamaBio}</p>
@@ -312,12 +457,10 @@ export default function App() {
             </p>
           </section>
 
-          {/* Compliance notice */}
-          <section className="card">
+          {/* COMPLIANCE */}
+          <section id="compliance" className="card">
             <div className="card__label">{content.complianceTitle}</div>
-            <p className="card__value card__value--top">
-              {content.complianceBody}
-            </p>
+            <p className="card__value card__value--top">{content.complianceBody}</p>
           </section>
         </div>
 
@@ -336,4 +479,3 @@ export default function App() {
     </div>
   );
 }
-
