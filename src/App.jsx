@@ -22,9 +22,11 @@ export default function App() {
       },
 
       // Hero
-      heroTitle: "Medical consumer goods sourcing & distribution in Jordan.",
+      heroTitle: "Medical consumables sourcing, quality evaluation, and distribution in Jordan.",
+
       heroBody:
-        "We support private clinics, pharmacies, and laboratories with a focused range of essential medical consumer products. Share your required quantities and delivery location — we’ll confirm availability, lead time, and next steps.",
+        "We support private clinics, pharmacies, and laboratories with carefully selected medical consumer goods. Each request is evaluated based on product specifications, quality consistency, documentation readiness, regulatory requirements, and total landed cost—allowing us to provide reliable supply with competitive, volume-based pricing.",
+
       heroPrimary: "Email us",
       heroSecondary: "Call us",
 
@@ -145,9 +147,9 @@ export default function App() {
         compliance: "الالتزام",
       },
 
-      heroTitle: "توريد وتوزيع المنتجات الطبية الاستهلاكية في الأردن.",
+      heroTitle: "توريد وتقييم جودة وتوزيع المستلزمات الطبية الاستهلاكية في الأردن.",
       heroBody:
-        "ندعم العيادات الخاصة والصيدليات والمختبرات بمجموعة مركّزة من المنتجات الطبية الاستهلاكية الأساسية. أرسل الكمية المطلوبة وموقع التسليم — وسنؤكد التوفر ووقت التوريد والخطوات التالية.",
+      "ندعم العيادات الخاصة والصيدليات والمختبرات من خلال توريد مستلزمات طبية استهلاكية مختارة بعناية. يتم تقييم كل طلب وفق المواصفات الفنية، وثبات الجودة، وجاهزية المستندات، والمتطلبات التنظيمية، والتكلفة الإجمالية بعد الشحن، مما يتيح توفير منتجات موثوقة بأسعار تنافسية حسب الكمية.",
       heroPrimary: "راسلنا بالبريد",
       heroSecondary: "اتصل بنا",
 
@@ -315,7 +317,7 @@ export default function App() {
         {/* HOME */}
         <section id="home" className="hero">
           <div>
-            <p className="eyebrow">{content.contactTitle ?? content.contactLabel}</p>
+            <p className="eyebrow">Jordan-based medical supplies</p>
             <h2 className="hero__title">{content.heroTitle}</h2>
             <p className="hero__body">{content.heroBody}</p>
 
@@ -531,6 +533,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
