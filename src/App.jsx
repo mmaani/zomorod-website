@@ -80,7 +80,7 @@ export default function App() {
 
       // Leadership
       aboutTitle: "Leadership",
-      mdTitle: "Managing Director — Mohammad Maani (MBA)",
+      mdTitle: "Managing Director — Mr. Mohammad Maani (MBA)",
       mdBio:
         "MBA-qualified Managing Director with 12+ years of experience across the private sector and international NGOs (INGOs). Experienced in the medical field and in leading operations and partnerships across the MENA region and West Africa.",
       mdEmailLabel: "Email",
@@ -198,7 +198,7 @@ export default function App() {
         "يعتمد التوفر على الطلب والكميات والمتطلبات التنظيمية. تواصل معنا للحصول على عرض سعر ووقت توريد.",
 
       aboutTitle: "الإدارة",
-      mdTitle: "المدير العام — محمد المعاني (MBA)",
+      mdTitle: "المدير العام — السيد محمد المعاني (MBA)",
       mdBio:
         "مدير عام حاصل على ماجستير إدارة أعمال (MBA) بخبرة تزيد عن 12 عامًا في القطاع الخاص والمنظمات الدولية غير الحكومية. لديه خبرة في المجال الطبي وقيادة العمليات وبناء الشراكات في منطقة الشرق الأوسط وشمال أفريقيا وغرب أفريقيا.",
       mdEmailLabel: "البريد الإلكتروني",
@@ -541,6 +541,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
