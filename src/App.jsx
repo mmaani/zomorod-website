@@ -96,6 +96,13 @@ export default function App() {
       contactTitle: "Contact",
       locationLabel: "Location",
       locationValue: "Amman, Jordan",
+      locationDetails: "Amman, Sport City, Jordan",
+      zipLabel: "Zip Code",
+      zipValue: "11196",
+      coordsLabel: "Coordinates",
+      coordsValue: `31°59'8"N 35°53'52"E`,
+      mapOpenLabel: "Open in Google Maps",
+
       phonesLabel: "Phone",
       emailsLabel: "Email",
       companyPhoneLabel: "Company",
@@ -206,6 +213,13 @@ export default function App() {
       contactTitle: "التواصل",
       locationLabel: "الموقع",
       locationValue: "عمّان، الأردن",
+      locationDetails: "عمّان، المدينة الرياضية، الأردن",
+      zipLabel: "الرمز البريدي",
+      zipValue: "11196",
+      coordsLabel: "الإحداثيات",
+      coordsValue: `31°59'8"N 35°53'52"E`,
+      mapOpenLabel: "فتح على خرائط Google",
+
       phonesLabel: "الهاتف",
       emailsLabel: "البريد الإلكتروني",
       companyPhoneLabel: "هاتف الشركة",
@@ -527,5 +541,6 @@ export default function App() {
     </div>
   );
 }
+
 
 
