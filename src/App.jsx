@@ -132,9 +132,9 @@ export default function App() {
       nav: {
         home: "الرئيسية",
         products: "المنتجات",
-        approach: "المنهجية",
         leadership: "الإدارة",
         contact: "التواصل",
+        approach: "المنهجية",
         compliance: "الالتزام",
       },
 
@@ -479,3 +479,4 @@ export default function App() {
     </div>
   );
 }
+
