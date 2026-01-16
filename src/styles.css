@@ -202,9 +202,14 @@ body {
 
 /* Make anchor scrolling land below sticky header */
 #home, #products, #approach, #leadership, #contact, #compliance {
-  scroll-margin-top: 110px;
+  scroll-margin-top: 130px;
 }
 
+@media (max-width: 860px) {
+  #home, #products, #approach, #leadership, #contact, #compliance {
+    scroll-margin-top: 20px; /* header is no longer sticky */
+  }
+}
 /* Hero */
 .hero {
   display: grid;
@@ -440,3 +445,13 @@ a:focus-visible {
   .nav { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .nav__link { padding: 9px 10px; }
 }
+@media (max-width: 860px) {
+  .header {
+    position: static; /* stops overlapping content on mobile */
+    backdrop-filter: none;
+    background: transparent;
+    border-bottom: none;
+    padding-top: 18px;
+  }
+}
+
