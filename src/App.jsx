@@ -86,7 +86,7 @@ export default function App() {
       mdEmailLabel: "Email",
       mdEmail: "m.maani@zomorodmedical.com",
 
-      osamaTitle: "Dr. Osama Waleed Alakhras — Technical Expert",
+      osamaTitle: "Technical Expert — Dr. Osama Waleed Alakhras",
       osamaBio:
         "PharmaD with 15+ years of professional experience as a medical representative. Worked with well-known pharmaceutical companies across psychiatric medications, antibiotics, dietary supplements, and medical cosmetic products (body, hair, and dental care).",
       osamaEmailLabel: "Email",
@@ -204,7 +204,7 @@ export default function App() {
       mdEmailLabel: "البريد الإلكتروني",
       mdEmail: "m.maani@zomorodmedical.com",
 
-      osamaTitle: "د. أسامة وليد الأخرس — الخبير الفني",
+      osamaTitle: "الخبير الفني - د. أسامة وليد الأخرس ",
       osamaBio:
         "حاصل على بكالوريس دكتور في الصيدلة بخبرة مهنية تزيد عن 15 عامًا كمندوب طبي. عمل مع شركات دوائية معروفة في مجالات تشمل أدوية الطب النفسي، والمضادات الحيوية، والمكملات الغذائية، ومنتجات التجميل الطبية (العناية بالجسم والشعر والأسنان).",
       osamaEmailLabel: "البريد الإلكتروني",
@@ -541,6 +541,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
