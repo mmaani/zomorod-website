@@ -417,25 +417,15 @@ export default function App() {
   <div style={{ height: 12 }} />
 
   {/* Map embed (no API key needed) */}
-  <div
-    style={{
-      borderRadius: 14,
-      overflow: "hidden",
-      border: "1px solid rgba(15,23,42,0.10)",
-      boxShadow: "0 10px 24px rgba(15,23,42,0.06)",
-    }}
-  >
-    <iframe
-      title="Zomorod location map"
-      src="https://www.google.com/maps?q=31.985555,35.897777&z=15&output=embed"
-      width="100%"
-      height="220"
-      loading="lazy"
-      referrerPolicy="no-referrer-when-downgrade"
-      style={{ border: 0, display: "block" }}
-      allowFullScreen
-    />
-  </div>
+<div className="map">
+  <iframe
+    title="Zomorod location map"
+    src="https://www.google.com/maps?q=31.985555,35.897777&z=15&output=embed"
+    loading="lazy"
+    referrerPolicy="no-referrer-when-downgrade"
+    allowFullScreen
+  />
+</div>
 
   <p className="card__value card__value--top">
     <a
@@ -541,6 +531,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
