@@ -60,11 +60,11 @@ export default function App() {
       productsTitle: "Products",
       productsSubtitle: "Current products (small scale)",
       products: [
-        "Toothpaste",
-        "Toothbrushes",
-        "Personal protection products (condoms)",
         "Baby feeding bottle",
         "Silicone pacifier",
+        "Personal protection products",
+        "Toothpaste",
+        "Toothbrushes",
         "Selected oral-care items (on request)",
       ],
       additionalTitle: "Additional medical consumables (on request / expanding)",
@@ -179,11 +179,11 @@ export default function App() {
       productsTitle: "المنتجات",
       productsSubtitle: "المنتجات الحالية (على نطاق صغير)",
       products: [
-        "معجون أسنان",
-        "فرش أسنان",
-        "منتجات حماية شخصية (واقيات)",
         "رضّاعة أطفال",
         "لهاية سيليكون",
+        "منتجات حماية شخصية (واقيات)",
+        "معجون أسنان",
+        "فرش أسنان",
         "منتجات عناية فموية مختارة (عند الطلب)",
       ],
       additionalTitle: "مستلزمات طبية إضافية (عند الطلب / ضمن التوسع)",
@@ -541,6 +541,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
