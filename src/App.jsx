@@ -88,7 +88,7 @@ export default function App() {
       mdEmailLabel: "Email",
       mdEmail: "m.maani@zomorodmedical.com",
 
-      osamaTitle: "Technical Expert — Dr. Osama Waleed Alakhras",
+      osamaTitle: "Technical Expert — Dr. Osama ",
       osamaBio:
         "PharmaD with 15+ years of professional experience as a medical representative. Worked with well-known pharmaceutical companies across psychiatric medications, antibiotics, dietary supplements, and medical cosmetic products (body, hair, and dental care).",
       osamaEmailLabel: "Email",
@@ -108,7 +108,7 @@ export default function App() {
       phonesLabel: "Phone",
       emailsLabel: "Email",
       companyPhoneLabel: "Company",
-      doctorPhoneLabel: "Dr. Osama Nbhan",
+      doctorPhoneLabel: "Dr. Osama",
       infoEmail: "info@zomorodmedical.com",
 
       // CTA
@@ -206,7 +206,7 @@ export default function App() {
       mdEmailLabel: "البريد الإلكتروني",
       mdEmail: "m.maani@zomorodmedical.com",
 
-      osamaTitle: "الخبير الفني - د. أسامة وليد الأخرس ",
+      osamaTitle: "الخبير الفني - د. أسامة  ",
       osamaBio:
         "حاصل على بكالوريس دكتور في الصيدلة بخبرة مهنية تزيد عن 15 عامًا كمندوب طبي. عمل مع شركات دوائية معروفة في مجالات تشمل أدوية الطب النفسي، والمضادات الحيوية، والمكملات الغذائية، ومنتجات التجميل الطبية (العناية بالجسم والشعر والأسنان).",
       osamaEmailLabel: "البريد الإلكتروني",
@@ -225,7 +225,7 @@ export default function App() {
       phonesLabel: "الهاتف",
       emailsLabel: "البريد الإلكتروني",
       companyPhoneLabel: "هاتف الشركة",
-      doctorPhoneLabel: "د. أسامه نبهان",
+      doctorPhoneLabel: "د. أسامه",
       infoEmail: "info@zomorodmedical.com",
 
       ctaTitle: "طلب عرض سعر",
@@ -546,6 +546,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
