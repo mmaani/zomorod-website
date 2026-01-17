@@ -1,3 +1,7 @@
+.main {
+  padding-top: 18px; /* keeps content away from sticky header */
+}
+
 :root {
   /* === Brand colors (edit these 3 to match your logo) === */
   --brand: #0ea67a;       /* primary (emerald/teal) */
@@ -567,6 +571,7 @@ a:focus-visible {
 :root {
   --header-offset: 110px; /* adjust if needed (90–140px) */
 }
+
 
 
 
