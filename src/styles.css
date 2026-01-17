@@ -428,6 +428,7 @@ body {
   margin-top: 14px;
   display: flex;
   justify-content: center;
+  gap: 10px;
 }
 
 .social__icon {
@@ -442,7 +443,16 @@ body {
   font-weight: 900;
   font-size: 16px;
   text-decoration: none;
-  box-shadow: 0 10px 26px rgba(14,166,122
+  box-shadow: 0 10px 26px rgba(14, 166, 122, 0.22);
+  border: 1px solid rgba(14, 166, 122, 0.25);
+  transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+}
+
+.social__icon:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(14, 166, 122, 0.32);
+  filter: brightness(1.05);
+}
 
 /* WhatsApp */
 .whatsapp {
@@ -512,6 +522,7 @@ a:focus-visible {
     margin-bottom: 10px;
   }
 }
+
 
 
 
