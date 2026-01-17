@@ -28,7 +28,23 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--header-offset);
+}
+
+/* Desktop header offset (increase if still covering) */
+:root {
+  --header-offset: 170px;
+}
+
+/* Mobile: header becomes static, so no offset needed */
+@media (max-width: 860px) {
+  :root {
+    --header-offset: 20px;
+  }
+}
+
 
 body {
   margin: 0;
@@ -555,6 +571,7 @@ a:focus-visible {
 section[id] {
   scroll-margin-top: var(--header-offset);
 }
+
 
 
 
