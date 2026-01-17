@@ -522,6 +522,41 @@ a:focus-visible {
     margin-bottom: 10px;
   }
 }
+/* === Chips / badges (Who We Serve) === */
+.chips {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+  color: rgba(15, 23, 42, 0.92);
+  background: linear-gradient(
+    135deg,
+    rgba(14, 166, 122, 0.10) 0%,
+    rgba(21, 194, 138, 0.08) 100%
+  );
+  border: 1px solid rgba(14, 166, 122, 0.22);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+}
+
+.chip::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+  box-shadow: 0 8px 18px rgba(14, 166, 122, 0.25);
+}
+
 
 
 
