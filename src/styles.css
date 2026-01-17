@@ -28,6 +28,7 @@
 
   /* New: header height + smooth scrolling */
   --header-h: 86px;
+
 }
 
 * { box-sizing: border-box; }
@@ -39,7 +40,7 @@ html {
 
 /* Desktop header offset (increase if still covering) */
 :root {
-  --header-offset: 170px;
+  --header-offset: 140px;
 }
 
 /* Mobile: header becomes static, so no offset needed */
@@ -571,6 +572,7 @@ a:focus-visible {
 :root {
   --header-offset: 110px; /* adjust if needed (90–140px) */
 }
+
 
 
 
