@@ -263,19 +263,17 @@ export default function App() {
     return isAr ? ar : en;
   }, [isAr]);
 
-const scrollToId = (id) => {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.scrollIntoView({ behavior: "smooth", block: "start" });
-};
-  const header = document.querySelector(".header");
-  const headerH = header ? header.offsetHeight : 110;
+  const scrollToId = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
 
-  const yOffset = -(headerH + 16); // extra space under header
-  const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+    const header = document.querySelector(".header");
+    const headerH = header ? header.offsetHeight : 0;
 
-  window.scrollTo({ top: y, behavior: "smooth" });
-};
+    const y = el.getBoundingClientRect().top + window.pageYOffset - (headerH + 18);
+    window.scrollTo({ top: y, behavior: "smooth" });
+  };
+
 
 
   return (
@@ -583,6 +581,7 @@ const scrollToId = (id) => {
     </div>
   );
 }
+
 
 
 
