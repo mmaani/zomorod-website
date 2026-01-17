@@ -200,16 +200,7 @@ body {
   padding: 14px 18px 42px;
 }
 
-/* Make anchor scrolling land below sticky header */
-#home, #products, #approach, #leadership, #contact, #compliance {
-  scroll-margin-top: 130px;
-}
 
-@media (max-width: 860px) {
-  #home, #products, #approach, #leadership, #contact, #compliance {
-    scroll-margin-top: 20px; /* header is no longer sticky */
-  }
-}
 /* Hero */
 .hero {
   display: grid;
@@ -564,6 +555,7 @@ a:focus-visible {
 section[id] {
   scroll-margin-top: var(--header-offset);
 }
+
 
 
 
