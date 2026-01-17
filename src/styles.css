@@ -568,14 +568,6 @@ a:focus-visible {
   --header-offset: 110px; /* adjust if needed (90–140px) */
 }
 
-section[id] {
-  scroll-margin-top: var(--header-offset);
-}
-
-
-
-
-
 
 
 
