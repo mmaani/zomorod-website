@@ -517,6 +517,17 @@ export default function App() {
             <p className="card__value card__value--top">{content.complianceBody}</p>
           </section>
         </div>
+<div className="social">
+  <a
+    href="https://www.linkedin.com/company/zomorod-medical-supplies"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Zomorod Medical Supplies on LinkedIn"
+    className="social__link"
+  >
+    LinkedIn
+  </a>
+</div>
 
         <p className="note">{content.contactNote}</p>
         <footer className="footer">{content.footer}</footer>
@@ -533,6 +544,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
