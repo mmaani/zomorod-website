@@ -263,19 +263,19 @@ export default function App() {
     return isAr ? ar : en;
   }, [isAr]);
 
-  const scrollToId = (id) => {
-    const el = document.getElementById(id);
-    if (!el) return;
 const scrollToId = (id) => {
   const el = document.getElementById(id);
   if (!el) return;
 
-  const yOffset = -110; // header height offset
+  const header = document.querySelector(".header");
+  const headerH = header ? header.offsetHeight : 110;
+
+  const yOffset = -(headerH + 16); // extra space under header
   const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
 
   window.scrollTo({ top: y, behavior: "smooth" });
 };
-  };
+
 
   return (
     <div dir={isAr ? "rtl" : "ltr"} lang={isAr ? "ar" : "en"} className="page">
@@ -582,4 +582,5 @@ const scrollToId = (id) => {
     </div>
   );
 }
+
 
