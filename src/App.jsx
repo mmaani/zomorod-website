@@ -18,15 +18,14 @@ export default function App() {
         leadership: "Leadership",
         contact: "Contact",
         approach: "Approach",
+        serve: "Who We Serve",
         compliance: "Compliance",
       },
 
       // Hero
       heroTitle: "Medical consumables sourcing, quality evaluation, and distribution in Jordan.",
-
       heroBody:
         "We support private clinics, pharmacies, and laboratories with carefully selected medical consumer goods. Each request is evaluated based on product specifications, quality consistency, documentation readiness, regulatory requirements, and total landed cost—allowing us to provide reliable supply with competitive, volume-based pricing.",
-
       heroPrimary: "Email us",
       heroSecondary: "Call us",
 
@@ -37,7 +36,7 @@ export default function App() {
         "Fast response via phone, email, and WhatsApp",
       ],
 
-      // Market + sourcing (website-safe)
+      // Market + sourcing
       marketTitle: "Market Focus",
       marketBody:
         "Jordan’s private healthcare sector relies significantly on imported medical consumables. Zomorod Medical Supplies LLC focuses on serving local private-sector demand with practical, small-scale fulfillment.",
@@ -45,10 +44,16 @@ export default function App() {
       sourcingBody:
         "We evaluate quality consistency, documentation readiness, regulatory requirements, logistics feasibility, and market suitability when selecting supply options. Documentation support is provided where applicable.",
 
-      // NEW: Quality & Value Methodology
+      // Quality & Value
       qvTitle: "Quality & Value Methodology",
       qvBody:
         "We compare sourcing options using defined criteria: product specifications, quality consistency, documentation readiness, regulatory requirements, and total landed cost. This helps us provide reliable products with competitive quotes based on volume and delivery needs.",
+
+      // NEW: Who we serve
+      serveTitle: "Who We Serve",
+      serveBody:
+        "We primarily support professional healthcare buyers and distribution channels in Jordan. If you purchase medical consumables for your facility or customers, we can support you with availability confirmation, documentation guidance (where applicable), and competitive quotes.",
+      serveList: ["Private clinics", "Pharmacies", "Laboratories", "Healthcare distributors"],
 
       // How to order
       orderTitle: "How to Order",
@@ -88,7 +93,7 @@ export default function App() {
       mdEmailLabel: "Email",
       mdEmail: "m.maani@zomorodmedical.com",
 
-      osamaTitle: "Technical Expert — Dr. Osama ",
+      osamaTitle: "Technical Expert — Dr. Osama",
       osamaBio:
         "PharmaD with 15+ years of professional experience as a medical representative. Worked with well-known pharmaceutical companies across psychiatric medications, antibiotics, dietary supplements, and medical cosmetic products (body, hair, and dental care).",
       osamaEmailLabel: "Email",
@@ -144,12 +149,13 @@ export default function App() {
         leadership: "الإدارة",
         contact: "التواصل",
         approach: "المنهجية",
+        serve: "من نخدم",
         compliance: "الالتزام",
       },
 
       heroTitle: "توريد وتقييم جودة وتوزيع المستلزمات الطبية الاستهلاكية في الأردن.",
       heroBody:
-      "ندعم العيادات الخاصة والصيدليات والمختبرات من خلال توريد مستلزمات طبية استهلاكية مختارة بعناية. يتم تقييم كل طلب وفق المواصفات الفنية، وثبات الجودة، وجاهزية المستندات، والمتطلبات التنظيمية، والتكلفة الإجمالية بعد الشحن، مما يتيح توفير منتجات موثوقة بأسعار تنافسية حسب الكمية.",
+        "ندعم العيادات الخاصة والصيدليات والمختبرات من خلال توريد مستلزمات طبية استهلاكية مختارة بعناية. يتم تقييم كل طلب وفق المواصفات الفنية، وثبات الجودة، وجاهزية المستندات، والمتطلبات التنظيمية، والتكلفة الإجمالية بعد الشحن، مما يتيح توفير منتجات موثوقة بأسعار تنافسية حسب الكمية.",
       heroPrimary: "راسلنا بالبريد",
       heroSecondary: "اتصل بنا",
 
@@ -170,6 +176,12 @@ export default function App() {
       qvTitle: "منهجية الجودة والقيمة",
       qvBody:
         "نقارن خيارات التوريد وفق معايير واضحة تشمل المواصفات، وثبات الجودة، وجاهزية المستندات، والمتطلبات التنظيمية، والتكلفة الإجمالية بعد الشحن. يتيح ذلك تقديم منتجات موثوقة مع عروض أسعار تنافسية حسب الكمية وموقع التسليم.",
+
+      // NEW: Who we serve
+      serveTitle: "من نخدم",
+      serveBody:
+        "نخدم بشكل أساسي المشترين المهنيين وقنوات التوزيع في الأردن. إذا كنت تشتري مستلزمات طبية لمرفقك أو لعملائك، يمكننا دعمك بتأكيد التوفر، وإرشادات المستندات (عند الاقتضاء)، وعروض أسعار تنافسية.",
+      serveList: ["العيادات الخاصة", "الصيدليات", "المختبرات", "موزعو المستلزمات الطبية"],
 
       orderTitle: "كيفية الطلب",
       orderSteps: [
@@ -206,7 +218,7 @@ export default function App() {
       mdEmailLabel: "البريد الإلكتروني",
       mdEmail: "m.maani@zomorodmedical.com",
 
-      osamaTitle: "الخبير الفني - د. أسامة  ",
+      osamaTitle: "الخبير الفني - د. أسامة",
       osamaBio:
         "حاصل على بكالوريس دكتور في الصيدلة بخبرة مهنية تزيد عن 15 عامًا كمندوب طبي. عمل مع شركات دوائية معروفة في مجالات تشمل أدوية الطب النفسي، والمضادات الحيوية، والمكملات الغذائية، ومنتجات التجميل الطبية (العناية بالجسم والشعر والأسنان).",
       osamaEmailLabel: "البريد الإلكتروني",
@@ -251,7 +263,6 @@ export default function App() {
     return isAr ? ar : en;
   }, [isAr]);
 
-  // Simple in-page navigation (still a single page / landing page)
   const scrollToId = (id) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -261,7 +272,12 @@ export default function App() {
   return (
     <div dir={isAr ? "rtl" : "ltr"} lang={isAr ? "ar" : "en"} className="page">
       <header className="header">
-        <div className="brand" onClick={() => scrollToId("home")} role="button" tabIndex={0}>
+        <div
+          className="brand"
+          onClick={() => scrollToId("home")}
+          role="button"
+          tabIndex={0}
+        >
           <img src={logo} alt="Zomorod Medical Supplies LLC" className="brand__logo" />
           <div>
             <h1 className="brand__title">{content.brand}</h1>
@@ -277,14 +293,17 @@ export default function App() {
             <button className="nav__link" type="button" onClick={() => scrollToId("products")}>
               {content.nav.products}
             </button>
-                 <button className="nav__link" type="button" onClick={() => scrollToId("leadership")}>
+            <button className="nav__link" type="button" onClick={() => scrollToId("approach")}>
+              {content.nav.approach}
+            </button>
+            <button className="nav__link" type="button" onClick={() => scrollToId("serve")}>
+              {content.nav.serve}
+            </button>
+            <button className="nav__link" type="button" onClick={() => scrollToId("leadership")}>
               {content.nav.leadership}
             </button>
             <button className="nav__link" type="button" onClick={() => scrollToId("contact")}>
               {content.nav.contact}
-            </button>
-                   <button className="nav__link" type="button" onClick={() => scrollToId("approach")}>
-              {content.nav.approach}
             </button>
             <button className="nav__link" type="button" onClick={() => scrollToId("compliance")}>
               {content.nav.compliance}
@@ -360,6 +379,17 @@ export default function App() {
             <p className="card__value card__value--top">{content.qvBody}</p>
           </section>
 
+          {/* WHO WE SERVE (NEW) */}
+          <section id="serve" className="card">
+            <div className="card__label">{content.serveTitle}</div>
+            <p className="card__value card__value--top">{content.serveBody}</p>
+            <ul className="list">
+              {content.serveList.map((s) => (
+                <li key={s}>{s}</li>
+              ))}
+            </ul>
+          </section>
+
           {/* HOW TO ORDER */}
           <section className="card">
             <div className="card__label">{content.orderTitle}</div>
@@ -398,49 +428,47 @@ export default function App() {
             </p>
           </section>
 
-{/* LOCATION */}
-<section className="card">
-  <div className="card__label">{content.locationLabel}</div>
+          {/* LOCATION */}
+          <section className="card">
+            <div className="card__label">{content.locationLabel}</div>
 
-  <p className="card__value" style={{ fontWeight: 900 }}>
-    {content.locationDetails}
-  </p>
+            <p className="card__value" style={{ fontWeight: 900 }}>
+              {content.locationDetails}
+            </p>
 
-  <p className="card__value card__value--top">
-    <strong>{content.zipLabel}: </strong>
-    {content.zipValue}
-  </p>
+            <p className="card__value card__value--top">
+              <strong>{content.zipLabel}: </strong>
+              {content.zipValue}
+            </p>
 
-  <p className="card__value card__value--top">
-    <strong>{content.coordsLabel}: </strong>
-    {content.coordsValue}
-  </p>
+            <p className="card__value card__value--top">
+              <strong>{content.coordsLabel}: </strong>
+              {content.coordsValue}
+            </p>
 
-  <div style={{ height: 12 }} />
+            <div style={{ height: 12 }} />
 
-  {/* Map embed (no API key needed) */}
-<div className="map">
-  <iframe
-    title="Zomorod location map"
-    src="https://www.google.com/maps?q=31.985555,35.897777&z=15&output=embed"
-    loading="lazy"
-    referrerPolicy="no-referrer-when-downgrade"
-    allowFullScreen
-  />
-</div>
+            <div className="map">
+              <iframe
+                title="Zomorod location map"
+                src="https://www.google.com/maps?q=31.985555,35.897777&z=15&output=embed"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+              />
+            </div>
 
-  <p className="card__value card__value--top">
-    <a
-      className="link"
-      href="https://www.google.com/maps?q=31.985555,35.897777"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {content.mapOpenLabel}
-    </a>
-  </p>
-</section>
-
+            <p className="card__value card__value--top">
+              <a
+                className="link"
+                href="https://www.google.com/maps?q=31.985555,35.897777"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {content.mapOpenLabel}
+              </a>
+            </p>
+          </section>
 
           {/* CONTACT */}
           <section id="contact" className="card">
@@ -517,22 +545,22 @@ export default function App() {
             <p className="card__value card__value--top">{content.complianceBody}</p>
           </section>
         </div>
-<p className="note">{content.contactNote}</p>
 
-<div className="social">
-  <a
-    href="https://www.linkedin.com/company/zomorod-medical-supplies"
-    target="_blank"
-    rel="noopener noreferrer"
-    aria-label="Zomorod Medical Supplies on LinkedIn"
-    className="social__icon"
-  >
-    in
-  </a>
-</div>
+        <p className="note">{content.contactNote}</p>
 
-<footer className="footer">{content.footer}</footer>
+        <div className="social">
+          <a
+            href="https://www.linkedin.com/company/zomorod-medical-supplies"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Zomorod Medical Supplies on LinkedIn"
+            className="social__icon"
+          >
+            in
+          </a>
+        </div>
 
+        <footer className="footer">{content.footer}</footer>
       </main>
 
       <a
@@ -546,15 +574,3 @@ export default function App() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
