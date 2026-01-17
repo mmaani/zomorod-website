@@ -556,6 +556,14 @@ a:focus-visible {
   background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
   box-shadow: 0 8px 18px rgba(14, 166, 122, 0.25);
 }
+/* Fix: prevent header from covering section titles when scrolling */
+:root {
+  --header-offset: 110px; /* adjust if needed (90–140px) */
+}
+
+section[id] {
+  scroll-margin-top: var(--header-offset);
+}
 
 
 
