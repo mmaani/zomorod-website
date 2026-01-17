@@ -266,7 +266,15 @@ export default function App() {
   const scrollToId = (id) => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
+const scrollToId = (id) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  const yOffset = -110; // header height offset
+  const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
+  window.scrollTo({ top: y, behavior: "smooth" });
+};
   };
 
   return (
@@ -574,3 +582,4 @@ export default function App() {
     </div>
   );
 }
+
