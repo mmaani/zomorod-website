@@ -1,7 +1,12 @@
-.main {
-  padding-top: 18px; /* keeps content away from sticky header */
-}
+/* ==========================================================================
+   ZOMOROD WEBSITE + CRM (shared theme)
+   - Marketing page uses global classes: .page, .header, .nav, .main, etc.
+   - CRM must be wrapped in <div className="crm ..."> to scope CRM-only rules.
+   ========================================================================== */
 
+/* =========================
+   Global tokens / variables
+   ========================= */
 :root {
   /* === Brand colors (edit these 3 to match your logo) === */
   --brand: #0ea67a;       /* primary (emerald/teal) */
@@ -26,30 +31,21 @@
   --h2: 18px;
   --p: 14px;
 
-  /* New: header height + smooth scrolling */
-  --header-h: 86px;
-
+  /* Sticky-header offset for anchor scrolling */
+  --header-offset: 140px; /* desktop default (adjust 90–160px if needed) */
 }
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+
 html {
   scroll-behavior: smooth;
   scroll-padding-top: var(--header-offset);
 }
 
-/* Desktop header offset (increase if still covering) */
-:root {
-  --header-offset: 140px;
-}
-
-/* Mobile: header becomes static, so no offset needed */
 @media (max-width: 860px) {
-  :root {
-    --header-offset: 20px;
-  }
+  :root { --header-offset: 20px; }
 }
-
 
 body {
   margin: 0;
@@ -64,10 +60,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Page */
+/* Page wrapper */
 .page { min-height: 100vh; }
 
-/* Header (now supports nav + language) */
+/* =========================
+   Header (marketing + CRM)
+   ========================= */
 .header {
   position: sticky;
   top: 0;
@@ -85,6 +83,20 @@ body {
   border-bottom: 1px solid rgba(15,23,42,0.06);
 }
 
+@media (max-width: 860px) {
+  .header {
+    position: static;        /* stops overlapping content on mobile */
+    backdrop-filter: none;
+    background: transparent;
+    border-bottom: none;
+    padding-top: 18px;
+    display: block;
+  }
+
+  .brand { margin-bottom: 10px; }
+}
+
+/* Brand block */
 .brand {
   display: flex;
   align-items: center;
@@ -128,7 +140,7 @@ body {
   max-width: 640px;
 }
 
-/* Right side (nav + language) */
+/* Right side (nav + language / CRM logout) */
 .header__right {
   display: flex;
   align-items: center;
@@ -137,7 +149,7 @@ body {
   justify-content: flex-end;
 }
 
-/* Top nav (single-page anchors) */
+/* Top nav */
 .nav {
   display: flex;
   align-items: center;
@@ -162,6 +174,7 @@ body {
   letter-spacing: 0.12px;
   transition: background 160ms ease, transform 160ms ease, color 160ms ease;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .nav__link:hover {
@@ -214,15 +227,18 @@ body {
   color: white;
 }
 
-/* Main */
+/* =========================
+   Main
+   ========================= */
 .main {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 14px 18px 42px;
+  padding: 18px 18px 42px; /* includes top padding away from header */
 }
 
-
-/* Hero */
+/* =========================
+   Hero
+   ========================= */
 .hero {
   display: grid;
   grid-template-columns: 1.25fr 1fr;
@@ -264,7 +280,9 @@ body {
   margin-top: 16px;
 }
 
-/* Buttons */
+/* =========================
+   Buttons
+   ========================= */
 .button {
   display: inline-flex;
   align-items: center;
@@ -276,6 +294,7 @@ body {
   border: 1px solid rgba(15,23,42,0.10);
   transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease, border-color 140ms ease;
   user-select: none;
+  cursor: pointer;
 }
 
 .button:active { transform: translateY(1px); }
@@ -302,7 +321,9 @@ body {
   box-shadow: var(--shadow-soft);
 }
 
-/* Hero panel */
+/* =========================
+   Hero panel
+   ========================= */
 .hero__panel {
   border-radius: 18px;
   border: 1px solid rgba(15,23,42,0.08);
@@ -332,7 +353,9 @@ body {
   font-size: var(--p);
 }
 
-/* Grid + cards */
+/* =========================
+   Grid + cards
+   ========================= */
 .grid {
   margin-top: 14px;
   display: grid;
@@ -373,35 +396,6 @@ body {
 .card__value--top { margin-top: 10px; }
 .card__value--spaced { margin-bottom: 6px; }
 
-/* Map block inside cards */
-.map {
-  margin-top: 12px;
-  border-radius: 14px;
-  overflow: hidden;
-  border: 1px solid rgba(15,23,42,0.10);
-  box-shadow: 0 10px 24px rgba(15,23,42,0.06);
-  background: rgba(255,255,255,0.9);
-}
-
-.map iframe {
-  display: block;
-  width: 100%;
-  height: 220px;
-  border: 0;
-}
-
-/* Better spacing for "location details" lines */
-.card__value strong {
-  font-weight: 950;
-}
-
-/* Mobile: slightly shorter map */
-@media (max-width: 520px) {
-  .map iframe {
-    height: 190px;
-  }
-}
-
 .stack { margin-top: 10px; }
 
 /* Links */
@@ -423,6 +417,27 @@ body {
   font-size: var(--p);
 }
 
+/* Map */
+.map {
+  margin-top: 12px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(15,23,42,0.10);
+  box-shadow: 0 10px 24px rgba(15,23,42,0.06);
+  background: rgba(255,255,255,0.9);
+}
+
+.map iframe {
+  display: block;
+  width: 100%;
+  height: 220px;
+  border: 0;
+}
+
+@media (max-width: 520px) {
+  .map iframe { height: 190px; }
+}
+
 /* Note + footer */
 .note {
   margin: 14px 0 0;
@@ -435,6 +450,7 @@ body {
   color: rgba(15, 23, 42, 0.62);
   font-size: 12px;
 }
+
 /* Social (LinkedIn icon) */
 .social {
   margin-top: 14px;
@@ -489,7 +505,10 @@ body {
 
 /* Focus accessibility */
 button:focus-visible,
-a:focus-visible {
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
   outline: 3px solid rgba(14,166,122,0.35);
   outline-offset: 3px;
   border-radius: 12px;
@@ -516,25 +535,8 @@ a:focus-visible {
   .nav { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .nav__link { padding: 9px 10px; }
 }
-@media (max-width: 860px) {
-  .header {
-    position: static; /* stops overlapping content on mobile */
-    backdrop-filter: none;
-    background: transparent;
-    border-bottom: none;
-    padding-top: 18px;
-  }
-}
-@media (max-width: 860px) {
-  .header {
-    display: block !important;
-  }
 
-  .brand {
-    margin-bottom: 10px;
-  }
-}
-/* === Chips / badges (Who We Serve) === */
+/* Chips / badges */
 .chips {
   margin-top: 12px;
   display: flex;
@@ -568,7 +570,162 @@ a:focus-visible {
   background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
   box-shadow: 0 8px 18px rgba(14, 166, 122, 0.25);
 }
-/* Fix: prevent header from covering section titles when scrolling */
-:root {
-  --header-offset: 110px; /* adjust if needed (90–140px) */
+
+/* ==========================================================================
+   CRM ONLY (scoped under .crm)
+   ========================================================================== */
+
+.crm .main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 18px 18px 42px;
 }
+
+.crm .crm-topbar.header {
+  /* keep the same theme but slightly stronger background for app feel */
+  background: rgba(246, 248, 251, 0.84);
+  border-bottom: 1px solid rgba(15,23,42,0.08);
+}
+
+/* CRM page headings */
+.crm h2, .crm h3 {
+  margin: 0 0 12px;
+  letter-spacing: 0.2px;
+}
+
+/* CRM cards + layout helpers */
+.crm .crm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.crm .crm-card {
+  border-radius: var(--radius);
+  border: 1px solid rgba(15,23,42,0.08);
+  background: rgba(255,255,255,0.90);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-soft);
+  padding: 16px;
+}
+
+.crm .crm-card__title {
+  font-size: 13px;
+  font-weight: 950;
+  color: rgba(15,23,42,0.90);
+  margin: 0 0 10px;
+}
+
+.crm .crm-muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Forms */
+.crm .form {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.crm .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 760px) {
+  .crm .form-row { grid-template-columns: 1fr; }
+}
+
+.crm label {
+  display: block;
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(15,23,42,0.75);
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+
+.crm input,
+.crm select,
+.crm textarea {
+  width: 100%;
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(15,23,42,0.14);
+  background: rgba(255,255,255,0.95);
+  color: var(--text);
+  font-size: 14px;
+  box-shadow: 0 8px 20px rgba(15,23,42,0.05);
+}
+
+.crm textarea { min-height: 110px; resize: vertical; }
+
+.crm input::placeholder,
+.crm textarea::placeholder {
+  color: rgba(15,23,42,0.45);
+}
+
+/* Tables */
+.crm .table-wrap {
+  overflow: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(15,23,42,0.10);
+  background: rgba(255,255,255,0.92);
+  box-shadow: var(--shadow-soft);
+  margin-top: 12px;
+}
+
+.crm table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 820px; /* allows horizontal scroll on small screens */
+}
+
+.crm th, .crm td {
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(15,23,42,0.08);
+  text-align: left;
+  vertical-align: top;
+  font-size: 13px;
+}
+
+.crm th {
+  position: sticky;
+  top: 0;
+  background: rgba(246, 248, 251, 0.92);
+  backdrop-filter: blur(10px);
+  font-weight: 950;
+  color: rgba(15,23,42,0.75);
+  letter-spacing: 0.2px;
+}
+
+.crm tr:hover td {
+  background: rgba(14,166,122,0.06);
+}
+
+/* Small status pills */
+.crm .pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 950;
+  font-size: 12px;
+  border: 1px solid rgba(14,166,122,0.22);
+  background: rgba(14,166,122,0.08);
+  color: rgba(15,23,42,0.86);
+}
+
+.crm .pill--danger {
+  border-color: rgba(239,68,68,0.25);
+  background: rgba(239,68,68,0.10);
+}
+
+/* CRM-specific link */
+.crm a.link { cursor: pointer; }
+
+/* CRM footer note spacing */
+.crm .note { margin-top: 12px; }
