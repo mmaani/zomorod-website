@@ -1,6 +1,3 @@
-mkdir -p api/auth
-
-cat > api/auth/setup.js <<'JS'
 import bcrypt from "bcryptjs";
 import { db } from "../_lib/db.js";
 import { readJson } from "../_lib/http.js";
@@ -70,4 +67,3 @@ export default {
     return Response.json({ ok: true, users: [uMain.email, uDoc.email, uGen.email] });
   },
 };
-JS
