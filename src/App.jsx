@@ -1,6 +1,8 @@
+// src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import MarketingPage from "./marketing/MarketingPage.jsx";
+
 import LoginPage from "./crm/LoginPage.jsx";
 import CRMLayout from "./crm/CRMLayout.jsx";
 import ProtectedRoute from "./crm/ProtectedRoute.jsx";
@@ -14,13 +16,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public site */}
+        {/* Marketing site */}
         <Route path="/" element={<MarketingPage />} />
 
-        {/* Required: /login */}
+        {/* CRM auth */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* CRM area */}
+        {/* CRM (protected) */}
         <Route
           path="/crm"
           element={
