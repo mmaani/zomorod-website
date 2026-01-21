@@ -39,3 +39,4 @@ export default function CRMLayout() {
     </div>
   );
 }
+cd /workspaces/zomorod-website
