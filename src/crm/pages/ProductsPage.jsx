@@ -7,24 +7,25 @@ export default function ProductsPage() {
   const roles = user?.roles || [];
 
   const isMain = hasRole("main");
-  const canSeePurchase = roles.includes("main") || roles.includes("doctor"); // UI rule you requested
+  const canSeePurchase = roles.includes("main") || roles.includes("doctor");
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [products, setProducts] = useState([]);
+  const [includeArchived, setIncludeArchived] = useState(false);
 
-  // Add Product form (main only)
+  const [batches, setBatches] = useState([]);
+  const [batchesLoading, setBatchesLoading] = useState(false);
+
   const [pForm, setPForm] = useState({
     productCode: "",
     category: "",
     officialName: "",
     marketName: "",
     defaultSellPriceJod: "",
-    // tiers optional: [{minQty, unitPriceJod}]
     priceTiers: [],
   });
 
-  // Receive Batch form (main only)
   const [bForm, setBForm] = useState({
     productId: "",
     lotNumber: "",
@@ -40,14 +41,12 @@ export default function ProductsPage() {
     setLoading(true);
     setErr("");
     try {
-      // IMPORTANT: leading slash so it hits /api/products (not /crm/api/products)
-      const res = await apiFetch("/api/products");
-      if (!res) return; // apiFetch will auto-redirect to /login on 401
+      const url = includeArchived ? "/api/products?includeArchived=1" : "/api/products";
+      const res = await apiFetch(url);
+      if (!res) return;
 
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.error || `HTTP ${res.status}`);
-      }
+      if (!res.ok || !data?.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
       setProducts(Array.isArray(data.products) ? data.products : []);
     } catch (e) {
@@ -57,15 +56,42 @@ export default function ProductsPage() {
     }
   }
 
+  async function loadBatches(productId) {
+    if (!productId) {
+      setBatches([]);
+      return;
+    }
+    setBatchesLoading(true);
+    try {
+      const res = await apiFetch(`/api/batches?productId=${productId}`);
+      if (!res) return;
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+
+      setBatches(Array.isArray(data.batches) ? data.batches : []);
+    } catch (e) {
+      setErr(e?.message || "Failed to load batches");
+      setBatches([]);
+    } finally {
+      setBatchesLoading(false);
+    }
+  }
+
   useEffect(() => {
     loadProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [includeArchived]);
+
+  useEffect(() => {
+    if (isMain && bForm.productId) loadBatches(Number(bForm.productId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bForm.productId]);
 
   const productOptions = useMemo(() => {
     return products.map((p) => ({
       id: p.id,
-      label: `${p.productCode} — ${p.officialName}`,
+      label: `${p.productCode} — ${p.officialName}${p.archivedAt ? " (archived)" : ""}`,
     }));
   }, [products]);
 
@@ -133,8 +159,6 @@ export default function ProductsPage() {
     }
 
     try {
-      // NOTE: this assumes your api/batches.js expects these names.
-      // If your backend uses different keys, paste api/batches.js and I’ll align it.
       const res = await apiFetch("/api/batches", {
         method: "POST",
         body: JSON.stringify(payload),
@@ -144,8 +168,9 @@ export default function ProductsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
-      setBForm({
-        productId: "",
+      // Keep product selected; clear other fields
+      setBForm((s) => ({
+        ...s,
         lotNumber: "",
         purchaseDate: "",
         expiryDate: "",
@@ -153,18 +178,84 @@ export default function ProductsPage() {
         qtyReceived: "",
         supplierName: "",
         supplierInvoiceNo: "",
-      });
+      }));
 
       await loadProducts();
+      await loadBatches(payload.productId);
     } catch (e3) {
       setErr(e3?.message || "Failed to receive batch");
+    }
+  }
+
+  async function toggleArchive(p) {
+    setErr("");
+    try {
+      const res = await apiFetch("/api/products", {
+        method: "PATCH",
+        body: JSON.stringify({ id: p.id, archived: !p.archivedAt }),
+      });
+      if (!res) return;
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+
+      await loadProducts();
+    } catch (e) {
+      setErr(e?.message || "Failed to update product");
+    }
+  }
+
+  async function deleteProduct(p) {
+    setErr("");
+    if (!confirm(`Delete product "${p.productCode}" permanently? This only works if it has no batches/movements/tiers.`)) {
+      return;
+    }
+    try {
+      const res = await apiFetch(`/api/products?id=${p.id}`, { method: "DELETE" });
+      if (!res) return;
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+
+      await loadProducts();
+    } catch (e) {
+      setErr(e?.message || "Failed to delete product");
+    }
+  }
+
+  async function voidBatch(batchId) {
+    setErr("");
+    if (!confirm("Void this batch? This will reduce stock and affect average cost.")) return;
+
+    try {
+      const res = await apiFetch(`/api/batches?id=${batchId}`, { method: "DELETE" });
+      if (!res) return;
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+
+      await loadProducts();
+      if (bForm.productId) await loadBatches(Number(bForm.productId));
+    } catch (e) {
+      setErr(e?.message || "Failed to void batch");
     }
   }
 
   return (
     <div className="crm-wrap">
       <div className="card">
-        <h2 style={{ marginTop: 0 }}>Products</h2>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <h2 style={{ marginTop: 0, marginBottom: 0 }}>Products</h2>
+
+          <label className="muted" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={includeArchived}
+              onChange={(e) => setIncludeArchived(e.target.checked)}
+            />
+            Show archived
+          </label>
+        </div>
 
         {err ? <div className="banner">{err}</div> : null}
         {loading ? <p className="muted">Loading…</p> : null}
@@ -179,30 +270,34 @@ export default function ProductsPage() {
                 <th>Market</th>
                 <th>On-hand</th>
                 <th>Sell Price (JOD)</th>
-                {canSeePurchase ? <th>Last Purchase (JOD)</th> : null}
+                {canSeePurchase ? <th>Avg Purchase (JOD)</th> : null}
                 {canSeePurchase ? <th>Last Purchase Date</th> : null}
                 <th>Tiers</th>
+                {isMain ? <th>Actions</th> : null}
               </tr>
             </thead>
             <tbody>
               {!loading && products.length === 0 ? (
                 <tr>
-                  <td colSpan={canSeePurchase ? 9 : 7} className="muted">
+                  <td colSpan={isMain ? (canSeePurchase ? 10 : 8) : (canSeePurchase ? 9 : 7)} className="muted">
                     No products yet.
                   </td>
                 </tr>
               ) : null}
 
               {products.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.productCode}</td>
+                <tr key={p.id} style={p.archivedAt ? { opacity: 0.65 } : undefined}>
+                  <td>
+                    {p.productCode}
+                    {p.archivedAt ? <span className="muted"> {" "} (archived)</span> : null}
+                  </td>
                   <td>{p.category}</td>
                   <td>{p.officialName}</td>
                   <td>{p.marketName}</td>
                   <td>{p.onHandQty}</td>
                   <td>{p.defaultSellPriceJod}</td>
 
-                  {canSeePurchase ? <td>{p.lastPurchasePriceJod ?? ""}</td> : null}
+                  {canSeePurchase ? <td>{p.avgPurchasePriceJod ?? ""}</td> : null}
                   {canSeePurchase ? <td>{p.lastPurchaseDate ?? ""}</td> : null}
 
                   <td>
@@ -218,6 +313,18 @@ export default function ProductsPage() {
                       <span className="muted">—</span>
                     )}
                   </td>
+
+                  {isMain ? (
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <button className="button button--ghost" type="button" onClick={() => toggleArchive(p)}>
+                        {p.archivedAt ? "Unarchive" : "Archive"}
+                      </button>
+                      {" "}
+                      <button className="button button--ghost" type="button" onClick={() => deleteProduct(p)}>
+                        Delete
+                      </button>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>
@@ -252,7 +359,6 @@ export default function ProductsPage() {
               <input
                 value={pForm.officialName}
                 onChange={(e) => setPForm((s) => ({ ...s, officialName: e.target.value }))}
-                placeholder="Official / registered name"
               />
             </div>
 
@@ -261,7 +367,6 @@ export default function ProductsPage() {
               <input
                 value={pForm.marketName}
                 onChange={(e) => setPForm((s) => ({ ...s, marketName: e.target.value }))}
-                placeholder="Short market name"
               />
             </div>
 
@@ -272,7 +377,6 @@ export default function ProductsPage() {
                 step="0.001"
                 value={pForm.defaultSellPriceJod}
                 onChange={(e) => setPForm((s) => ({ ...s, defaultSellPriceJod: e.target.value }))}
-                placeholder="e.g., 0.500"
               />
             </div>
 
@@ -286,6 +390,10 @@ export default function ProductsPage() {
       {isMain ? (
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Receive Batch / Lot (Main only)</h3>
+          <p className="muted" style={{ marginTop: 6 }}>
+            Tip: If you enter the <strong>same Lot/Batch Number</strong> again for the same product, it will <strong>add quantity</strong> to that lot and update its average cost.
+          </p>
+
           <form className="form" onSubmit={onReceiveBatch}>
             <div className="field">
               <label>Select product…</label>
@@ -369,6 +477,45 @@ export default function ProductsPage() {
               Receive
             </button>
           </form>
+
+          {bForm.productId ? (
+            <div style={{ marginTop: 18 }}>
+              <h4 style={{ margin: "0 0 10px" }}>Batches for selected product</h4>
+              {batchesLoading ? <p className="muted">Loading batches…</p> : null}
+              {!batchesLoading && batches.length === 0 ? <p className="muted">No batches yet.</p> : null}
+
+              {batches.length ? (
+                <div className="table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Lot</th>
+                        <th>Date</th>
+                        <th>Qty</th>
+                        <th>Price (JOD)</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {batches.map((b) => (
+                        <tr key={b.id}>
+                          <td>{b.lotNumber}</td>
+                          <td>{b.purchaseDate}</td>
+                          <td>{b.qtyReceived}</td>
+                          <td>{b.purchasePriceJod ?? ""}</td>
+                          <td style={{ whiteSpace: "nowrap" }}>
+                            <button className="button button--ghost" type="button" onClick={() => voidBatch(b.id)}>
+                              Void
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

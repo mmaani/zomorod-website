@@ -1,17 +1,22 @@
-
 import { getSql } from "./_lib/db.js";
-const sql = getSql();
 import { requireUser, canSeePurchasePrice } from "./_lib/requireAuth.js";
 
-// Ensure Node runtime (DB access)
 export const config = { runtime: "nodejs" };
+
+function n(v) {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
+}
 
 export async function GET(request) {
   try {
     const auth = await requireUser(request);
     if (auth instanceof Response) return auth;
 
-    // Products + category + inventory (from movements) + last purchase price/date (from batches)
+    const sql = getSql();
+    const url = new URL(request.url);
+    const includeArchived = url.searchParams.get("includeArchived") === "1";
+
     const rows = await sql`
       SELECT
         p.id,
@@ -20,31 +25,55 @@ export async function GET(request) {
         p.official_name,
         p.market_name,
         p.default_sell_price_jod,
-        COALESCE(SUM(
-          CASE
-            WHEN m.movement_type IN ('IN','RETURN') THEN m.qty
-            WHEN m.movement_type = 'ADJ' THEN m.qty
-            WHEN m.movement_type = 'OUT' THEN -m.qty
-            ELSE 0
-          END
+        p.archived_at,
+
+        -- inventory on hand (from movements)
+        COALESCE((
+          SELECT SUM(
+            CASE
+              WHEN m.movement_type IN ('IN','RETURN') THEN m.qty
+              WHEN m.movement_type = 'ADJ' THEN m.qty
+              WHEN m.movement_type = 'OUT' THEN -m.qty
+              ELSE 0
+            END
+          )
+          FROM inventory_movements m
+          WHERE m.product_id = p.id
         ), 0) AS on_hand_qty,
+
+        -- last purchase (from non-voided batches)
         lp.purchase_price_jod AS last_purchase_price_jod,
-        lp.purchase_date AS last_purchase_date
+        lp.purchase_date AS last_purchase_date,
+
+        -- average purchase price (weighted by qty_received) from non-voided batches
+        ap.avg_purchase_price_jod AS avg_purchase_price_jod
+
       FROM products p
       LEFT JOIN product_categories c ON c.id = p.category_id
-      LEFT JOIN inventory_movements m ON m.product_id = p.id
+
       LEFT JOIN LATERAL (
         SELECT b.purchase_price_jod, b.purchase_date
         FROM batches b
-        WHERE b.product_id = p.id
+        WHERE b.product_id = p.id AND b.voided_at IS NULL
         ORDER BY b.purchase_date DESC, b.id DESC
         LIMIT 1
       ) lp ON TRUE
-      GROUP BY p.id, c.name, lp.purchase_price_jod, lp.purchase_date
+
+      LEFT JOIN LATERAL (
+        SELECT
+          CASE
+            WHEN SUM(b.qty_received) > 0
+            THEN (SUM(b.qty_received * b.purchase_price_jod) / SUM(b.qty_received))
+            ELSE NULL
+          END AS avg_purchase_price_jod
+        FROM batches b
+        WHERE b.product_id = p.id AND b.voided_at IS NULL
+      ) ap ON TRUE
+
+      WHERE (${includeArchived} OR p.archived_at IS NULL)
       ORDER BY p.created_at DESC
     `;
 
-    // Load tiers
     const tiers = await sql`
       SELECT product_id, min_qty, unit_price_jod
       FROM product_price_tiers
@@ -68,16 +97,20 @@ export async function GET(request) {
         officialName: r.official_name,
         marketName: r.market_name || "",
         defaultSellPriceJod: r.default_sell_price_jod,
-        onHandQty: Number(r.on_hand_qty || 0),
+        onHandQty: n(r.on_hand_qty),
         priceTiers: tiersByProduct.get(r.id) || [],
+        archivedAt: r.archived_at || null,
+
+        // purchase data
         lastPurchaseDate: r.last_purchase_date || null,
         lastPurchasePriceJod: r.last_purchase_price_jod || null,
+        avgPurchasePriceJod: r.avg_purchase_price_jod || null,
       };
 
-      // Hide purchase info unless allowed
       if (!showPurchase) {
         item.lastPurchaseDate = null;
         item.lastPurchasePriceJod = null;
+        item.avgPurchasePriceJod = null;
       }
 
       return item;
@@ -94,6 +127,8 @@ export async function POST(request) {
   try {
     const auth = await requireUser(request, { rolesAny: ["main"] });
     if (auth instanceof Response) return auth;
+
+    const sql = getSql();
 
     let body;
     try {
@@ -116,7 +151,6 @@ export async function POST(request) {
       );
     }
 
-    // Upsert category if provided
     let categoryId = null;
     if (categoryName) {
       const catRows = await sql`
@@ -133,10 +167,8 @@ export async function POST(request) {
       VALUES (${productCode}, ${categoryId}, ${officialName}, ${marketName || null}, ${defaultSellPriceJod})
       RETURNING id
     `;
-
     const productId = pRows[0].id;
 
-    // Insert tiers (optional)
     for (const t of priceTiers) {
       const minQty = Number(t?.minQty);
       const unitPriceJod = Number(t?.unitPriceJod);
@@ -153,6 +185,86 @@ export async function POST(request) {
     return Response.json({ ok: true, id: productId }, { status: 201 });
   } catch (err) {
     console.error("POST /api/products failed:", err);
+    return Response.json({ ok: false, error: "Server error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(request) {
+  try {
+    const auth = await requireUser(request, { rolesAny: ["main"] });
+    if (auth instanceof Response) return auth;
+
+    const sql = getSql();
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return Response.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+    }
+
+    const id = Number(body?.id);
+    if (!id) return Response.json({ ok: false, error: "id is required" }, { status: 400 });
+
+    // archive toggle
+    if (typeof body?.archived === "boolean") {
+      if (body.archived) {
+        await sql`UPDATE products SET archived_at = NOW() WHERE id = ${id}`;
+      } else {
+        await sql`UPDATE products SET archived_at = NULL WHERE id = ${id}`;
+      }
+    }
+
+    // (optional) allow updating main fields too
+    if (body?.defaultSellPriceJod !== undefined) {
+      await sql`
+        UPDATE products
+        SET default_sell_price_jod = ${Number(body.defaultSellPriceJod || 0)}
+        WHERE id = ${id}
+      `;
+    }
+
+    return Response.json({ ok: true }, { status: 200 });
+  } catch (err) {
+    console.error("PATCH /api/products failed:", err);
+    return Response.json({ ok: false, error: "Server error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    const auth = await requireUser(request, { rolesAny: ["main"] });
+    if (auth instanceof Response) return auth;
+
+    const sql = getSql();
+    const url = new URL(request.url);
+    const id = Number(url.searchParams.get("id"));
+
+    if (!id) return Response.json({ ok: false, error: "id is required" }, { status: 400 });
+
+    // hard delete only if no related data
+    const rel = await sql`
+      SELECT
+        (SELECT COUNT(*) FROM batches WHERE product_id = ${id} AND voided_at IS NULL) AS batches,
+        (SELECT COUNT(*) FROM inventory_movements WHERE product_id = ${id}) AS moves,
+        (SELECT COUNT(*) FROM product_price_tiers WHERE product_id = ${id}) AS tiers
+    `;
+
+    const batches = Number(rel?.[0]?.batches || 0);
+    const moves = Number(rel?.[0]?.moves || 0);
+    const tiers = Number(rel?.[0]?.tiers || 0);
+
+    if (batches > 0 || moves > 0 || tiers > 0) {
+      return Response.json(
+        { ok: false, error: "Cannot delete: product has batches/movements/tiers. Archive it instead." },
+        { status: 400 }
+      );
+    }
+
+    await sql`DELETE FROM products WHERE id = ${id}`;
+    return Response.json({ ok: true }, { status: 200 });
+  } catch (err) {
+    console.error("DELETE /api/products failed:", err);
     return Response.json({ ok: false, error: "Server error" }, { status: 500 });
   }
 }
