@@ -27,7 +27,6 @@ export async function GET(request) {
         p.default_sell_price_jod,
         p.archived_at,
 
-        -- inventory on hand (from movements)
         COALESCE((
           SELECT SUM(
             CASE
@@ -41,11 +40,9 @@ export async function GET(request) {
           WHERE m.product_id = p.id
         ), 0) AS on_hand_qty,
 
-        -- last purchase (from non-voided batches)
         lp.purchase_price_jod AS last_purchase_price_jod,
         lp.purchase_date AS last_purchase_date,
 
-        -- average purchase price (weighted by qty_received) from non-voided batches
         ap.avg_purchase_price_jod AS avg_purchase_price_jod
 
       FROM products p
@@ -101,7 +98,6 @@ export async function GET(request) {
         priceTiers: tiersByProduct.get(r.id) || [],
         archivedAt: r.archived_at || null,
 
-        // purchase data
         lastPurchaseDate: r.last_purchase_date || null,
         lastPurchasePriceJod: r.last_purchase_price_jod || null,
         avgPurchasePriceJod: r.avg_purchase_price_jod || null,
@@ -206,7 +202,6 @@ export async function PATCH(request) {
     const id = Number(body?.id);
     if (!id) return Response.json({ ok: false, error: "id is required" }, { status: 400 });
 
-    // archive toggle
     if (typeof body?.archived === "boolean") {
       if (body.archived) {
         await sql`UPDATE products SET archived_at = NOW() WHERE id = ${id}`;
@@ -215,7 +210,6 @@ export async function PATCH(request) {
       }
     }
 
-    // (optional) allow updating main fields too
     if (body?.defaultSellPriceJod !== undefined) {
       await sql`
         UPDATE products
@@ -242,7 +236,6 @@ export async function DELETE(request) {
 
     if (!id) return Response.json({ ok: false, error: "id is required" }, { status: 400 });
 
-    // hard delete only if no related data
     const rel = await sql`
       SELECT
         (SELECT COUNT(*) FROM batches WHERE product_id = ${id} AND voided_at IS NULL) AS batches,
