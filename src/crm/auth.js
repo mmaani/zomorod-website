@@ -23,17 +23,13 @@ export function hasRole(role) {
   return user?.roles?.includes(role);
 }
 
-export function logout() {
+export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
 }
 
-/**
- * Backward compatibility:
- * CRMLayout.jsx imports clearToken() — keep it working.
- */
-export function clearToken() {
-  logout();
+export function logout() {
+  clearToken();
 }
 
 export async function login(email, password) {
