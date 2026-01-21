@@ -1,4 +1,6 @@
-import { sql } from "./_lib/db.js";
+
+import { getSql } from "./_lib/db.js";
+const sql = getSql();
 import { requireUser, canSeePurchasePrice } from "./_lib/requireAuth.js";
 
 // Ensure Node runtime (DB access)
