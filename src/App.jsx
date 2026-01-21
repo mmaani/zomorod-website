@@ -1,11 +1,10 @@
-// src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import MarketingPage from "./marketing/MarketingPage.jsx";
 
 import LoginPage from "./crm/LoginPage.jsx";
-import CRMLayout from "./crm/CRMLayout.jsx";
 import ProtectedRoute from "./crm/ProtectedRoute.jsx";
+import CRMLayout from "./crm/CRMLayout.jsx";
 
 import DashboardPage from "./crm/pages/DashboardPage.jsx";
 import ProductsPage from "./crm/pages/ProductsPage.jsx";
@@ -19,7 +18,7 @@ export default function App() {
         {/* Marketing site */}
         <Route path="/" element={<MarketingPage />} />
 
-        {/* CRM auth */}
+        {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
 
         {/* CRM (protected) */}
