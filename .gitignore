@@ -1,8 +1,5 @@
-
-# build output
+node_modules/
 dist/
-
-
-# build output
-dist/
-
+.DS_Store
+.env
+.env.*
