@@ -1,64 +1,66 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from "./auth";
+import { login, isLoggedIn } from "./auth.js";
+import "./crm.css";
 
 export default function LoginPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const nav = useNavigate();
+  React.useEffect(() => {
+    if (isLoggedIn()) navigate("/crm", { replace: true });
+  }, [navigate]);
 
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
+    setLoading(true);
     try {
-      await login({ email, password });
-      nav("/crm", { replace: true });
+      await login(email.trim(), password);
+      navigate("/crm", { replace: true });
     } catch (err) {
-      setError(err?.message || "Login failed");
+      setError(err.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <div className="page">
-      <main className="main">
-        <section className="card" style={{ maxWidth: 520, margin: "40px auto" }}>
-          <div className="card__label">Zomorod CRM</div>
-          <h2 style={{ marginTop: 6, marginBottom: 12 }}>Login</h2>
+    <div className="crm-container">
+      <div className="crm-card">
+        <h1 className="crm-title">ZOMOROD CRM Login</h1>
 
-          <form className="form" onSubmit={onSubmit}>
-            <label className="field">
-              <span>Email</span>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </label>
+        <form onSubmit={onSubmit} className="crm-form">
+          <label className="crm-label">Email</label>
+          <input
+            className="crm-input"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            autoComplete="username"
+            required
+          />
 
-            <label className="field">
-              <span>Password</span>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </label>
+          <label className="crm-label">Password</label>
+          <input
+            className="crm-input"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            type="password"
+            autoComplete="current-password"
+            required
+          />
 
-            {error && <p style={{ color: "crimson", marginTop: 6 }}>{error}</p>}
+          {error ? <div className="crm-error">{error}</div> : null}
 
-            <button className="button button--primary" type="submit" style={{ marginTop: 12, width: "100%" }}>
-              Sign in
-            </button>
-          </form>
-
-          <p className="note" style={{ marginTop: 12 }}>
-          </p>
-        </section>
-      </main>
+          <button className="crm-btn" type="submit" disabled={loading}>
+            {loading ? "Signing in..." : "Sign In"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
