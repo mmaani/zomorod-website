@@ -10,8 +10,8 @@ export default function CRMLayout() {
   }
 
   return (
-    <div className="page">
-      <header className="header">
+    <div className="crm page">
+      <header className="crm-topbar header">
         <div className="brand" role="button" tabIndex={0} onClick={() => nav("/crm")}>
           <div>
             <h1 className="brand__title">Zomorod CRM</h1>
@@ -33,7 +33,7 @@ export default function CRMLayout() {
         </div>
       </header>
 
-      <main className="main">
+      <main className="crm-main main">
         <Outlet />
       </main>
     </div>
