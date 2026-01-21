@@ -705,6 +705,11 @@ textarea:focus-visible {
 .crm tr:hover td {
   background: rgba(14,166,122,0.06);
 }
+.crm .nav__link.is-active {
+  background: rgba(14,166,122,0.12);
+  color: var(--text);
+}
+
 
 /* Small status pills */
 .crm .pill {
