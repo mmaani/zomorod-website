@@ -1,69 +1,91 @@
-import bcrypt from "bcryptjs";
-import { db } from "../_lib/db.js";
-import { readJson } from "../_lib/http.js";
+import { getSql } from "../_lib/db.js";
+import { hashPassword } from "./auth.js";
 
-export default {
-  async fetch(request) {
-    if (request.method !== "POST") {
-      return Response.json({ error: "Method not allowed" }, { status: 405 });
+export async function POST(request) {
+  try {
+    const headerToken = request.headers.get("x-setup-token") || "";
+    const envToken = process.env.SETUP_TOKEN || "";
+
+    if (!envToken) {
+      return Response.json(
+        { ok: false, error: "SETUP_TOKEN is not set in Vercel env vars" },
+        { status: 500 }
+      );
     }
 
-    const token = request.headers.get("x-setup-token") || "";
-    if (!process.env.SETUP_TOKEN || token !== process.env.SETUP_TOKEN) {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+    if (!headerToken || headerToken !== envToken) {
+      return Response.json(
+        { ok: false, error: "Invalid setup token" },
+        { status: 401 }
+      );
     }
 
-    const sql = db();
-
-    // Only allow setup if no users exist yet
-    const existing = await sql`SELECT COUNT(*)::int AS c FROM users`;
-    if (existing[0].c > 0) {
-      return Response.json({ error: "Setup already completed" }, { status: 409 });
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return Response.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const body = (await readJson(request)) || {};
-    const main = body.main;
-    const doctor = body.doctor;
-    const general = body.general;
+    const sql = getSql();
 
-    if (!main?.email || !main?.password || !main?.fullName) {
-      return Response.json({ error: "Missing main user fields" }, { status: 400 });
+    // Ensure roles exist (safe even if already inserted)
+    const roleNames = ["main", "doctor", "general"];
+    const roleIdByName = {};
+
+    for (const name of roleNames) {
+      const rows = await sql`
+        INSERT INTO roles (name)
+        VALUES (${name})
+        ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+        RETURNING id, name
+      `;
+      roleIdByName[name] = rows[0].id;
     }
-    if (!doctor?.email || !doctor?.password || !doctor?.fullName) {
-      return Response.json({ error: "Missing doctor user fields" }, { status: 400 });
+
+    async function upsertUser(roleKey, u) {
+      const fullName = String(u?.fullName || "").trim();
+      const email = String(u?.email || "").trim().toLowerCase();
+      const password = String(u?.password || "");
+
+      if (!fullName || !email || !password) {
+        throw new Error(`Missing fields for ${roleKey} user`);
+      }
+
+      const passwordHash = await hashPassword(password);
+
+      const userRows = await sql`
+        INSERT INTO users (full_name, email, password_hash, is_active)
+        VALUES (${fullName}, ${email}, ${passwordHash}, TRUE)
+        ON CONFLICT (email) DO UPDATE SET
+          full_name = EXCLUDED.full_name,
+          password_hash = EXCLUDED.password_hash,
+          is_active = TRUE
+        RETURNING id, full_name, email, is_active
+      `;
+      const user = userRows[0];
+
+      const roleId = roleIdByName[roleKey];
+      await sql`
+        INSERT INTO user_roles (user_id, role_id)
+        VALUES (${user.id}, ${roleId})
+        ON CONFLICT DO NOTHING
+      `;
+
+      return { id: user.id, fullName: user.full_name, email: user.email, role: roleKey };
     }
-    if (!general?.email || !general?.password || !general?.fullName) {
-      return Response.json({ error: "Missing general user fields" }, { status: 400 });
-    }
 
-    // Get role ids
-    const roles = await sql`SELECT id, name FROM roles`;
-    const roleId = Object.fromEntries(roles.map(r => [r.name, r.id]));
+    const results = [];
+    results.push(await upsertUser("main", body.main));
+    results.push(await upsertUser("doctor", body.doctor));
+    results.push(await upsertUser("general", body.general));
 
-    const hMain = await bcrypt.hash(main.password, 12);
-    const hDoc = await bcrypt.hash(doctor.password, 12);
-    const hGen = await bcrypt.hash(general.password, 12);
-
-    const [uMain] = await sql`
-      INSERT INTO users (full_name, email, password_hash)
-      VALUES (${main.fullName}, ${main.email}, ${hMain})
-      RETURNING id, email
-    `;
-    const [uDoc] = await sql`
-      INSERT INTO users (full_name, email, password_hash)
-      VALUES (${doctor.fullName}, ${doctor.email}, ${hDoc})
-      RETURNING id, email
-    `;
-    const [uGen] = await sql`
-      INSERT INTO users (full_name, email, password_hash)
-      VALUES (${general.fullName}, ${general.email}, ${hGen})
-      RETURNING id, email
-    `;
-
-    await sql`INSERT INTO user_roles (user_id, role_id) VALUES (${uMain.id}, ${roleId.main})`;
-    await sql`INSERT INTO user_roles (user_id, role_id) VALUES (${uDoc.id}, ${roleId.doctor})`;
-    await sql`INSERT INTO user_roles (user_id, role_id) VALUES (${uGen.id}, ${roleId.general})`;
-
-    return Response.json({ ok: true, users: [uMain.email, uDoc.email, uGen.email] });
-  },
-};
+    return Response.json({ ok: true, users: results }, { status: 200 });
+  } catch (e) {
+    // Return JSON so you can see the actual error in curl instead of generic Vercel 500 page
+    return Response.json(
+      { ok: false, error: "Server error", detail: String(e?.message || e) },
+      { status: 500 }
+    );
+  }
+}
