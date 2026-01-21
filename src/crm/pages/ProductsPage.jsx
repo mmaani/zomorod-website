@@ -1,60 +1,53 @@
 import { useEffect, useMemo, useState } from "react";
-import { getToken, getUser } from "../auth.js";
+import { apiFetch } from "../api.js";
+import { getUser, hasRole } from "../auth.js";
 
-async function apiFetch(path, options = {}) {
-  const token = getToken();
-  const res = await fetch(path, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || data?.detail || `HTTP ${res.status}`);
-  return data;
+function fmtJod(v) {
+  if (v === null || v === undefined || v === "") return "";
+  const n = Number(v);
+  if (!Number.isFinite(n)) return String(v);
+  return n.toFixed(3);
+}
+
+function fmtDate(d) {
+  if (!d) return "";
+  // Neon/Postgres DATE often arrives like "2026-01-21"
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return String(d);
+  return dt.toLocaleDateString();
 }
 
 export default function ProductsPage() {
-  const me = getUser(); // should include roles array
-  const roles = useMemo(() => (me?.roles || []), [me]);
-  const canManage = roles.includes("main");
-  const canSeePurchase = roles.includes("main") || roles.includes("doctor");
+  const user = useMemo(() => getUser(), []);
+  const canSeePurchase = hasRole("main") || hasRole("doctor");
+  const canAdd = hasRole("main");
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [err, setErr] = useState("");
   const [products, setProducts] = useState([]);
 
-  // Add product form
-  const [newP, setNewP] = useState({
-    productCode: "",
-    category: "",
-    officialName: "",
-    marketName: "",
-    defaultSellPriceJod: 0,
-  });
+  // Add form state
+  const [productCode, setProductCode] = useState("");
+  const [category, setCategory] = useState("");
+  const [officialName, setOfficialName] = useState("");
+  const [marketName, setMarketName] = useState("");
+  const [defaultSellPriceJod, setDefaultSellPriceJod] = useState("");
 
-  // Receive batch form
-  const [batch, setBatch] = useState({
-    productId: "",
-    lotNumber: "",
-    purchaseDate: "",
-    expiryDate: "",
-    purchasePriceJod: "",
-    quantityReceived: "",
-    supplierName: "",
-    supplierInvoiceNo: "",
-  });
+  const [tierMinQty, setTierMinQty] = useState("");
+  const [tierUnitPrice, setTierUnitPrice] = useState("");
+  const [priceTiers, setPriceTiers] = useState([]);
 
   async function load() {
     setLoading(true);
-    setError("");
+    setErr("");
     try {
-      const data = await apiFetch("/api/products");
-      setProducts(data.products || []);
+      const res = await apiFetch("/api/products");
+      if (!res) return; // apiFetch redirects on 401
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || `Failed (${res.status})`);
+      setProducts(Array.isArray(data.products) ? data.products : []);
     } catch (e) {
-      setError(e.message || "Failed to load products");
+      setErr(e?.message || "Failed to load products");
     } finally {
       setLoading(false);
     }
@@ -62,144 +55,238 @@ export default function ProductsPage() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function addProduct(e) {
-    e.preventDefault();
-    setError("");
-    try {
-      await apiFetch("/api/products", { method: "POST", body: JSON.stringify(newP) });
-      setNewP({ productCode: "", category: "", officialName: "", marketName: "", defaultSellPriceJod: 0 });
-      await load();
-    } catch (e2) {
-      setError(e2.message || "Failed to add product");
-    }
+  function addTier() {
+    const minQty = Number(tierMinQty);
+    const unitPriceJod = Number(tierUnitPrice);
+    if (!Number.isFinite(minQty) || minQty <= 0) return;
+    if (!Number.isFinite(unitPriceJod) || unitPriceJod <= 0) return;
+
+    setPriceTiers((prev) => {
+      const next = [...prev, { minQty, unitPriceJod }];
+      next.sort((a, b) => a.minQty - b.minQty);
+      return next;
+    });
+    setTierMinQty("");
+    setTierUnitPrice("");
   }
 
-  async function receiveBatch(e) {
+  function removeTier(minQty) {
+    setPriceTiers((prev) => prev.filter((t) => t.minQty !== minQty));
+  }
+
+  async function submit(e) {
     e.preventDefault();
-    setError("");
+    setErr("");
+
+    const payload = {
+      productCode: productCode.trim(),
+      category: category.trim(),
+      officialName: officialName.trim(),
+      marketName: marketName.trim(),
+      defaultSellPriceJod: defaultSellPriceJod === "" ? 0 : Number(defaultSellPriceJod),
+      priceTiers,
+    };
+
+    if (!payload.productCode || !payload.officialName) {
+      setErr("Product Code and Official Name are required.");
+      return;
+    }
+
     try {
-      const payload = {
-        ...batch,
-        productId: Number(batch.productId),
-        purchasePriceJod: Number(batch.purchasePriceJod),
-        quantityReceived: Number(batch.quantityReceived),
-      };
-      await apiFetch("/api/batches", { method: "POST", body: JSON.stringify(payload) });
-      setBatch({
-        productId: "",
-        lotNumber: "",
-        purchaseDate: "",
-        expiryDate: "",
-        purchasePriceJod: "",
-        quantityReceived: "",
-        supplierName: "",
-        supplierInvoiceNo: "",
+      const res = await apiFetch("/api/products", {
+        method: "POST",
+        body: JSON.stringify(payload),
       });
+      if (!res) return;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || `Failed (${res.status})`);
+
+      // reset form
+      setProductCode("");
+      setCategory("");
+      setOfficialName("");
+      setMarketName("");
+      setDefaultSellPriceJod("");
+      setPriceTiers([]);
+
       await load();
     } catch (e2) {
-      setError(e2.message || "Failed to receive batch");
+      setErr(e2?.message || "Failed to add product");
     }
   }
 
   return (
-    <div style={{ padding: 16 }}>
-      <h2>Products</h2>
-
-      {error ? (
-        <div style={{ background: "#ffe5e5", padding: 10, borderRadius: 8, marginBottom: 12 }}>
-          {error}
+    <div className="crm-page">
+      <div className="crm-toolbar">
+        <h2 className="crm-h2">Products</h2>
+        <div className="crm-toolbar__right">
+          <button className="button button--ghost" type="button" onClick={load}>
+            Refresh
+          </button>
         </div>
-      ) : null}
+      </div>
 
-      {loading ? <p>Loading…</p> : null}
+      {err ? <div className="crm-alert">{err}</div> : null}
 
-      {!loading ? (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th style={th}>Code</th>
-                <th style={th}>Category</th>
-                <th style={th}>Official</th>
-                <th style={th}>Market</th>
-                <th style={th}>On-hand</th>
-                <th style={th}>Sell Price (JOD)</th>
-                {canSeePurchase ? <th style={th}>Last Purchase (JOD)</th> : null}
-                {canSeePurchase ? <th style={th}>Last Purchase Date</th> : null}
-                <th style={th}>Tiers</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p) => (
-                <tr key={p.id}>
-                  <td style={td}>{p.productCode}</td>
-                  <td style={td}>{p.category}</td>
-                  <td style={td}>{p.officialName}</td>
-                  <td style={td}>{p.marketName}</td>
-                  <td style={td}>{p.onHandQty}</td>
-                  <td style={td}>{Number(p.defaultSellPriceJod || 0).toFixed(3)}</td>
-                  {canSeePurchase ? <td style={td}>{p.lastPurchasePriceJod ? Number(p.lastPurchasePriceJod).toFixed(3) : "-"}</td> : null}
-                  {canSeePurchase ? <td style={td}>{p.lastPurchaseDate || "-"}</td> : null}
-                  <td style={td}>
-                    {(p.priceTiers || []).length
-                      ? p.priceTiers.map((t) => `≥${t.minQty}: ${Number(t.unitPriceJod).toFixed(3)}`).join(" | ")
-                      : "-"}
-                  </td>
+      {canAdd ? (
+        <form className="crm-card" onSubmit={submit}>
+          <div className="crm-card__title">Add Product (Main only)</div>
+
+          <div className="crm-grid">
+            <label className="crm-field">
+              <span>Product Code *</span>
+              <input value={productCode} onChange={(e) => setProductCode(e.target.value)} />
+            </label>
+
+            <label className="crm-field">
+              <span>Category</span>
+              <input value={category} onChange={(e) => setCategory(e.target.value)} />
+            </label>
+
+            <label className="crm-field">
+              <span>Official Name *</span>
+              <input value={officialName} onChange={(e) => setOfficialName(e.target.value)} />
+            </label>
+
+            <label className="crm-field">
+              <span>Market Name</span>
+              <input value={marketName} onChange={(e) => setMarketName(e.target.value)} />
+            </label>
+
+            <label className="crm-field">
+              <span>Default Sell Price (JOD)</span>
+              <input
+                inputMode="decimal"
+                value={defaultSellPriceJod}
+                onChange={(e) => setDefaultSellPriceJod(e.target.value)}
+                placeholder="e.g. 0.500"
+              />
+            </label>
+          </div>
+
+          <div className="crm-divider" />
+
+          <div className="crm-row">
+            <div className="crm-row__title">Optional price tiers</div>
+            <div className="crm-row__inputs">
+              <input
+                inputMode="numeric"
+                placeholder="Min Qty"
+                value={tierMinQty}
+                onChange={(e) => setTierMinQty(e.target.value)}
+              />
+              <input
+                inputMode="decimal"
+                placeholder="Unit Price (JOD)"
+                value={tierUnitPrice}
+                onChange={(e) => setTierUnitPrice(e.target.value)}
+              />
+              <button className="button button--primary" type="button" onClick={addTier}>
+                Add Tier
+              </button>
+            </div>
+          </div>
+
+          {priceTiers.length ? (
+            <div className="crm-tiers">
+              {priceTiers.map((t) => (
+                <div className="crm-tier" key={t.minQty}>
+                  <span>
+                    {t.minQty}+ → {fmtJod(t.unitPriceJod)} JOD
+                  </span>
+                  <button
+                    className="button button--ghost"
+                    type="button"
+                    onClick={() => removeTier(t.minQty)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          <div style={{ height: 10 }} />
+          <button className="button button--primary" type="submit">
+            Save Product
+          </button>
+        </form>
+      ) : (
+        <div className="crm-card">
+          <div className="crm-card__title">Add Product</div>
+          <div className="crm-muted">
+            You are logged in as <strong>{user?.email || "user"}</strong>. Only <strong>main</strong> can add
+            products.
+          </div>
+        </div>
+      )}
+
+      <div className="crm-card">
+        <div className="crm-card__title">Product List</div>
+
+        {loading ? (
+          <div className="crm-muted">Loading…</div>
+        ) : (
+          <div className="crm-tableWrap">
+            <table className="crm-table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Category</th>
+                  <th>Official</th>
+                  <th>Market</th>
+                  <th style={{ textAlign: "right" }}>On Hand</th>
+                  <th style={{ textAlign: "right" }}>Sell (JOD)</th>
+                  {canSeePurchase ? (
+                    <>
+                      <th style={{ textAlign: "right" }}>Last Buy (JOD)</th>
+                      <th>Last Buy Date</th>
+                    </>
+                  ) : null}
+                  <th>Price Tiers</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
+              </thead>
+              <tbody>
+                {products.map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.productCode}</td>
+                    <td>{p.category}</td>
+                    <td>{p.officialName}</td>
+                    <td>{p.marketName}</td>
+                    <td style={{ textAlign: "right" }}>{Number(p.onHandQty || 0)}</td>
+                    <td style={{ textAlign: "right" }}>{fmtJod(p.defaultSellPriceJod)}</td>
 
-      {canManage ? (
-        <>
-          <hr style={{ margin: "18px 0" }} />
-          <h3>Add Product (Main only)</h3>
-          <form onSubmit={addProduct} style={{ display: "grid", gap: 8, maxWidth: 520 }}>
-            <input placeholder="Product Code" value={newP.productCode} onChange={(e) => setNewP({ ...newP, productCode: e.target.value })} />
-            <input placeholder="Category" value={newP.category} onChange={(e) => setNewP({ ...newP, category: e.target.value })} />
-            <input placeholder="Official Name" value={newP.officialName} onChange={(e) => setNewP({ ...newP, officialName: e.target.value })} />
-            <input placeholder="Market Name" value={newP.marketName} onChange={(e) => setNewP({ ...newP, marketName: e.target.value })} />
-            <input
-              placeholder="Default Sell Price (JOD)"
-              type="number"
-              step="0.001"
-              value={newP.defaultSellPriceJod}
-              onChange={(e) => setNewP({ ...newP, defaultSellPriceJod: e.target.value })}
-            />
-            <button type="submit">Add</button>
-          </form>
+                    {canSeePurchase ? (
+                      <>
+                        <td style={{ textAlign: "right" }}>{fmtJod(p.lastPurchasePriceJod)}</td>
+                        <td>{fmtDate(p.lastPurchaseDate)}</td>
+                      </>
+                    ) : null}
 
-          <hr style={{ margin: "18px 0" }} />
-          <h3>Receive Batch / Lot (Main only)</h3>
-          <form onSubmit={receiveBatch} style={{ display: "grid", gap: 8, maxWidth: 520 }}>
-            <select value={batch.productId} onChange={(e) => setBatch({ ...batch, productId: e.target.value })}>
-              <option value="">Select product…</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.productCode} — {p.officialName}
-                </option>
-              ))}
-            </select>
-
-            <input placeholder="Lot/Batch Number" value={batch.lotNumber} onChange={(e) => setBatch({ ...batch, lotNumber: e.target.value })} />
-            <input placeholder="Purchase Date (YYYY-MM-DD)" value={batch.purchaseDate} onChange={(e) => setBatch({ ...batch, purchaseDate: e.target.value })} />
-            <input placeholder="Expiry Date (YYYY-MM-DD) optional" value={batch.expiryDate} onChange={(e) => setBatch({ ...batch, expiryDate: e.target.value })} />
-            <input placeholder="Purchase Price (JOD)" type="number" step="0.001" value={batch.purchasePriceJod} onChange={(e) => setBatch({ ...batch, purchasePriceJod: e.target.value })} />
-            <input placeholder="Quantity Received" type="number" value={batch.quantityReceived} onChange={(e) => setBatch({ ...batch, quantityReceived: e.target.value })} />
-            <input placeholder="Supplier Name (optional)" value={batch.supplierName} onChange={(e) => setBatch({ ...batch, supplierName: e.target.value })} />
-            <input placeholder="Supplier Invoice No (optional)" value={batch.supplierInvoiceNo} onChange={(e) => setBatch({ ...batch, supplierInvoiceNo: e.target.value })} />
-
-            <button type="submit">Receive</button>
-          </form>
-        </>
-      ) : null}
+                    <td>
+                      {Array.isArray(p.priceTiers) && p.priceTiers.length
+                        ? p.priceTiers
+                            .map((t) => `${t.minQty}+ → ${fmtJod(t.unitPriceJod)}`)
+                            .join(" | ")
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+                {!products.length ? (
+                  <tr>
+                    <td colSpan={canSeePurchase ? 9 : 7} className="crm-muted">
+                      No products yet.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-
-const th = { borderBottom: "1px solid #ddd", textAlign: "left", padding: 8, fontWeight: 700 };
-const td = { borderBottom: "1px solid #f0f0f0", padding: 8, verticalAlign: "top" };
