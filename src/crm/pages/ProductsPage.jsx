@@ -218,7 +218,7 @@ export default function ProductsPage() {
         <div className="crm-card">
           <div className="crm-card__title">Add Product</div>
           <div className="crm-muted">
-            You are logged in as <strong>{user?.email || "user"}</strong>. Only <strong>main</strong> can add
+            You are logged in as <strong>{user?.email || "user"}</strong>. Only <strong>The Admin </strong> can add
             products.
           </div>
         </div>
