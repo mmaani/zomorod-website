@@ -1,5 +1,7 @@
+// src/marketing/MarketingPage.jsx
 import { useMemo, useState } from "react";
 import logo from "../assets/logo.png";
+
 export default function MarketingPage() {
   const [lang, setLang] = useState("en");
   const isAr = lang === "ar";
@@ -7,7 +9,8 @@ export default function MarketingPage() {
   const content = useMemo(() => {
     const en = {
       brand: "Zomorod Medical Supplies LLC",
-      tagline: "Medical consumables sourcing, quality evaluation & distribution — Jordan & Syria.",
+      tagline:
+        "Medical consumables sourcing, quality evaluation & distribution — Jordan & Syria.",
 
       // Navigation
       nav: {
@@ -21,9 +24,10 @@ export default function MarketingPage() {
       },
 
       // Hero
-      heroTitle: "Medical consumables sourcing, quality evaluation, and distribution — Jordan & Syria.",
+      heroTitle:
+        "Medical consumables sourcing, quality evaluation, and distribution — Jordan & Syria.",
       heroBody:
-  "We support private clinics, pharmacies, laboratories, and healthcare distributors across Jordan and Syria with carefully selected medical consumer goods. Each request is evaluated based on product specifications, quality consistency, documentation readiness, regulatory requirements, and total landed cost—allowing us to provide reliable supply with competitive, volume-based pricing.",
+        "We support private clinics, pharmacies, laboratories, and healthcare distributors across Jordan and Syria with carefully selected medical consumer goods. Each request is evaluated based on product specifications, quality consistency, documentation readiness, regulatory requirements, and total landed cost—allowing us to provide reliable supply with competitive, volume-based pricing.",
       heroPrimary: "Email us",
       heroSecondary: "Call us",
 
@@ -37,7 +41,7 @@ export default function MarketingPage() {
       // Market + sourcing
       marketTitle: "Market Focus",
       marketBody:
-"Jordan and Syria rely significantly on imported medical consumables across the private healthcare sector. Zomorod Medical Supplies LLC focuses on serving local private-sector demand with practical, small-scale fulfillment and clear lead-time communication.",
+        "Jordan and Syria rely significantly on imported medical consumables across the private healthcare sector. Zomorod Medical Supplies LLC focuses on serving local private-sector demand with practical, small-scale fulfillment and clear lead-time communication.",
       sourcingTitle: "Sourcing Approach",
       sourcingBody:
         "We evaluate quality consistency, documentation readiness, regulatory requirements, logistics feasibility, and market suitability when selecting supply options. Documentation support is provided where applicable.",
@@ -47,23 +51,28 @@ export default function MarketingPage() {
       qvBody:
         "We compare sourcing options using defined criteria: product specifications, quality consistency, documentation readiness, regulatory requirements, and total landed cost. This helps us provide reliable products with competitive quotes based on volume and delivery needs.",
 
-      // NEW: Who we serve
+      // Who we serve
       serveTitle: "Who We Serve",
       serveBody:
-"We support professional healthcare buyers and distribution channels across Jordan and Syria. If you purchase medical consumables for your facility or customers, we can support you with availability confirmation, documentation guidance (where applicable), and competitive quotes.",
-serveList: ["Private clinics", "Pharmacies", "Laboratories", "Healthcare distributors"],
-    serviceAreaLabel: "Service Areas",
-    serviceAreaValue: "Jordan & Syria",
+        "We support professional healthcare buyers and distribution channels across Jordan and Syria. If you purchase medical consumables for your facility or customers, we can support you with availability confirmation, documentation guidance (where applicable), and competitive quotes.",
+      serveList: [
+        "Private clinics",
+        "Pharmacies",
+        "Laboratories",
+        "Healthcare distributors",
+      ],
+      serviceAreaLabel: "Service Areas",
+      serviceAreaValue: "Jordan & Syria",
 
       // How to order
       orderTitle: "How to Order",
       orderSteps: [
-  "Send your request: product, quantity, and delivery location (Jordan or Syria) by email or WhatsApp.",
-  "We confirm availability, documentation requirements (where applicable), pricing, and estimated lead time.",
-  "We arrange delivery and handover based on the agreed location and timeline.",
-],
+        "Send your request: product, quantity, and delivery location (Jordan or Syria) by email or WhatsApp.",
+        "We confirm availability, documentation requirements (where applicable), pricing, and estimated lead time.",
+        "We arrange delivery and handover based on the agreed location and timeline.",
+      ],
 
-      // Products (6 + additional generic categories)
+      // Products
       productsTitle: "Products",
       productsSubtitle: "Current products (small scale)",
       products: [
@@ -128,7 +137,7 @@ serveList: ["Private clinics", "Pharmacies", "Laboratories", "Healthcare distrib
 
       // Compliance
       complianceTitle: "Regulatory & Compliance Notice",
-        complianceBody:
+      complianceBody:
         "Zomorod Medical Supplies LLC supplies medical consumer goods and related products for customers in Jordan and Syria. Product availability, specifications, labeling, and import/distribution requirements may vary by product and destination. We provide information upon request and support customers with documentation where applicable. This website is for general information only and does not constitute medical advice.",
 
       contactNote: "Prefer WhatsApp? Tap the button to message us instantly.",
@@ -141,7 +150,9 @@ serveList: ["Private clinics", "Pharmacies", "Laboratories", "Healthcare distrib
 
     const ar = {
       brand: "Zomorod Medical Supplies LLC",
-      tagline:   "توريد وتقييم جودة وتوزيع المستلزمات الطبية الاستهلاكية — الأردن وسوريا.",
+      tagline:
+        "توريد وتقييم جودة وتوزيع المستلزمات الطبية الاستهلاكية — الأردن وسوريا.",
+
       nav: {
         home: "الرئيسية",
         products: "المنتجات",
@@ -152,9 +163,10 @@ serveList: ["Private clinics", "Pharmacies", "Laboratories", "Healthcare distrib
         compliance: "الالتزام",
       },
 
-      heroTitle:   "توريد وتقييم جودة وتوزيع المستلزمات الطبية الاستهلاكية — الأردن وسوريا.",
+      heroTitle:
+        "توريد وتقييم جودة وتوزيع المستلزمات الطبية الاستهلاكية — الأردن وسوريا.",
       heroBody:
-  "ندعم العيادات الخاصة والصيدليات والمختبرات وموزّعي المستلزمات الطبية في الأردن وسوريا من خلال توريد منتجات طبية استهلاكية مختارة بعناية. يتم تقييم كل طلب وفق المواصفات الفنية، وثبات الجودة، وجاهزية المستندات، والمتطلبات التنظيمية، والتكلفة الإجمالية بعد الشحن، مما يتيح توفير منتجات موثوقة بأسعار تنافسية حسب الكمية.",
+        "ندعم العيادات الخاصة والصيدليات والمختبرات وموزّعي المستلزمات الطبية في الأردن وسوريا من خلال توريد منتجات طبية استهلاكية مختارة بعناية. يتم تقييم كل طلب وفق المواصفات الفنية، وثبات الجودة، وجاهزية المستندات، والمتطلبات التنظيمية، والتكلفة الإجمالية بعد الشحن، مما يتيح توفير منتجات موثوقة بأسعار تنافسية حسب الكمية.",
       heroPrimary: "راسلنا بالبريد",
       heroSecondary: "اتصل بنا",
 
@@ -167,7 +179,7 @@ serveList: ["Private clinics", "Pharmacies", "Laboratories", "Healthcare distrib
 
       marketTitle: "السوق المستهدف",
       marketBody:
-  "يعتمد القطاع الصحي الخاص في الأردن وسوريا بشكل كبير على استيراد المستلزمات الطبية الاستهلاكية. تركز زمرد للمستلزمات الطبية على تلبية الطلب المحلي في القطاع الخاص من خلال توريد عملي وعلى نطاق مناسب مع وضوح في وقت التوريد.",
+        "يعتمد القطاع الصحي الخاص في الأردن وسوريا بشكل كبير على استيراد المستلزمات الطبية الاستهلاكية. تركز زمرد للمستلزمات الطبية على تلبية الطلب المحلي في القطاع الخاص من خلال توريد عملي وعلى نطاق مناسب مع وضوح في وقت التوريد.",
       sourcingTitle: "نهج التوريد",
       sourcingBody:
         "نعتمد على تقييم ثبات الجودة وجاهزية المستندات والمتطلبات التنظيمية وجدوى الخدمات اللوجستية وملاءمة السوق عند اختيار خيارات التوريد. ويتم دعم العملاء بالمستندات عند الاقتضاء.",
@@ -176,20 +188,24 @@ serveList: ["Private clinics", "Pharmacies", "Laboratories", "Healthcare distrib
       qvBody:
         "نقارن خيارات التوريد وفق معايير واضحة تشمل المواصفات، وثبات الجودة، وجاهزية المستندات، والمتطلبات التنظيمية، والتكلفة الإجمالية بعد الشحن. يتيح ذلك تقديم منتجات موثوقة مع عروض أسعار تنافسية حسب الكمية وموقع التسليم.",
 
-      // NEW: Who we serve
       serveTitle: "من نخدم",
       serveBody:
         "نخدم المشترين المهنيين وقنوات التوزيع في الأردن وسوريا. إذا كنت تشتري مستلزمات طبية لمرفقك أو لعملائك، يمكننا دعمك بتأكيد التوفر، وإرشادات المستندات (عند الاقتضاء)، وعروض أسعار تنافسية.",
-      serveList: ["العيادات الخاصة", "الصيدليات", "المختبرات", "موزعو المستلزمات الطبية"],
+      serveList: [
+        "العيادات الخاصة",
+        "الصيدليات",
+        "المختبرات",
+        "موزعو المستلزمات الطبية",
+      ],
       serviceAreaLabel: "نطاق الخدمة",
       serviceAreaValue: "الأردن وسوريا",
 
       orderTitle: "كيفية الطلب",
       orderSteps: [
-            "إرسال الطلب: نوع المنتج والكمية وموقع التسليم (الأردن أو سوريا) عبر البريد أو واتساب.",
-            "نؤكد التوفر ومتطلبات المستندات (عند الاقتضاء) والسعر ووقت التوريد المتوقع.",
-            "ترتيب التسليم والتسليم النهائي حسب الموقع والجدول المتفق عليه.",
-          ],
+        "إرسال الطلب: نوع المنتج والكمية وموقع التسليم (الأردن أو سوريا) عبر البريد أو واتساب.",
+        "نؤكد التوفر ومتطلبات المستندات (عند الاقتضاء) والسعر ووقت التوريد المتوقع.",
+        "ترتيب التسليم والتسليم النهائي حسب الموقع والجدول المتفق عليه.",
+      ],
 
       productsTitle: "المنتجات",
       productsSubtitle: "المنتجات الحالية (على نطاق صغير)",
@@ -251,10 +267,8 @@ serveList: ["Private clinics", "Pharmacies", "Laboratories", "Healthcare distrib
 
       complianceTitle: "إشعار تنظيمي والالتزام",
       complianceBody:
-  "تقوم Zomorod Medical Supplies LLC بتوريد المنتجات الطبية الاستهلاكية وما يرتبط بها لعملائها في الأردن وسوريا. قد تختلف التوفر والمواصفات والملصقات ومتطلبات الاستيراد/التوزيع حسب المنتج ووجهة التسليم. نقدم المعلومات عند الطلب وندعم العملاء بالمستندات عند الاقتضاء. هذا الموقع مخصص للمعلومات العامة فقط ولا يُعد نصيحة طبية.",
-serviceAreaLabel: "نطاق الخدمة",
-serviceAreaValue: "الأردن وسوريا",
-        
+        "تقوم Zomorod Medical Supplies LLC بتوريد المنتجات الطبية الاستهلاكية وما يرتبط بها لعملائها في الأردن وسوريا. قد تختلف التوفر والمواصفات والملصقات ومتطلبات الاستيراد/التوزيع حسب المنتج ووجهة التسليم. نقدم المعلومات عند الطلب وندعم العملاء بالمستندات عند الاقتضاء. هذا الموقع مخصص للمعلومات العامة فقط ولا يُعد نصيحة طبية.",
+
       contactNote: "تفضّل واتساب؟ اضغط الزر لإرسال رسالة مباشرة.",
       footer: `© ${new Date().getFullYear()} Zomorod Medical Supplies LLC. جميع الحقوق محفوظة.`,
 
@@ -277,17 +291,10 @@ serviceAreaValue: "الأردن وسوريا",
     window.scrollTo({ top: y, behavior: "smooth" });
   };
 
-
-
   return (
     <div dir={isAr ? "rtl" : "ltr"} lang={isAr ? "ar" : "en"} className="page">
       <header className="header">
-        <div
-          className="brand"
-          onClick={() => scrollToId("home")}
-          role="button"
-          tabIndex={0}
-        >
+        <div className="brand" onClick={() => scrollToId("home")} role="button" tabIndex={0}>
           <img src={logo} alt="Zomorod Medical Supplies LLC" className="brand__logo" />
           <div>
             <h1 className="brand__title">{content.brand}</h1>
@@ -389,7 +396,7 @@ serviceAreaValue: "الأردن وسوريا",
             <p className="card__value card__value--top">{content.qvBody}</p>
           </section>
 
-          {/* WHO WE SERVE (NEW) */}
+          {/* WHO WE SERVE */}
           <section id="serve" className="card">
             <div className="card__label">{content.serveTitle}</div>
             <p className="card__value card__value--top">{content.serveBody}</p>
@@ -445,11 +452,11 @@ serviceAreaValue: "الأردن وسوريا",
             <p className="card__value" style={{ fontWeight: 900 }}>
               {content.locationDetails}
             </p>
+
             <p className="card__value card__value--top">
               <strong>{content.serviceAreaLabel}: </strong>
               {content.serviceAreaValue}
             </p>
-
 
             <p className="card__value card__value--top">
               <strong>{content.zipLabel}: </strong>
@@ -589,8 +596,3 @@ serviceAreaValue: "الأردن وسوريا",
     </div>
   );
 }
-
-
-
-
-

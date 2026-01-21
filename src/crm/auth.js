@@ -28,6 +28,14 @@ export function logout() {
   localStorage.removeItem(USER_KEY);
 }
 
+/**
+ * Backward compatibility:
+ * CRMLayout.jsx imports clearToken() — keep it working.
+ */
+export function clearToken() {
+  logout();
+}
+
 export async function login(email, password) {
   const res = await fetch("/api/auth/login", {
     method: "POST",
