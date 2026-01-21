@@ -1,25 +1,36 @@
 import postgres from "postgres";
 
 export default {
-  async fetch(request) {
+  async fetch() {
+    const raw = String(process.env.DATABASE_URL || "");
+
+    const diag = {
+      hasValue: raw.length > 0,
+      length: raw.length,
+      startsWith: raw.slice(0, 12),       // should be "postgresql://"
+      hasWhitespace: /\s/.test(raw),
+      hasScheme:
+        raw.startsWith("postgresql://") || raw.startsWith("postgres://"),
+    };
+
     try {
-      if (!process.env.DATABASE_URL) {
-        return Response.json(
-          { ok: false, error: "DATABASE_URL missing in Vercel env vars" },
-          { status: 500 }
-        );
-      }
+      // Validate URL format before using postgres()
+      new URL(raw);
+    } catch (e) {
+      return Response.json(
+        { ok: false, error: "Invalid URL", diag },
+        { status: 500 }
+      );
+    }
 
-      const sql = postgres(process.env.DATABASE_URL, { ssl: "require", max: 1 });
-
+    try {
+      const sql = postgres(raw, { ssl: "require", max: 1 });
       const r = await sql`SELECT NOW() AS now`;
       await sql.end();
-
-      return Response.json({ ok: true, now: r[0].now });
+      return Response.json({ ok: true, now: r[0].now, diag });
     } catch (e) {
-      console.error(e);
       return Response.json(
-        { ok: false, error: String(e?.message || e) },
+        { ok: false, error: String(e?.message || e), diag },
         { status: 500 }
       );
     }
