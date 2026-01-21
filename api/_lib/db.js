@@ -1,11 +1,25 @@
 import postgres from "postgres";
 
-let sql;
+let _sql = null;
 
-export function db() {
-  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL missing");
-  if (!sql) {
-    sql = postgres(process.env.DATABASE_URL, { ssl: "require", max: 1 });
+export function getSql() {
+  const url = process.env.DATABASE_URL;
+
+  if (!url) {
+    // Don’t throw at module load time — only throw when the function is actually called.
+    throw new Error("DATABASE_URL is missing in the environment variables.");
   }
-  return sql;
+
+  // Create once, reuse across invocations (good for serverless).
+  if (!_sql) {
+    _sql = postgres(url, {
+      // Works well with Neon pooled connection strings
+      ssl: "require",
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+    });
+  }
+
+  return _sql;
 }

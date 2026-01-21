@@ -1,61 +1,31 @@
-cd /workspaces/zomorod-website
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
-cat > src/crm/auth.js <<'JS'
-const TOKEN_KEY = "zomorod_token";
-const USER_KEY = "zomorod_user";
-
-export function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
+function getJwtSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error("JWT_SECRET is missing in the environment variables.");
+  return secret;
 }
 
-export function getUser() {
-  const raw = localStorage.getItem(USER_KEY);
-  try {
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+export async function hashPassword(password) {
+  const saltRounds = 10;
+  return bcrypt.hash(password, saltRounds);
 }
 
-export function isLoggedIn() {
-  return !!getToken() && !!getUser();
+export async function verifyPassword(password, passwordHash) {
+  return bcrypt.compare(password, passwordHash);
 }
 
-export function hasRole(role) {
-  const user = getUser();
-  return user?.roles?.includes(role);
+export function signJwt(payload, options = {}) {
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: "7d", ...options });
 }
 
-export function logout() {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
+export function verifyJwt(token) {
+  return jwt.verify(token, getJwtSecret());
 }
 
-/**
- * Backward compatibility:
- * CRMLayout.jsx imports clearToken() — keep it working.
- */
-export function clearToken() {
-  logout();
+export function getBearerToken(request) {
+  const h = request.headers.get("authorization") || "";
+  if (!h.toLowerCase().startsWith("bearer ")) return null;
+  return h.slice(7).trim();
 }
-
-export async function login(email, password) {
-  const res = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    const msg = data?.error || `Login failed (${res.status})`;
-    throw new Error(msg);
-  }
-
-  localStorage.setItem(TOKEN_KEY, data.token);
-  localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-
-  return data.user;
-}
-JS

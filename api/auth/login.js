@@ -1,65 +1,72 @@
-import { sql } from "../_lib/db.js";
+import { getSql } from "../_lib/db.js";
 import { verifyPassword, signJwt } from "./auth.js";
 
-// Ensure Node runtime (good for DB access)
-export const config = { runtime: "nodejs" };
-
-export default async function handler(req, res) {
+export async function POST(request) {
   try {
-    if (req.method !== "POST") {
-      return res.status(405).json({ ok: false, error: "Method not allowed" });
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return Response.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { email, password } = req.body || {};
+    const email = String(body?.email || "").trim().toLowerCase();
+    const password = String(body?.password || "");
+
     if (!email || !password) {
-      return res.status(400).json({ ok: false, error: "Email and password are required" });
+      return Response.json({ ok: false, error: "Email and password are required" }, { status: 400 });
     }
 
-    const normalizedEmail = String(email).toLowerCase().trim();
+    const sql = getSql();
 
     const rows = await sql`
       SELECT id, full_name, email, password_hash, is_active
       FROM users
-      WHERE email = ${normalizedEmail}
+      WHERE lower(email) = ${email}
       LIMIT 1
     `;
+    const user = rows?.[0];
 
-    if (rows.length === 0) {
-      return res.status(401).json({ ok: false, error: "Invalid credentials" });
-    }
-
-    const user = rows[0];
-
-    if (!user.is_active) {
-      return res.status(403).json({ ok: false, error: "User is inactive" });
+    if (!user || !user.is_active) {
+      return Response.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
     }
 
     const ok = await verifyPassword(password, user.password_hash);
     if (!ok) {
-      return res.status(401).json({ ok: false, error: "Invalid credentials" });
+      return Response.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
     }
 
     const roleRows = await sql`
       SELECT r.name
-      FROM user_roles ur
-      JOIN roles r ON r.id = ur.role_id
+      FROM roles r
+      JOIN user_roles ur ON ur.role_id = r.id
       WHERE ur.user_id = ${user.id}
+      ORDER BY r.id
     `;
     const roles = roleRows.map((r) => r.name);
 
     const token = signJwt({
-      sub: String(user.id),
+      sub: user.id,
       email: user.email,
       roles,
+      fullName: user.full_name,
     });
 
-    return res.status(200).json({
+    return Response.json({
       ok: true,
       token,
-      user: { id: user.id, fullName: user.full_name, email: user.email, roles },
+      user: {
+        id: user.id,
+        fullName: user.full_name,
+        email: user.email,
+        roles,
+      },
     });
-  } catch (err) {
-    console.error("LOGIN_ERROR:", err);
-    return res.status(500).json({ ok: false, error: "Server error" });
+  } catch (e) {
+    // Return JSON (not Vercel generic 500) so you can see it in curl/UI
+    return Response.json(
+      { ok: false, error: "Server error", detail: String(e?.message || e) },
+      { status: 500 }
+    );
   }
 }
