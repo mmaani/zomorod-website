@@ -56,7 +56,6 @@ export default function LoginPage() {
           </form>
 
           <p className="note" style={{ marginTop: 12 }}>
-            Step 1: placeholder login. Step 2 adds real authentication + roles.
           </p>
         </section>
       </main>
