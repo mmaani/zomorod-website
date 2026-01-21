@@ -1,104 +1,146 @@
-import { db } from "./_lib/db.js";
-import { readJson } from "./_lib/http.js";
-import { requireAuth, requireRole } from "./_lib/rbac.js";
+import { getSql } from "./_lib/db.js";
+import { requireUser, canSeePurchasePrice } from "./_lib/requireAuth.js";
 
-export default {
-  async fetch(request) {
-    const a = requireAuth(request);
-    if (!a.ok) return a.response;
+export async function GET(request) {
+  const auth = await requireUser(request);
+  if (auth instanceof Response) return auth;
 
-    const sql = db();
+  const sql = getSql();
 
-    // LIST
-    if (request.method === "GET") {
-      const rows = await sql`
-        SELECT
-          p.id,
-          p.product_code,
-          pc.name AS category,
-          p.official_name,
-          p.market_name,
-          COALESCE(pp.base_selling_price_jod, 0) AS base_selling_price_jod,
+  // Products + category + inventory (from movements) + last purchase price/date (from batches)
+  const rows = await sql`
+    SELECT
+      p.id,
+      p.product_code,
+      c.name AS category,
+      p.official_name,
+      p.market_name,
+      p.default_sell_price_jod,
+      COALESCE(SUM(
+        CASE
+          WHEN m.movement_type IN ('IN','RETURN') THEN m.qty
+          WHEN m.movement_type = 'ADJ' THEN m.qty
+          WHEN m.movement_type = 'OUT' THEN -m.qty
+          ELSE 0
+        END
+      ), 0) AS on_hand_qty,
+      lp.purchase_price_jod AS last_purchase_price_jod,
+      lp.purchase_date AS last_purchase_date
+    FROM products p
+    LEFT JOIN product_categories c ON c.id = p.category_id
+    LEFT JOIN inventory_movements m ON m.product_id = p.id
+    LEFT JOIN LATERAL (
+      SELECT b.purchase_price_jod, b.purchase_date
+      FROM batches b
+      WHERE b.product_id = p.id
+      ORDER BY b.purchase_date DESC, b.id DESC
+      LIMIT 1
+    ) lp ON TRUE
+    GROUP BY p.id, c.name, lp.purchase_price_jod, lp.purchase_date
+    ORDER BY p.created_at DESC
+  `;
 
-          -- total received across batches
-          COALESCE(SUM(b.quantity_received), 0) AS qty_received,
+  // Load tiers
+  const tiers = await sql`
+    SELECT product_id, min_qty, unit_price_jod
+    FROM product_price_tiers
+    ORDER BY product_id, min_qty
+  `;
 
-          -- weighted average purchase price (from batches)
-          CASE
-            WHEN COALESCE(SUM(b.quantity_received),0) = 0 THEN 0
-            ELSE ROUND(SUM(b.purchase_price_jod * b.quantity_received) / SUM(b.quantity_received), 3)
-          END AS avg_purchase_price_jod
-        FROM products p
-        LEFT JOIN product_categories pc ON pc.id = p.category_id
-        LEFT JOIN product_pricing pp ON pp.product_id = p.id
-        LEFT JOIN batches b ON b.product_id = p.id
-        GROUP BY p.id, pc.name, pp.base_selling_price_jod
-        ORDER BY p.id DESC
-      `;
+  const tiersByProduct = new Map();
+  for (const t of tiers) {
+    const arr = tiersByProduct.get(t.product_id) || [];
+    arr.push({ minQty: t.min_qty, unitPriceJod: t.unit_price_jod });
+    tiersByProduct.set(t.product_id, arr);
+  }
 
-      const canSeePurchase = a.roles.includes("main") || a.roles.includes("doctor");
+  const showPurchase = canSeePurchasePrice(auth.roles);
 
-      const data = rows.map(r => {
-        const obj = {
-          id: r.id,
-          productCode: r.product_code,
-          category: r.category || null,
-          officialName: r.official_name,
-          marketName: r.market_name,
-          qtyReceived: Number(r.qty_received),
-          baseSellingPriceJod: Number(r.base_selling_price_jod),
-        };
-        if (canSeePurchase) obj.avgPurchasePriceJod = Number(r.avg_purchase_price_jod);
-        return obj;
-      });
+  const data = rows.map((r) => {
+    const item = {
+      id: r.id,
+      productCode: r.product_code,
+      category: r.category || "",
+      officialName: r.official_name,
+      marketName: r.market_name || "",
+      defaultSellPriceJod: r.default_sell_price_jod,
+      onHandQty: Number(r.on_hand_qty || 0),
+      priceTiers: tiersByProduct.get(r.id) || [],
+      lastPurchaseDate: r.last_purchase_date || null,
+      lastPurchasePriceJod: r.last_purchase_price_jod || null,
+    };
 
-      return Response.json({ ok: true, data });
+    if (!showPurchase) {
+      item.lastPurchaseDate = null;
+      item.lastPurchasePriceJod = null;
     }
 
-    // CREATE product (main only)
-    if (request.method === "POST") {
-      const r = requireRole(a.roles, ["main"]);
-      if (!r.ok) return r.response;
+    return item;
+  });
 
-      const body = (await readJson(request)) || {};
-      const productCode = String(body.productCode || "").trim();
-      const categoryName = String(body.category || "").trim();
-      const officialName = String(body.officialName || "").trim();
-      const marketName = String(body.marketName || "").trim();
-      const baseSellingPriceJod = Number(body.baseSellingPriceJod || 0);
+  return Response.json({ ok: true, products: data }, { status: 200 });
+}
 
-      if (!productCode || !officialName) {
-        return Response.json({ error: "productCode and officialName are required" }, { status: 400 });
-      }
+export async function POST(request) {
+  const auth = await requireUser(request, { rolesAny: ["main"] });
+  if (auth instanceof Response) return auth;
 
-      let categoryId = null;
-      if (categoryName) {
-        const [cat] = await sql`
-          INSERT INTO product_categories (name)
-          VALUES (${categoryName})
-          ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-          RETURNING id
-        `;
-        categoryId = cat.id;
-      }
+  const sql = getSql();
 
-      const [p] = await sql`
-        INSERT INTO products (product_code, category_id, official_name, market_name)
-        VALUES (${productCode}, ${categoryId}, ${officialName}, ${marketName || null})
-        RETURNING id
-      `;
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+  }
 
-      await sql`
-        INSERT INTO product_pricing (product_id, base_selling_price_jod)
-        VALUES (${p.id}, ${baseSellingPriceJod})
-        ON CONFLICT (product_id) DO UPDATE
-          SET base_selling_price_jod = EXCLUDED.base_selling_price_jod,
-              updated_at = NOW()
-      `;
+  const productCode = String(body?.productCode || "").trim();
+  const categoryName = String(body?.category || "").trim();
+  const officialName = String(body?.officialName || "").trim();
+  const marketName = String(body?.marketName || "").trim();
+  const defaultSellPriceJod = Number(body?.defaultSellPriceJod || 0);
+  const priceTiers = Array.isArray(body?.priceTiers) ? body.priceTiers : [];
 
-      return Response.json({ ok: true, id: p.id });
-    }
+  if (!productCode || !officialName) {
+    return Response.json(
+      { ok: false, error: "productCode and officialName are required" },
+      { status: 400 }
+    );
+  }
 
-    return Response.json({ error: "Method not allowed" }, { status: 405 });
-  },
-};
+  // Upsert category if provided
+  let categoryId = null;
+  if (categoryName) {
+    const catRows = await sql`
+      INSERT INTO product_categories (name)
+      VALUES (${categoryName})
+      ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+      RETURNING id
+    `;
+    categoryId = catRows[0].id;
+  }
+
+  const pRows = await sql`
+    INSERT INTO products (product_code, category_id, official_name, market_name, default_sell_price_jod)
+    VALUES (${productCode}, ${categoryId}, ${officialName}, ${marketName || null}, ${defaultSellPriceJod})
+    RETURNING id
+  `;
+
+  const productId = pRows[0].id;
+
+  // Insert tiers (optional)
+  for (const t of priceTiers) {
+    const minQty = Number(t?.minQty);
+    const unitPriceJod = Number(t?.unitPriceJod);
+    if (!Number.isFinite(minQty) || minQty <= 0) continue;
+    if (!Number.isFinite(unitPriceJod) || unitPriceJod <= 0) continue;
+
+    await sql`
+      INSERT INTO product_price_tiers (product_id, min_qty, unit_price_jod)
+      VALUES (${productId}, ${minQty}, ${unitPriceJod})
+      ON CONFLICT (product_id, min_qty) DO UPDATE SET unit_price_jod = EXCLUDED.unit_price_jod
+    `;
+  }
+
+  return Response.json({ ok: true, id: productId }, { status: 201 });
+}
