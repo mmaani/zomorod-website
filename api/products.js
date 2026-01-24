@@ -13,8 +13,11 @@ export async function GET(request) {
     const auth = await requireUser(request);
     if (auth instanceof Response) return auth;
 
-    const sql = getSql();
-    const rows = await sql`
+const sql = getSql();
+const url = new URL(request.url);
+const includeArchived = url.searchParams.get("includeArchived") === "1";
+
+const rows = await sql`
   SELECT
     p.id,
     p.product_code,
@@ -48,8 +51,7 @@ export async function GET(request) {
   LEFT JOIN LATERAL (
     SELECT b.purchase_price_jod, b.purchase_date
     FROM batches b
-    WHERE b.product_id = p.id
-      AND COALESCE(b.is_void, false) = false
+    WHERE b.product_id = p.id AND b.voided_at IS NULL
     ORDER BY b.purchase_date DESC, b.id DESC
     LIMIT 1
   ) lp ON TRUE
@@ -57,74 +59,17 @@ export async function GET(request) {
   LEFT JOIN LATERAL (
     SELECT
       CASE
-        WHEN SUM(b.quantity_received) > 0
-          THEN (SUM(b.quantity_received * b.purchase_price_jod) / SUM(b.quantity_received))
+        WHEN SUM(b.qty_received) > 0
+        THEN (SUM(b.qty_received * b.purchase_price_jod) / SUM(b.qty_received))
         ELSE NULL
       END AS avg_purchase_price_jod
     FROM batches b
-    WHERE b.product_id = p.id
-      AND COALESCE(b.is_void, false) = false
+    WHERE b.product_id = p.id AND b.voided_at IS NULL
   ) ap ON TRUE
 
   WHERE (${includeArchived} OR p.archived_at IS NULL)
   ORDER BY p.created_at DESC
 `;
-    const url = new URL(request.url);
-    const includeArchived = url.searchParams.get("includeArchived") === "1";
-
-    const rows = await sql`
-      SELECT
-        p.id,
-        p.product_code,
-        c.name AS category,
-        p.official_name,
-        p.market_name,
-        p.default_sell_price_jod,
-        p.archived_at,
-
-        COALESCE((
-          SELECT SUM(
-            CASE
-              WHEN m.movement_type IN ('IN','RETURN') THEN m.qty
-              WHEN m.movement_type = 'ADJ' THEN m.qty
-              WHEN m.movement_type = 'OUT' THEN -m.qty
-              ELSE 0
-            END
-          )
-          FROM inventory_movements m
-          WHERE m.product_id = p.id
-        ), 0) AS on_hand_qty,
-
-        lp.purchase_price_jod AS last_purchase_price_jod,
-        lp.purchase_date AS last_purchase_date,
-
-        ap.avg_purchase_price_jod AS avg_purchase_price_jod
-
-      FROM products p
-      LEFT JOIN product_categories c ON c.id = p.category_id
-
-      LEFT JOIN LATERAL (
-        SELECT b.purchase_price_jod, b.purchase_date
-        FROM batches b
-        WHERE b.product_id = p.id AND b.voided_at IS NULL
-        ORDER BY b.purchase_date DESC, b.id DESC
-        LIMIT 1
-      ) lp ON TRUE
-
-      LEFT JOIN LATERAL (
-        SELECT
-          CASE
-            WHEN SUM(b.qty_received) > 0
-            THEN (SUM(b.qty_received * b.purchase_price_jod) / SUM(b.qty_received))
-            ELSE NULL
-          END AS avg_purchase_price_jod
-        FROM batches b
-        WHERE b.product_id = p.id AND b.voided_at IS NULL
-      ) ap ON TRUE
-
-      WHERE (${includeArchived} OR p.archived_at IS NULL)
-      ORDER BY p.created_at DESC
-    `;
 
     const tiers = await sql`
       SELECT product_id, min_qty, unit_price_jod
