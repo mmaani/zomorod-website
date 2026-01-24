@@ -1,4 +1,5 @@
-import { verifyJwt, getBearerToken } from "../auth/auth.js";
+// Import JWT helpers from the root-level auth module.
+import { verifyJwt, getBearerToken } from "./auth.js";
 
 export async function requireUser(request, { rolesAny = null } = {}) {
   const token = getBearerToken(request);

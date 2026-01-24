@@ -1,14 +1,13 @@
-// api/batches.js
-import { getSql } from "./_lib/db.js";
-import { requireUser } from "./_lib/requireAuth.js";
+import { getSql } from '../db.js';
+import { requireUser } from '../requireAuth.js';
 
-export const config = { runtime: "nodejs" };
+export const config = { runtime: 'nodejs' };
 
 function toDateOrNull(s) {
-  const v = String(s || "").trim();
+  const v = String(s || '').trim();
   if (!v) return null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
-  return v; // DATE
+  return v;
 }
 
 function n(v) {
@@ -23,10 +22,10 @@ export async function GET(request) {
 
     const sql = getSql();
     const url = new URL(request.url);
-    const productId = n(url.searchParams.get("productId"));
+    const productId = n(url.searchParams.get('productId'));
 
     if (!productId) {
-      return Response.json({ ok: false, error: "productId is required" }, { status: 400 });
+      return Response.json({ ok: false, error: 'productId is required' }, { status: 400 });
     }
 
     const rows = await sql`
@@ -57,18 +56,18 @@ export async function GET(request) {
       purchasePriceJod: r.purchase_price_jod,
       supplierName: r.supplier_name,
       supplierInvoiceNo: r.supplier_invoice_no,
-      createdAt: r.created_at,
+      createdAt: r.created_at
     }));
 
     return Response.json({ ok: true, batches }, { status: 200 });
   } catch (err) {
-    console.error("GET /api/batches failed:", err);
-    return Response.json({ ok: false, error: "Server error" }, { status: 500 });
+    console.error('GET /api/batches failed:', err);
+    return Response.json({ ok: false, error: 'Server error' }, { status: 500 });
   }
 }
 
 export async function POST(request) {
-  const auth = await requireUser(request, { rolesAny: ["main"] });
+  const auth = await requireUser(request, { rolesAny: ['main'] });
   if (auth instanceof Response) return auth;
 
   const sql = getSql();
@@ -77,30 +76,27 @@ export async function POST(request) {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+    return Response.json({ ok: false, error: 'Invalid JSON body' }, { status: 400 });
   }
 
   const productId = n(body?.productId);
-  const lotNumber = String(body?.lotNumber || "").trim();
+  const lotNumber = String(body?.lotNumber || '').trim();
   const purchaseDate = toDateOrNull(body?.purchaseDate);
   const expiryDate = toDateOrNull(body?.expiryDate);
   const purchasePriceJod = n(body?.purchasePriceJod);
   const qtyReceived = n(body?.qtyReceived);
-  const supplierName = String(body?.supplierName || "").trim() || null;
-  const supplierInvoiceNo = String(body?.supplierInvoiceNo || "").trim() || null;
+  const supplierName = String(body?.supplierName || '').trim() || null;
+  const supplierInvoiceNo = String(body?.supplierInvoiceNo || '').trim() || null;
 
-  if (!productId) return Response.json({ ok: false, error: "productId is required" }, { status: 400 });
-  if (!lotNumber) return Response.json({ ok: false, error: "lotNumber is required" }, { status: 400 });
-  if (!purchaseDate) return Response.json({ ok: false, error: "purchaseDate must be YYYY-MM-DD" }, { status: 400 });
-  if (qtyReceived <= 0) return Response.json({ ok: false, error: "qtyReceived must be > 0" }, { status: 400 });
-  if (purchasePriceJod <= 0) return Response.json({ ok: false, error: "purchasePriceJod must be > 0" }, { status: 400 });
+  if (!productId) return Response.json({ ok: false, error: 'productId is required' }, { status: 400 });
+  if (!lotNumber) return Response.json({ ok: false, error: 'lotNumber is required' }, { status: 400 });
+  if (!purchaseDate) return Response.json({ ok: false, error: 'purchaseDate must be YYYY-MM-DD' }, { status: 400 });
+  if (qtyReceived <= 0) return Response.json({ ok: false, error: 'qtyReceived must be > 0' }, { status: 400 });
+  if (purchasePriceJod <= 0) return Response.json({ ok: false, error: 'purchasePriceJod must be > 0' }, { status: 400 });
 
   try {
     const result = await sql.begin(async (tx) => {
-      // warehouse default should be 1 (from migration) — but we keep it explicit in movements
       const warehouseId = 1;
-
-      // Find existing lot (same product + lot), ignoring voided
       const existing = await tx`
         SELECT id, qty_received, purchase_price_jod
         FROM batches
@@ -109,7 +105,6 @@ export async function POST(request) {
           AND COALESCE(is_void, false) = false
         LIMIT 1
       `;
-
       let batchId;
 
       if (existing.length) {
@@ -151,7 +146,6 @@ export async function POST(request) {
         batchId = ins[0].id;
       }
 
-      // Record inventory IN movement
       await tx`
         INSERT INTO inventory_movements (warehouse_id, product_id, movement_type, qty, batch_id, movement_date, note)
         VALUES (${warehouseId}, ${productId}, 'IN', ${qtyReceived}, ${batchId}, ${purchaseDate}, 'Receive batch')
@@ -162,20 +156,20 @@ export async function POST(request) {
 
     return Response.json({ ok: true, batchId: result.batchId }, { status: 201 });
   } catch (err) {
-    console.error("POST /api/batches failed:", err);
-    return Response.json({ ok: false, error: "Server error" }, { status: 500 });
+    console.error('POST /api/batches failed:', err);
+    return Response.json({ ok: false, error: 'Server error' }, { status: 500 });
   }
 }
 
 export async function DELETE(request) {
   try {
-    const auth = await requireUser(request, { rolesAny: ["main"] });
+    const auth = await requireUser(request, { rolesAny: ['main'] });
     if (auth instanceof Response) return auth;
 
     const sql = getSql();
     const url = new URL(request.url);
-    const id = n(url.searchParams.get("id"));
-    if (!id) return Response.json({ ok: false, error: "id is required" }, { status: 400 });
+    const id = n(url.searchParams.get('id'));
+    if (!id) return Response.json({ ok: false, error: 'id is required' }, { status: 400 });
 
     await sql.begin(async (tx) => {
       const rows = await tx`
@@ -185,7 +179,7 @@ export async function DELETE(request) {
         LIMIT 1
       `;
       if (!rows.length) {
-        throw new Error("BATCH_NOT_FOUND");
+        throw new Error('BATCH_NOT_FOUND');
       }
 
       const b = rows[0];
@@ -203,10 +197,10 @@ export async function DELETE(request) {
 
     return Response.json({ ok: true }, { status: 200 });
   } catch (err) {
-    if (String(err?.message) === "BATCH_NOT_FOUND") {
-      return Response.json({ ok: false, error: "Batch not found" }, { status: 404 });
+    if (String(err?.message) === 'BATCH_NOT_FOUND') {
+      return Response.json({ ok: false, error: 'Batch not found' }, { status: 404 });
     }
-    console.error("DELETE /api/batches failed:", err);
-    return Response.json({ ok: false, error: "Server error" }, { status: 500 });
+    console.error('DELETE /api/batches failed:', err);
+    return Response.json({ ok: false, error: 'Server error' }, { status: 500 });
   }
 }

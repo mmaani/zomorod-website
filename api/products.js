@@ -1,9 +1,7 @@
+import { getSql } from '../db.js';
+import { requireUser, canSeePurchasePrice } from '../requireAuth.js';
 
-// api/products.js
-import { getSql } from "./_lib/db.js";
-import { requireUser, canSeePurchasePrice } from "./_lib/requireAuth.js";
-
-export const config = { runtime: "nodejs" };
+export const config = { runtime: 'nodejs' };
 
 function n(v) {
   const x = Number(v);
@@ -16,9 +14,8 @@ export async function GET(request) {
     if (auth instanceof Response) return auth;
 
     const sql = getSql();
-
     const url = new URL(request.url);
-    const includeArchived = url.searchParams.get("includeArchived") === "1";
+    const includeArchived = url.searchParams.get('includeArchived') === '1';
 
     const rows = await sql`
       SELECT
@@ -90,59 +87,54 @@ export async function GET(request) {
     }
 
     const showPurchase = canSeePurchasePrice(auth.roles);
-
     const data = rows.map((r) => {
       const item = {
         id: r.id,
         productCode: r.product_code,
-        category: r.category || "",
+        category: r.category || '',
         officialName: r.official_name,
-        marketName: r.market_name || "",
+        marketName: r.market_name || '',
         defaultSellPriceJod: r.default_sell_price_jod,
         onHandQty: n(r.on_hand_qty),
         priceTiers: tiersByProduct.get(r.id) || [],
         archivedAt: r.archived_at || null,
-
         lastPurchaseDate: r.last_purchase_date || null,
         lastPurchasePriceJod: r.last_purchase_price_jod || null,
-        avgPurchasePriceJod: r.avg_purchase_price_jod || null,
+        avgPurchasePriceJod: r.avg_purchase_price_jod || null
       };
-
       if (!showPurchase) {
-        item.lastPurchaseDate = null;
+      item.lastPurchaseDate = null;
         item.lastPurchasePriceJod = null;
         item.avgPurchasePriceJod = null;
       }
-
       return item;
     });
 
     return Response.json({ ok: true, products: data }, { status: 200 });
   } catch (err) {
-    console.error("GET /api/products failed:", err);
-    return Response.json({ ok: false, error: "Server error" }, { status: 500 });
+    console.error('GET /api/products failed:', err);
+    return Response.json({ ok: false, error: 'Server error' }, { status: 500 });
   }
 }
 
 export async function POST(request) {
   try {
-    const auth = await requireUser(request, { rolesAny: ["main"] });
+    const auth = await requireUser(request, { rolesAny: ['main'] });
     if (auth instanceof Response) return auth;
 
     const sql = getSql();
-
     const body = await request.json().catch(() => null);
-    if (!body) return Response.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+    if (!body) return Response.json({ ok: false, error: 'Invalid JSON body' }, { status: 400 });
 
-    const productCode = String(body?.productCode || "").trim();
-    const categoryName = String(body?.category || "").trim();
-    const officialName = String(body?.officialName || "").trim();
-    const marketName = String(body?.marketName || "").trim();
+    const productCode = String(body?.productCode || '').trim();
+    const categoryName = String(body?.category || '').trim();
+    const officialName = String(body?.officialName || '').trim();
+    const marketName = String(body?.marketName || '').trim();
     const defaultSellPriceJod = Number(body?.defaultSellPriceJod || 0);
     const priceTiers = Array.isArray(body?.priceTiers) ? body.priceTiers : [];
 
     if (!productCode || !officialName) {
-      return Response.json({ ok: false, error: "productCode and officialName are required" }, { status: 400 });
+      return Response.json({ ok: false, error: 'productCode and officialName are required' }, { status: 400 });
     }
 
     let categoryId = null;
@@ -178,7 +170,88 @@ export async function POST(request) {
 
     return Response.json({ ok: true, id: productId }, { status: 201 });
   } catch (err) {
-    console.error("POST /api/products failed:", err);
-    return Response.json({ ok: false, error: "Server error" }, { status: 500 });
+    console.error('POST /api/products failed:', err);
+    return Response.json({ ok: false, error: 'Server error' }, { status: 500 });
+  }
+}
+
+// Toggle product archived/unarchived status.
+export async function PATCH(request) {
+  try {
+    const auth = await requireUser(request, { rolesAny: ['main'] });
+    if (auth instanceof Response) return auth;
+
+    const body = await request.json().catch(() => null);
+    const id = Number(body?.id);
+    const archived = typeof body?.archived === 'boolean' ? body.archived : null;
+    if (!id || archived === null) {
+      return Response.json({ ok: false, error: 'id and archived fields are required' }, { status: 400 });
+    }
+
+    const sql = getSql();
+    if (archived) {
+      const result = await sql`
+        UPDATE products
+        SET archived_at = NOW()
+        WHERE id = ${id}
+        RETURNING id
+      `;
+      if (!result.length) {
+        return Response.json({ ok: false, error: 'Product not found' }, { status: 404 });
+      }
+    } else {
+      const result = await sql`
+        UPDATE products
+        SET archived_at = NULL
+        WHERE id = ${id}
+        RETURNING id
+      `;
+      if (!result.length) {
+        return Response.json({ ok: false, error: 'Product not found' }, { status: 404 });
+      }
+    }
+
+    return Response.json({ ok: true }, { status: 200 });
+  } catch (err) {
+    console.error('PATCH /api/products failed:', err);
+    return Response.json({ ok: false, error: 'Server error' }, { status: 500 });
+  }
+}
+
+// Delete a product if it has no associated batches, price tiers, or inventory movements.
+export async function DELETE(request) {
+  try {
+    const auth = await requireUser(request, { rolesAny: ['main'] });
+    if (auth instanceof Response) return auth;
+
+    const url = new URL(request.url);
+    const id = Number(url.searchParams.get('id'));
+    if (!id) {
+      return Response.json({ ok: false, error: 'id is required' }, { status: 400 });
+    }
+
+    const sql = getSql();
+    const rows = await sql`
+      SELECT
+        (SELECT COUNT(*) FROM batches WHERE product_id = ${id} AND COALESCE(is_void, false) = false) AS batch_count,
+        (SELECT COUNT(*) FROM product_price_tiers WHERE product_id = ${id}) AS tier_count,
+        (SELECT COUNT(*) FROM inventory_movements WHERE product_id = ${id}) AS movement_count
+    `;
+    const dep = rows[0] || {};
+    if (Number(dep.batch_count) > 0 || Number(dep.tier_count) > 0 || Number(dep.movement_count) > 0) {
+      return Response.json(
+        { ok: false, error: 'Cannot delete product with existing batches, price tiers or inventory movements' },
+        { status: 400 }
+      );
+    }
+
+    const result = await sql`DELETE FROM products WHERE id = ${id} RETURNING id`;
+    if (!result.length) {
+      return Response.json({ ok: false, error: 'Product not found' }, { status: 404 });
+    }
+    return Response.json({ ok: true }, { status: 200 });
+  } catch (err) {
+    console.error('DELETE /api/products failed:', err);
+    return Response.json({ ok: false, error: 'Server error' }, { status: 500 });
   }
 }
