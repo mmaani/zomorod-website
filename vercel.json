@@ -1,10 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "@vercel/node@3"
-    }
-  },
+  // The functions section was removed. Vercel will now auto‑detect the Node.js runtime,
+  // which avoids the “Function Runtimes must have a valid version” build error.
   "rewrites": [
     {
       "source": "/api/(.*)",
