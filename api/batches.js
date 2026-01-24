@@ -11,21 +11,15 @@ function toDateOrNull(s) {
   return v;
 }
 
-async function getOrCreateMainWarehouse(sql) {
-  // Ensure there is at least one warehouse (schema requires it)
-  const existing = await sql`SELECT id FROM warehouses ORDER BY id ASC LIMIT 1`;
-  if (existing.length) return existing[0].id;
-
-  const ins = await sql`
-    INSERT INTO warehouses (name)
-    VALUES ('Main')
-    ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-    RETURNING id
-  `;
-  return ins[0].id;
+function n(v) {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
 }
 
-// GET /api/batches?productId=1&includeVoided=1
+/**
+ * GET /api/batches?productId=1&includeVoided=1
+ * (fixes your 405 error)
+ */
 export async function GET(request) {
   try {
     const auth = await requireUser(request);
@@ -34,39 +28,35 @@ export async function GET(request) {
     const sql = getSql();
     const url = new URL(request.url);
 
-    const productId = Number(url.searchParams.get("productId") || 0);
+    const productId = Number(url.searchParams.get("productId"));
     const includeVoided = url.searchParams.get("includeVoided") === "1";
 
     if (!productId) {
       return Response.json({ ok: false, error: "productId is required" }, { status: 400 });
     }
 
-    // NOTE: after migration we will have is_void + voided_at.
-    // Until then, COALESCE(is_void,false) will error if column doesn't exist.
-    // So we keep this query compatible by NOT referencing is_void unless it exists.
-    // -> After you run the migration below, you can keep it as-is.
     const rows = await sql`
       SELECT
-        b.id,
-        b.product_id,
-        b.warehouse_id,
-        b.lot_number,
-        b.purchase_date,
-        b.expiry_date,
-        b.purchase_price_jod,
-        b.quantity_received,
-        b.supplier_name,
-        b.supplier_invoice_no,
-        b.created_at,
-        ${includeVoided}::boolean AS _include_voided
-      FROM batches b
-      WHERE b.product_id = ${productId}
-      ORDER BY b.purchase_date DESC, b.id DESC
+        id,
+        product_id,
+        warehouse_id,
+        lot_number,
+        purchase_date,
+        expiry_date,
+        purchase_price_jod,
+        qty_received,
+        supplier_name,
+        supplier_invoice_no,
+        is_void,
+        voided_at,
+        created_at
+      FROM batches
+      WHERE product_id = ${productId}
+        AND (${includeVoided} OR COALESCE(is_void,false) = false)
+      ORDER BY purchase_date DESC, id DESC
     `;
 
-    // If migration added is_void, filter in JS safely:
-    // (We can’t SELECT is_void before migration without breaking.)
-    let out = rows.map((r) => ({
+    const data = rows.map((r) => ({
       id: r.id,
       productId: r.product_id,
       warehouseId: r.warehouse_id,
@@ -74,21 +64,21 @@ export async function GET(request) {
       purchaseDate: r.purchase_date,
       expiryDate: r.expiry_date,
       purchasePriceJod: r.purchase_price_jod,
-      qtyReceived: Number(r.quantity_received || 0),
+      qtyReceived: n(r.qty_received),
       supplierName: r.supplier_name || null,
       supplierInvoiceNo: r.supplier_invoice_no || null,
+      isVoid: !!r.is_void,
+      voidedAt: r.voided_at || null,
       createdAt: r.created_at,
     }));
 
-    // After migration you’ll update GET to read is_void + voided_at (I show that below).
-    return Response.json({ ok: true, batches: out }, { status: 200 });
+    return Response.json({ ok: true, batches: data }, { status: 200 });
   } catch (err) {
     console.error("GET /api/batches failed:", err);
     return Response.json({ ok: false, error: "Server error" }, { status: 500 });
   }
 }
 
-// POST /api/batches  (receive batch / lot; if same lot exists -> add qty + weighted avg)
 export async function POST(request) {
   try {
     const auth = await requireUser(request, { rolesAny: ["main"] });
@@ -112,6 +102,9 @@ export async function POST(request) {
     const supplierName = String(body?.supplierName || "").trim() || null;
     const supplierInvoiceNo = String(body?.supplierInvoiceNo || "").trim() || null;
 
+    // optional; schema defaults to 1 anyway
+    const warehouseId = Number(body?.warehouseId || 1);
+
     if (!Number.isFinite(productId) || productId <= 0) {
       return Response.json({ ok: false, error: "productId is required" }, { status: 400 });
     }
@@ -128,15 +121,14 @@ export async function POST(request) {
       return Response.json({ ok: false, error: "purchasePriceJod must be > 0" }, { status: 400 });
     }
 
-    const warehouseId = await getOrCreateMainWarehouse(sql);
-
-    // Find existing lot for same product+warehouse+lot
+    // Find existing (same product + warehouse + lot), ignore voided
     const existing = await sql`
-      SELECT id, quantity_received, purchase_price_jod
+      SELECT id, qty_received, purchase_price_jod
       FROM batches
       WHERE product_id = ${productId}
         AND warehouse_id = ${warehouseId}
         AND lot_number = ${lotNumber}
+        AND COALESCE(is_void,false) = false
       LIMIT 1
     `;
 
@@ -144,7 +136,7 @@ export async function POST(request) {
 
     if (existing.length) {
       const b = existing[0];
-      const oldQty = Number(b.quantity_received || 0);
+      const oldQty = n(b.qty_received);
       const oldPrice = Number(b.purchase_price_jod || 0);
 
       const newQty = oldQty + qtyReceived;
@@ -156,7 +148,7 @@ export async function POST(request) {
       const upd = await sql`
         UPDATE batches
         SET
-          quantity_received = ${newQty},
+          qty_received = ${newQty},
           purchase_price_jod = ${newAvg},
           purchase_date = ${purchaseDate},
           expiry_date = ${expiryDate},
@@ -170,7 +162,7 @@ export async function POST(request) {
       const ins = await sql`
         INSERT INTO batches (
           product_id, warehouse_id, lot_number, purchase_date, expiry_date,
-          purchase_price_jod, quantity_received, supplier_name, supplier_invoice_no
+          purchase_price_jod, qty_received, supplier_name, supplier_invoice_no
         )
         VALUES (
           ${productId}, ${warehouseId}, ${lotNumber}, ${purchaseDate}, ${expiryDate},
@@ -181,15 +173,10 @@ export async function POST(request) {
       batchId = ins[0].id;
     }
 
-    // Record inventory movement IN (schema requires warehouse_id)
+    // record inventory IN movement
     await sql`
-      INSERT INTO inventory_movements (
-        warehouse_id, product_id, batch_id, movement_type, qty, movement_date, note, created_by
-      )
-      VALUES (
-        ${warehouseId}, ${productId}, ${batchId}, 'IN', ${qtyReceived},
-        ${purchaseDate}::timestamptz, 'Receive batch', ${auth.userId ?? null}
-      )
+      INSERT INTO inventory_movements (warehouse_id, product_id, batch_id, movement_type, qty, movement_date, note, created_by)
+      VALUES (${warehouseId}, ${productId}, ${batchId}, 'IN', ${qtyReceived}, ${purchaseDate}, 'Receive batch', ${auth.userId || null})
     `;
 
     return Response.json({ ok: true, batchId }, { status: 201 });
@@ -198,3 +185,90 @@ export async function POST(request) {
     return Response.json({ ok: false, error: "Server error" }, { status: 500 });
   }
 }
+
+// Soft delete / void batch + reverse inventory
+export async function DELETE(request) {
+  try {
+    const auth = await requireUser(request, { rolesAny: ["main"] });
+    if (auth instanceof Response) return auth;
+
+    const sql = getSql();
+
+    const url = new URL(request.url);
+    const id = Number(url.searchParams.get("id"));
+
+    if (!Number.isFinite(id) || id <= 0) {
+      return Response.json({ ok: false, error: "id is required" }, { status: 400 });
+    }
+
+    const rows = await sql`
+      SELECT id, product_id, warehouse_id, qty_received, purchase_date
+      FROM batches
+      WHERE id = ${id} AND COALESCE(is_void,false) = false
+      LIMIT 1
+    `;
+    if (!rows.length) {
+      return Response.json({ ok: false, error: "Batch not found" }, { status: 404 });
+    }
+
+    const b = rows[0];
+    const qty = n(b.qty_received);
+
+    await sql`
+      UPDATE batches
+      SET is_void = true, voided_at = NOW()
+      WHERE id = ${id}
+    `;
+
+    if (qty > 0) {
+      await sql`
+        INSERT INTO inventory_movements (warehouse_id, product_id, batch_id, movement_type, qty, movement_date, note, created_by)
+        VALUES (${b.warehouse_id}, ${b.product_id}, ${id}, 'ADJ', ${-qty}, ${b.purchase_date}, 'Void batch (reverse)', ${auth.userId || null})
+      `;
+    }
+
+    return Response.json({ ok: true }, { status: 200 });
+  } catch (err) {
+    console.error("DELETE /api/batches failed:", err);
+    return Response.json({ ok: false, error: "Server error" }, { status: 500 });
+  }
+}
+export async function GET(request) {
+  try {
+    const auth = await requireUser(request, { rolesAny: ["main"] });
+    if (auth instanceof Response) return auth;
+
+    const sql = getSql();
+    const url = new URL(request.url);
+    const productId = Number(url.searchParams.get("productId"));
+
+    if (!Number.isFinite(productId) || productId <= 0) {
+      return Response.json({ ok: false, error: "productId is required" }, { status: 400 });
+    }
+
+    const rows = await sql`
+      SELECT
+        id,
+        product_id,
+        lot_number,
+        purchase_date,
+        expiry_date,
+        purchase_price_jod,
+        qty_received,
+        supplier_name,
+        supplier_invoice_no,
+        is_void,
+        voided_at,
+        created_at
+      FROM batches
+      WHERE product_id = ${productId}
+      ORDER BY purchase_date DESC, id DESC
+    `;
+
+    return Response.json({ ok: true, batches: rows }, { status: 200 });
+  } catch (err) {
+    console.error("GET /api/batches failed:", err);
+    return Response.json({ ok: false, error: "Server error" }, { status: 500 });
+  }
+}
+
