@@ -11,7 +11,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   React.useEffect(() => {
-    if (isLoggedIn()) navigate("/crm", { replace: true });
+    if (isLoggedIn()) navigate("/crm/dashboard", { replace: true });
   }, [navigate]);
 
   async function onSubmit(e) {
