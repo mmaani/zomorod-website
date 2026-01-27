@@ -1,8 +1,14 @@
 import { getSql } from "../lib/db.js";
 import { verifyPassword, signJwt } from "../lib/auth.js";
 
-// Vercel Serverless Function (Node-style)
 export default async function handler(req, res) {
+  // Allow CORS preflight (some browsers/envs send OPTIONS even on same-origin edge cases)
+  if (req.method === "OPTIONS") {
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+
   // Allow only POST
   if (req.method !== "POST") {
     res.statusCode = 405;
@@ -15,7 +21,6 @@ export default async function handler(req, res) {
     // Parse JSON body safely
     let body = req.body;
 
-    // In some cases req.body might be a string (depending on runtime)
     if (typeof body === "string") {
       try {
         body = JSON.parse(body);
