@@ -1,121 +1,126 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { apiFetch } from "../api.js";
-import { getUser } from "../auth.js";
-import "../crm.css";
+import { getUser, hasRole } from "../auth.js";
 
-function StatCard({ title, value, hint }) {
+function StatCard({ label, value, hint }) {
   return (
-    <div className="crm-card" style={{ padding: 16 }}>
-      <div className="crm-muted" style={{ fontSize: 13, marginBottom: 6 }}>{title}</div>
-      <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: 0.2 }}>{value}</div>
-      {hint ? <div className="crm-muted" style={{ fontSize: 12, marginTop: 6 }}>{hint}</div> : null}
+    <div className="crm-card stat-card">
+      <div className="stat-label">{label}</div>
+      <div className="stat-value">{value}</div>
+      {hint ? <div className="stat-hint">{hint}</div> : null}
     </div>
   );
 }
 
 export default function DashboardPage() {
   const user = getUser();
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState("");
-  const [stats, setStats] = React.useState({
+  const isMain = hasRole("main");
+
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+
+  const [stats, setStats] = useState({
     products: 0,
     suppliers: 0,
     clients: 0,
-    sales: 0,
+    onHandTotal: 0,
   });
 
-  React.useEffect(() => {
-    let mounted = true;
+  useEffect(() => {
+    let alive = true;
 
     async function load() {
       setLoading(true);
-      setError("");
+      setErr("");
 
       try {
-        // We intentionally compute stats using existing endpoints to avoid adding new serverless functions.
-        const [pRes, sRes, cRes, saRes] = await Promise.all([
-          apiFetch("/products"),
-          apiFetch("/suppliers"),
-          apiFetch("/clients"),
-          apiFetch("/sales"),
-        ]);
+        // Products
+        const pr = await apiFetch("/products");
+        const pj = await pr.json().catch(() => ({}));
+        if (!pr.ok || !pj.ok) throw new Error(pj.error || `Products HTTP ${pr.status}`);
+        const products = Array.isArray(pj.products) ? pj.products : [];
 
-        const pJson = pRes?.ok ? await pRes.json() : { ok: false };
-        const sJson = sRes?.ok ? await sRes.json() : { ok: false };
-        const cJson = cRes?.ok ? await cRes.json() : { ok: false };
-        const saJson = saRes?.ok ? await saRes.json() : { ok: false };
+        // Suppliers
+        let suppliers = [];
+        const sr = await apiFetch("/suppliers");
+        const sj = await sr.json().catch(() => ({}));
+        if (sr.ok && sj.ok) suppliers = sj.suppliers || [];
 
-        if (!mounted) return;
+        // Clients
+        let clients = [];
+        const cr = await apiFetch("/clients");
+        const cj = await cr.json().catch(() => ({}));
+        if (cr.ok && cj.ok) clients = cj.clients || [];
 
+        const onHandTotal = products.reduce((sum, p) => sum + (Number(p.onHandQty) || 0), 0);
+
+        if (!alive) return;
         setStats({
-          products: Array.isArray(pJson.products) ? pJson.products.length : 0,
-          suppliers: Array.isArray(sJson.suppliers) ? sJson.suppliers.length : 0,
-          clients: Array.isArray(cJson.clients) ? cJson.clients.length : 0,
-          sales: Array.isArray(saJson.sales) ? saJson.sales.length : 0,
+          products: products.length,
+          suppliers: suppliers.length,
+          clients: clients.length,
+          onHandTotal,
         });
       } catch (e) {
-        if (!mounted) return;
-        setError(String(e?.message || e));
+        if (!alive) return;
+        setErr(e?.message || "Failed to load dashboard");
       } finally {
-        if (mounted) setLoading(false);
+        if (alive) setLoading(false);
       }
     }
 
     load();
-    return () => { mounted = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  const fullName = user?.fullName || "Welcome";
-  const roles = Array.isArray(user?.roles) ? user.roles.join(", ") : "";
-
   return (
-    <div style={{ padding: 18, maxWidth: 1100, margin: "0 auto" }}>
-      <div className="crm-card" style={{ padding: 18, marginBottom: 16 }}>
-        <div style={{ fontSize: 22, fontWeight: 900 }}>
-          {fullName} 👋
-        </div>
-        <div className="crm-muted" style={{ marginTop: 6 }}>
-          {user?.email ? <>Signed in as <b>{user.email}</b></> : null}
-          {roles ? <> · Role: <b>{roles}</b></> : null}
-        </div>
-        <div className="crm-muted" style={{ marginTop: 10 }}>
-          ZOMOROD CRM helps you manage inventory (products + lots), suppliers, clients, and sales in one place.
-        </div>
-      </div>
-
-      {error ? (
-        <div className="crm-card" style={{ padding: 14, borderColor: "rgba(239,68,68,0.35)" }}>
-          <b>Dashboard error:</b> <span className="crm-muted">{error}</span>
-        </div>
-      ) : null}
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
-        <StatCard title="Products" value={loading ? "…" : stats.products} />
-        <StatCard title="Suppliers" value={loading ? "…" : stats.suppliers} />
-        <StatCard title="Clients" value={loading ? "…" : stats.clients} />
-        <StatCard title="Sales" value={loading ? "…" : stats.sales} hint="Records count (MVP)" />
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginTop: 12 }}>
-        <div className="crm-card" style={{ padding: 16 }}>
-          <div style={{ fontWeight: 800, marginBottom: 8 }}>Quick Actions</div>
-          <div className="crm-muted" style={{ marginBottom: 12 }}>Jump straight to common tasks.</div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <a className="crm-btn-outline" href="/crm/products">Manage Products</a>
-            <a className="crm-btn-outline" href="/crm/suppliers">Manage Suppliers</a>
-            <a className="crm-btn-outline" href="/crm/clients">Manage Clients</a>
-            <a className="crm-btn-outline" href="/crm/sales">Record Sales</a>
+    <div className="crm-wrap">
+      <div className="crm-card">
+        <div className="dash-head">
+          <div>
+            <h2 className="dash-title">Welcome back{user?.fullName ? `, ${user.fullName}` : ""} 👋</h2>
+            <div className="dash-sub">
+              You are logged in as <b>{user?.email || "-"}</b>
+              {user?.roles?.length ? (
+                <>
+                  {" "}
+                  • Roles: <b>{user.roles.join(", ")}</b>
+                </>
+              ) : null}
+            </div>
+          </div>
+          <div className="dash-brand-badge">
+            <span className="badge-strong">ZOMOROD</span>
+            <span className="badge-soft">CRM</span>
           </div>
         </div>
 
-        <div className="crm-card" style={{ padding: 16 }}>
-          <div style={{ fontWeight: 800, marginBottom: 8 }}>Identity & Compliance</div>
-          <div className="crm-muted">
-            Operating: Jordan (primary) · Expansion: Syria (planned)
-            <br />
-            Currency: JOD · Lot tracking enabled · Role-based access
-          </div>
+        <div className="dash-note">
+          <b>Zomorod Medical Supplies</b> • Inventory, Suppliers, Clients, and Sales tracking.
+          {isMain ? " You have admin access." : " Limited access mode."}
         </div>
+
+        {err ? <div className="banner">{err}</div> : null}
+        {loading ? <div className="muted">Loading dashboard…</div> : null}
+      </div>
+
+      <div className="dash-grid">
+        <StatCard label="Products" value={stats.products} hint="Active/archived based on view" />
+        <StatCard label="Suppliers" value={stats.suppliers} hint="Saved supplier profiles" />
+        <StatCard label="Clients" value={stats.clients} hint="Accounts & buyers" />
+        <StatCard label="Total On-Hand Units" value={stats.onHandTotal} hint="Sum of on-hand quantity across products" />
+      </div>
+
+      <div className="crm-card">
+        <h3 style={{ marginTop: 0 }}>Quick actions</h3>
+        <ul className="dash-actions">
+          <li>Go to <b>Products</b> to add SKUs and receive batches.</li>
+          <li>Go to <b>Suppliers</b> to maintain your supplier directory.</li>
+          <li>Go to <b>Clients</b> to manage customer profiles.</li>
+          <li>Go to <b>Sales</b> to record invoices and reduce stock (next step).</li>
+        </ul>
       </div>
     </div>
   );

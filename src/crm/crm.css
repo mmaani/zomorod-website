@@ -1,6 +1,45 @@
 /* ================================
    CRM Layout & Components
    ================================ */
+   :root{
+  --zms-emerald: #0f766e;   /* primary */
+  --zms-emerald-2: #0b5f59; /* hover */
+  --zms-ink: #0b1220;       /* dark text */
+  --zms-bg: #f6f8fb;        /* background */
+  --zms-card: #ffffff;      /* card */
+  --zms-border: #e6eaf2;    /* border */
+}
+
+body { background: var(--zms-bg); color: var(--zms-ink); }
+
+.crm-topbar{
+  background: var(--zms-card);
+  border-bottom: 1px solid var(--zms-border);
+}
+
+.crm-brand{
+  color: var(--zms-emerald);
+  font-weight: 800;
+}
+
+.crm-nav-link.active{
+  color: var(--zms-emerald);
+  border-bottom: 2px solid var(--zms-emerald);
+}
+
+.crm-btn{
+  background: var(--zms-emerald);
+  color: #fff;
+  border: 1px solid var(--zms-emerald);
+}
+
+.crm-btn:hover{ background: var(--zms-emerald-2); border-color: var(--zms-emerald-2); }
+.crm-btn-outline{
+  background: transparent;
+  color: var(--zms-emerald);
+  border: 1px solid var(--zms-emerald);
+}
+
 
 .crm-shell{
   min-height: 100vh;
