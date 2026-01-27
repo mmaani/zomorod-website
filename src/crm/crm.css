@@ -1,33 +1,38 @@
 /* =========================
-   ZOMOROD CRM — Dark + Green Identity (FIXED)
-   - Works with BOTH class systems:
-     (crm-*) + old shared classes (container/card/table/button/form)
-   - High readability (like styles.css)
-   - Dropdown options readable
+   ZOMOROD CRM — Brand UI (Dark + Green Identity)
+   Goals:
+   - Fix unreadable text (nav/dashboard/cards)
+   - Keep dark theme + green identity
+   - Keep dropdown option visibility fix
+   - Provide solid defaults for tables/forms/buttons
    ========================= */
 
 :root{
   /* Brand */
-  --z-primary: #0e8e32;
-  --z-primary-2: #03521e;
-  --z-accent: #d6b25e;
+  --z-primary: #0e8e32;        /* emerald */
+  --z-primary-2: #03521e;      /* deep green */
+  --z-accent: #54b764;         /* soft green */
 
-  /* Dark UI */
-  --z-bg: #07130c;
-  --z-surface: rgba(15, 27, 51, .55);     /* fallback if you still want a "night" card feel */
-  --z-surface-g: rgba(10, 24, 16, 0.78);  /* green-tinted surface */
-  --z-surface-2: rgba(10, 24, 16, 0.92);
+  /* Dark surfaces */
+  --z-bg: #06120b;
+  --z-surface: rgba(10, 28, 18, 0.78);
+  --z-surface-2: rgba(10, 28, 18, 0.92);
 
-  --z-text: rgba(255,255,255,.92);
-  --z-muted: rgba(255,255,255,.72);
-  --z-muted-2: rgba(255,255,255,.55);
+  /* Text (HIGH contrast) */
+  --z-text: rgba(255,255,255,0.94);
+  --z-text-strong: rgba(255,255,255,0.98);
+  --z-muted: rgba(255,255,255,0.72);
+  --z-muted-2: rgba(255,255,255,0.56);
 
-  --z-border: rgba(255,255,255,.12);
-  --z-shadow: 0 10px 30px rgba(0,0,0,.35);
+  /* Borders / shadows */
+  --z-border: rgba(255,255,255,0.14);
+  --z-border-2: rgba(255,255,255,0.10);
+  --z-shadow: 0 12px 34px rgba(0,0,0,0.42);
+
   --z-radius: 16px;
-  --z-radius-sm: 12px;
 
-  --z-focus: 0 0 0 3px rgba(14,142,50,0.22);
+  /* Focus */
+  --z-focus: 0 0 0 3px rgba(14,142,50,0.28);
 }
 
 *{ box-sizing: border-box; }
@@ -39,144 +44,19 @@ body{
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
   color: var(--z-text);
 
-  /* GREEN identity glow (no blue) */
+  /* Green identity glow (no blue) */
   background:
     radial-gradient(1100px 760px at 18% 10%, rgba(14,142,50,.22), transparent 58%),
-    radial-gradient(900px 620px at 88% 12%, rgba(3,82,30,.18), transparent 60%),
-    radial-gradient(760px 560px at 55% 92%, rgba(214,178,94,.10), transparent 62%),
-    var(--z-bg);
+    radial-gradient(900px 620px at 88% 12%, rgba(3,82,30,.20), transparent 60%),
+    radial-gradient(760px 560px at 55% 92%, rgba(84,183,100,.14), transparent 62%),
+    linear-gradient(180deg, #06120b, #050f09);
 }
 
 a{ color: inherit; text-decoration: none; }
-a:hover{ text-decoration: underline; }
+a:hover{ text-decoration: none; }
 
 /* =========================
-   COMPAT LAYER (old classes used in pages)
-   ========================= */
-
-.container{
-  width: min(1160px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 18px 0 40px;
-}
-
-.card{
-  background: var(--z-surface-g);
-  border: 1px solid var(--z-border);
-  border-radius: var(--z-radius);
-  box-shadow: var(--z-shadow);
-  padding: 16px;
-  backdrop-filter: blur(10px);
-}
-
-.table{
-  width: 100%;
-  overflow: auto;
-  border-radius: var(--z-radius);
-  border: 1px solid var(--z-border);
-  background: rgba(255,255,255,.03);
-}
-
-.table table{
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 760px;
-}
-
-.table th,
-.table td{
-  padding: 12px 12px;
-  border-bottom: 1px solid var(--z-border);
-  text-align: left;
-  vertical-align: top;
-}
-
-.table th{
-  position: sticky;
-  top: 0;
-  background: rgba(10, 24, 16, 0.90);
-  color: var(--z-muted);
-  font-size: 12px;
-  letter-spacing: .02em;
-  text-transform: uppercase;
-}
-
-.table tr:hover td{
-  background: rgba(255,255,255,.04);
-}
-
-/* Buttons used by ProductsPage (button/button--primary/button--ghost) */
-.button, button{
-  appearance: none;
-  border: 1px solid var(--z-border);
-  background: rgba(255,255,255,.06);
-  color: var(--z-text);
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: transform .05s ease, background .15s ease, border-color .15s ease, filter .15s ease;
-}
-
-.button:hover, button:hover{ background: rgba(255,255,255,.10); }
-.button:active, button:active{ transform: translateY(1px); }
-.button:focus, button:focus{ outline: none; box-shadow: var(--z-focus); }
-
-.button--primary{
-  border-color: rgba(14,142,50,0.45);
-  background: linear-gradient(180deg, rgba(14,142,50,.35), rgba(3,82,30,.18));
-  color: var(--z-text); /* IMPORTANT: keep text WHITE (your previous version made it dark) */
-}
-.button--primary:hover{ filter: brightness(1.04); }
-
-.button--ghost{
-  background: transparent;
-  border-color: rgba(255,255,255,.16);
-}
-.button--ghost:hover{
-  border-color: rgba(14,142,50,0.40);
-  background: rgba(14,142,50,0.10);
-}
-
-/* Forms used by Products/Suppliers/Sales pages */
-.form{
-  display: grid;
-  gap: 12px;
-}
-
-.field{
-  display: grid;
-  gap: 6px;
-}
-
-label{
-  display:block;
-  font-size: 13px;
-  color: var(--z-muted);
-  margin: 0 0 6px;
-}
-
-.list{
-  margin: 0;
-  padding-left: 18px;
-  color: var(--z-muted);
-}
-
-/* Helpers */
-.muted{ color: var(--z-muted); }
-.small{ font-size: 12px; color: var(--z-muted); }
-
-.banner{
-  border: 1px solid rgba(239, 68, 68, 0.28);
-  background: rgba(239, 68, 68, 0.10);
-  color: var(--z-text);
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin-top: 10px;
-}
-
-/* =========================
-   CRM SHELL / TOPBAR (crm-*)
+   Layout
    ========================= */
 .crm-shell{
   min-height: 100vh;
@@ -191,12 +71,31 @@ label{
   padding: 18px 16px 40px;
 }
 
+/* Compatibility (some pages use container/card/table/button) */
+.container{
+  max-width: 1160px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 18px 16px 40px;
+}
+.crm-wrap{
+  max-width: 1160px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 18px 16px 40px;
+}
+
+/* =========================
+   Topbar
+   ========================= */
 .crm-topbar{
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(10, 24, 16, 0.72);
+
+  background: rgba(8, 22, 14, 0.72);
   backdrop-filter: blur(10px);
+
   border-bottom: 1px solid var(--z-border);
 }
 
@@ -204,6 +103,7 @@ label{
   max-width: 1160px;
   margin: 0 auto;
   padding: 12px 16px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -231,18 +131,17 @@ label{
   display: grid;
   line-height: 1.05;
 }
-
 .crm-brand-text strong{
   font-weight: 900;
   letter-spacing: .02em;
-  color: var(--z-text);
+  color: var(--z-text-strong);
 }
-
 .crm-brand-text span{
   font-size: 12px;
   color: var(--z-muted);
 }
 
+/* Nav */
 .crm-nav{
   display: flex;
   gap: 8px;
@@ -253,26 +152,30 @@ label{
 
 .crm-nav-link{
   text-decoration: none;
-  padding: 8px 10px;
+  padding: 9px 11px;
   border-radius: 12px;
   border: 1px solid transparent;
-  color: var(--z-muted);
+
+  color: var(--z-text);           /* ✅ was too muted before */
+  opacity: .88;
   font-weight: 800;
   font-size: 14px;
 }
 
 .crm-nav-link:hover{
-  background: rgba(14,142,50,0.10);
-  border-color: rgba(14,142,50,0.22);
-  color: var(--z-text);
+  opacity: 1;
+  background: rgba(14,142,50,0.14);
+  border-color: rgba(14,142,50,0.30);
 }
 
 .crm-nav-link.active{
-  background: rgba(14,142,50,0.16);
-  border-color: rgba(14,142,50,0.30);
-  color: var(--z-text);
+  opacity: 1;
+  background: rgba(14,142,50,0.20);
+  border-color: rgba(14,142,50,0.38);
+  color: var(--z-text-strong);
 }
 
+/* User box */
 .crm-user{
   display: flex;
   align-items: center;
@@ -290,88 +193,73 @@ label{
 }
 
 /* =========================
-   Dashboard blocks (dash-*)
+   Cards / Banners
    ========================= */
-.dash-hero{
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.dash-title{
-  margin: 0;
-  font-size: 22px;
-  letter-spacing: .01em;
-  color: var(--z-text);
-}
-
-.dash-sub{
-  margin-top: 6px;
-  color: var(--z-muted);
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.badges{
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.badge{
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 12px;
+.crm-card, .card{
+  background: var(--z-surface);
   border: 1px solid var(--z-border);
-  font-weight: 900;
+  border-radius: var(--z-radius);
+  box-shadow: var(--z-shadow);
+  padding: 16px;
+}
+
+.muted{ color: var(--z-muted); }
+
+.banner{
+  border: 1px solid rgba(239, 68, 68, 0.30);
+  background: rgba(239, 68, 68, 0.12);
   color: var(--z-text);
-  background: rgba(255,255,255,.06);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-top: 10px;
 }
 
-.badge-strong{
-  background: rgba(14,142,50,0.18);
-  border-color: rgba(14,142,50,0.30);
-}
-
-.badge-soft{
-  background: rgba(255,255,255,0.06);
-  border-color: rgba(255,255,255,0.14);
-  color: var(--z-muted);
-}
-
-.dash-grid{
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-@media (max-width: 900px){
-  .dash-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 520px){
-  .dash-grid{ grid-template-columns: 1fr; }
-}
-
-.stat-label{
-  color: var(--z-muted);
-  font-size: 12px;
-  font-weight: 900;
-}
-.stat-value{
-  font-size: 28px;
-  font-weight: 950;
-  margin-top: 6px;
-  color: var(--z-text);
-}
-.stat-hint{
-  color: var(--z-muted);
-  font-size: 12px;
-  margin-top: 6px;
+/* Headings inside cards */
+.crm-card h1, .crm-card h2, .crm-card h3, .crm-card h4,
+.card h1, .card h2, .card h3, .card h4{
+  color: var(--z-text-strong);
 }
 
 /* =========================
-   Inputs / Dropdowns (visibility fix)
+   Buttons (supports crm-btn + button + button--*)
+   ========================= */
+.crm-btn, .button, button{
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 900;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font: inherit;
+}
+
+.crm-btn-primary, .button--primary{
+  background: linear-gradient(180deg, rgba(14,142,50,1), rgba(3,82,30,1));
+  color: rgba(255,255,255,0.96);         /* ✅ keep text readable */
+  box-shadow: var(--z-shadow);
+  border-color: rgba(14,142,50,0.38);
+}
+.crm-btn-primary:hover, .button--primary:hover{ filter: brightness(1.06); }
+
+.crm-btn-outline, .button--ghost{
+  background: rgba(255,255,255,0.06);
+  border-color: var(--z-border);
+  color: var(--z-text);
+}
+.crm-btn-outline:hover, .button--ghost:hover{
+  border-color: rgba(14,142,50,0.34);
+  background: rgba(14,142,50,0.12);
+}
+
+/* Make native buttons that aren’t classed still look ok */
+button:not(.crm-btn):not(.button){
+  background: rgba(255,255,255,0.06);
+  border-color: var(--z-border);
+  color: var(--z-text);
+}
+button:hover{ filter: brightness(1.05); }
+
+/* =========================
+   Forms / Inputs / Dropdowns
    ========================= */
 input, select, textarea{
   font: inherit;
@@ -389,34 +277,175 @@ input::placeholder, textarea::placeholder{
 
 input:focus, select:focus, textarea:focus{
   box-shadow: var(--z-focus);
-  border-color: rgba(14,142,50,0.35);
+  border-color: rgba(14,142,50,0.42);
 }
 
-/* IMPORTANT: dropdown popup options */
+/* IMPORTANT: dropdown popup options (fix gray/white unreadable issue) */
 select option{
   color: #0b1220 !important;
   background: #ffffff !important;
 }
 
-/* Remember-me row (used in login) */
+/* Login helpers (remember me row) */
 .crm-remember{
   margin-top: 6px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-
 .crm-check{
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--z-muted);
   user-select: none;
 }
-
 .crm-check input{
   width: 18px;
   height: 18px;
   accent-color: var(--z-primary);
+}
+
+/* =========================
+   Dashboard (restore the look)
+   ========================= */
+.dash-hero{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.dash-title{
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: .01em;
+  color: var(--z-text-strong);
+}
+
+.dash-sub{
+  margin-top: 6px;
+  color: var(--z-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.dash-sub b{ color: var(--z-text-strong); }
+
+.badges{
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.badge{
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  border: 1px solid var(--z-border);
+  font-weight: 950;
+  background: rgba(255,255,255,.06);
+  color: var(--z-text-strong);
+  letter-spacing: .02em;
+}
+.badge-strong{
+  background: rgba(14,142,50,0.22);
+  border-color: rgba(14,142,50,0.36);
+}
+.badge-soft{
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.12);
+  color: var(--z-muted);
+}
+
+.dash-grid{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 900px){
+  .dash-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px){
+  .dash-grid{ grid-template-columns: 1fr; }
+}
+
+.stat-label{
+  color: var(--z-muted);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .02em;
+  text-transform: none;
+}
+.stat-value{
+  font-size: 28px;
+  font-weight: 950;
+  margin-top: 6px;
+  color: var(--z-text-strong);
+}
+.stat-hint{
+  color: var(--z-muted-2);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.quick-grid{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 900px){
+  .quick-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px){
+  .quick-grid{ grid-template-columns: 1fr; }
+}
+
+.quick-card h4{ margin: 0 0 6px; color: var(--z-text-strong); }
+.quick-card p{ margin: 0 0 12px; color: var(--z-muted); font-size: 13px; line-height: 1.45; }
+.quick-card .crm-btn{ width: 100%; }
+
+/* =========================
+   Tables (make all tables readable)
+   ========================= */
+.table{
+  width: 100%;
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid var(--z-border);
+  background: rgba(255,255,255,0.03);
+}
+
+.table table{
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.table th, .table td{
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--z-border-2);
+  text-align: left;
+  vertical-align: top;
+  color: var(--z-text);
+}
+
+.table th{
+  font-size: 12px;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--z-muted);
+  background: rgba(255,255,255,0.04);
+}
+
+.table tr:hover td{
+  background: rgba(14,142,50,0.08);
+}
+
+/* Lists used inside tables */
+.list{ padding-left: 18px; }
+.list li{ color: var(--z-muted); }
+
+/* Reduce motion preference */
+@media (prefers-reduced-motion: reduce){
+  *{ scroll-behavior: auto !important; transition: none !important; }
 }
