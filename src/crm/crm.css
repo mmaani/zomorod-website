@@ -1,10 +1,10 @@
 /* =========================
-   ZOMOROD CRM — Brand UI
+   ZOMOROD CRM — Brand UI (Green Identity)
    Based on logo palette:
-   Emerald: #0e8e32
-   Deep Green: #03521e
-   Light Mint: #d9e8d5
-   Graphite: #394a4c
+   Emerald:   #0e8e32
+   Deep Green:#03521e
+   Mint:      #d9e8d5
+   Graphite:  #394a4c
    ========================= */
 
 :root{
@@ -12,7 +12,10 @@
   --z-primary-2: #03521e;
   --z-accent: #54b764;
 
-  --z-bg: #f6f8fb;
+  /* Background now GREEN-tinted (not blue) */
+  --z-bg: #f3fbf5;               /* very light mint */
+  --z-bg-2: #e9f6ec;             /* soft mint */
+
   --z-card: #ffffff;
   --z-text: #0b1220;
   --z-muted: #5b6770;
@@ -20,10 +23,24 @@
 
   --z-radius: 16px;
   --z-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+
+  --z-focus: 0 0 0 3px rgba(14,142,50,0.18);
 }
 
 * { box-sizing: border-box; }
-body { background: var(--z-bg); color: var(--z-text); margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  color: var(--z-text);
+
+  /* GREEN identity background glow */
+  background:
+    radial-gradient(1100px 700px at 15% 10%, rgba(14,142,50,0.14), transparent 58%),
+    radial-gradient(900px 600px at 88% 12%, rgba(84,183,100,0.10), transparent 60%),
+    radial-gradient(900px 700px at 55% 92%, rgba(3,82,30,0.08), transparent 62%),
+    linear-gradient(180deg, var(--z-bg), var(--z-bg-2));
+}
 
 a { color: inherit; }
 
@@ -61,6 +78,7 @@ a { color: inherit; }
   gap: 14px;
 }
 
+/* Brand */
 .crm-brand{
   display: flex;
   align-items: center;
@@ -115,7 +133,7 @@ a { color: inherit; }
 }
 
 .crm-nav-link.active{
-  background: rgba(14,142,50,0.10);
+  background: rgba(14,142,50,0.12);
   border-color: rgba(14,142,50,0.28);
   color: var(--z-primary-2);
 }
@@ -183,6 +201,38 @@ a { color: inherit; }
   margin-top: 10px;
 }
 
+/* ---------------------------------
+   ✅ Dropdown readability FIX
+   (Your issue: options appear gray/white and hard to see)
+   --------------------------------- */
+
+/* Make selects readable on the page */
+select,
+input,
+textarea{
+  font: inherit;
+  color: var(--z-text);
+}
+
+/* The option list (the popup) needs explicit colors */
+select option{
+  color: #0b1220 !important;      /* strong readable text */
+  background: #ffffff !important; /* white background */
+}
+
+/* Optional: nicer input styling (if your pages rely on default inputs) */
+select, input, textarea{
+  border: 1px solid var(--z-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  outline: none;
+}
+select:focus, input:focus, textarea:focus{
+  box-shadow: var(--z-focus);
+  border-color: rgba(14,142,50,0.35);
+}
+
 /* Dashboard */
 .dash-hero{
   display: flex;
@@ -209,6 +259,7 @@ a { color: inherit; }
   gap: 8px;
   align-items: center;
 }
+
 .badge{
   border-radius: 999px;
   padding: 6px 10px;
@@ -216,11 +267,13 @@ a { color: inherit; }
   border: 1px solid var(--z-border);
   font-weight: 800;
 }
+
 .badge-strong{
   background: rgba(14,142,50,0.12);
   border-color: rgba(14,142,50,0.25);
   color: var(--z-primary-2);
 }
+
 .badge-soft{
   background: rgba(57,74,76,0.08);
   border-color: rgba(57,74,76,0.18);
@@ -233,9 +286,11 @@ a { color: inherit; }
   gap: 12px;
   margin-top: 12px;
 }
+
 @media (max-width: 900px){
   .dash-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
 @media (max-width: 520px){
   .dash-grid{ grid-template-columns: 1fr; }
 }
@@ -250,12 +305,15 @@ a { color: inherit; }
   gap: 12px;
   margin-top: 12px;
 }
+
 @media (max-width: 900px){
   .quick-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
 @media (max-width: 520px){
   .quick-grid{ grid-template-columns: 1fr; }
 }
+
 .quick-card h4{ margin: 0 0 6px; }
 .quick-card p{ margin: 0 0 12px; color: var(--z-muted); font-size: 13px; }
 .quick-card .crm-btn{ width: 100%; }
