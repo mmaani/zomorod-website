@@ -1,15 +1,19 @@
+import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import MarketingPage from "./marketing/MarketingPage.jsx";
 
+import CRMLayout from "./crm/CRMLayout.jsx";
 import LoginPage from "./crm/LoginPage.jsx";
 import ProtectedRoute from "./crm/ProtectedRoute.jsx";
-import CRMLayout from "./crm/CRMLayout.jsx";
 
 import DashboardPage from "./crm/pages/DashboardPage.jsx";
 import ProductsPage from "./crm/pages/ProductsPage.jsx";
 import ClientsPage from "./crm/pages/ClientsPage.jsx";
 import SalesPage from "./crm/pages/SalesPage.jsx";
+
+// If you created SuppliersPage already, import it. If not, comment it out.
+// import SuppliersPage from "./crm/pages/SuppliersPage.jsx";
 
 export default function App() {
   return (
@@ -18,10 +22,13 @@ export default function App() {
         {/* Marketing site */}
         <Route path="/" element={<MarketingPage />} />
 
-        {/* Auth */}
-        <Route path="/login" element={<LoginPage />} />
+        {/* IMPORTANT: redirect old login to CRM login */}
+        <Route path="/login" element={<Navigate to="/crm/login" replace />} />
 
-        {/* CRM (protected) */}
+        {/* CRM auth */}
+        <Route path="/crm/login" element={<LoginPage />} />
+
+        {/* CRM protected routes */}
         <Route
           path="/crm"
           element={
@@ -30,11 +37,12 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-             <Route path="dashboard" element={<DashboardPage />} />
-             <Route path="products" element={<ProductsPage />} />
-            <Route path="suppliers" element={<SuppliersPage />} />
-            <Route path="clients" element={<ClientsPage />} />
-            <Route path="sales" element={<SalesPage />} />
+          <Route index element={<Navigate to="/crm/dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="products" element={<ProductsPage />} />
+          <Route path="clients" element={<ClientsPage />} />
+          <Route path="sales" element={<SalesPage />} />
+          {/* <Route path="suppliers" element={<SuppliersPage />} /> */}
         </Route>
 
         {/* Fallback */}
