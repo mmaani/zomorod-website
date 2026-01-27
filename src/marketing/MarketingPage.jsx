@@ -70,9 +70,9 @@ export default function MarketingPage() {
           Headquartered in Amman, we distribute medical supplies throughout Jordan’s hospitals,
           clinics and laboratories and support partners across the wider Middle East. Jordan devotes
           around nine percent of its GDP to healthcare and operates more than one hundred hospitals,
-          giving the country one of the region’s strongest healthcare infrastructures:contentReference[oaicite:0]{index=0}.
+          giving the country one of the region’s strongest healthcare infrastructures.
           This foundation, along with Jordan’s reputation as a regional healthcare leader and medical
-          tourism destination:contentReference[oaicite:1]{index=1}, allows us to efficiently deliver our products wherever
+          tourism destination, allows us to efficiently deliver our products wherever
           they are needed.
         </p>
         <p>
@@ -89,7 +89,7 @@ export default function MarketingPage() {
         <ul style={{ listStyle: "disc", paddingLeft: "20px", lineHeight: 1.8 }}>
           <li>
             <strong>Quality assurance:</strong> We source from reputable manufacturers and
-            inspect every shipment to ensure products meet international standards:contentReference[oaicite:2]{index=2}.
+            inspect every shipment to ensure products meet international standards.
           </li>
           <li>
             <strong>Complete documentation:</strong> All consumables and equipment include certificates
@@ -101,7 +101,7 @@ export default function MarketingPage() {
           </li>
           <li>
             <strong>Reliable distribution:</strong> We provide timely delivery to hospitals, clinics and
-            distributors across Jordan, backed by local after‑sales support:contentReference[oaicite:3]{index=3}.
+            distributors across Jordan, backed by local after‑sales support.
           </li>
         </ul>
       </section>
