@@ -1,59 +1,57 @@
-import { Outlet, useNavigate, NavLink } from "react-router-dom";
-import { logout as doLogout } from "./auth";
+import React from "react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { logout as doLogout, getUser } from "./auth.js";
 
 export default function CRMLayout() {
   const nav = useNavigate();
-
+  const user = getUser();
 
   function handleLogout() {
-        <NavLink to="/crm/products" className={navLinkClass} end>Products</NavLink>
-        <NavLink to="/crm/suppliers" className={navLinkClass}>Suppliers</NavLink>
     doLogout();
-    nav("/login", { replace: true });
-
+    nav("/crm/login", { replace: true });
   }
-  
-  const linkClass = ({ isActive }) =>
-    `nav__link ${isActive ? "is-active" : ""}`;
+
+  const navLinkClass = ({ isActive }) =>
+    "crm-nav-link" + (isActive ? " active" : "");
 
   return (
-    <div className="crm page">
-      <header className="crm-topbar header">
-        <button
-          type="button"
-          className="brand"
-          onClick={() => nav("/crm")}
-          aria-label="Go to CRM dashboard"
-        >
-          <div>
-            <h1 className="brand__title">Zomorod CRM</h1>
-            <p className="brand__tagline">Inventory • Clients • Sales</p>
-          </div>
-        </button>
+    <div className="crm-shell">
+      <header className="crm-topbar">
+        <div className="crm-brand" onClick={() => nav("/crm/dashboard")}>
+          ZOMOROD CRM
+        </div>
 
-        <div className="header__right">
-          <nav className="nav" aria-label="CRM">
-            <NavLink className={linkClass} to="/crm" end>
-              Dashboard
-            </NavLink>
-            <NavLink className={linkClass} to="/crm/products">
-              Products
-            </NavLink>
-            <NavLink className={linkClass} to="/crm/clients">
-              Clients
-            </NavLink>
-            <NavLink className={linkClass} to="/crm/sales">
-              Sales
-            </NavLink>
-          </nav>
+        <nav className="crm-nav">
+          <NavLink to="/crm/dashboard" className={navLinkClass} end>
+            Dashboard
+          </NavLink>
 
-          <button className="button button--ghost" type="button" onClick={handleLogout}>
+          <NavLink to="/crm/products" className={navLinkClass}>
+            Products
+          </NavLink>
+
+          <NavLink to="/crm/suppliers" className={navLinkClass}>
+            Suppliers
+          </NavLink>
+
+          <NavLink to="/crm/clients" className={navLinkClass}>
+            Clients
+          </NavLink>
+
+          <NavLink to="/crm/sales" className={navLinkClass}>
+            Sales
+          </NavLink>
+        </nav>
+
+        <div className="crm-user">
+          <span className="crm-user-email">{user?.email || ""}</span>
+          <button className="crm-btn crm-btn-outline" onClick={handleLogout}>
             Logout
           </button>
         </div>
       </header>
 
-      <main className="crm-main main">
+      <main className="crm-content">
         <Outlet />
       </main>
     </div>
