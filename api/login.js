@@ -1,5 +1,7 @@
 import { getSql } from "../lib/db.js";
-import { verifyPassword, signJwt } from "../lib/auth.js";
+import { verifyPassword } from "../lib/auth.js";
+import { signJwt } from "../lib/jwt.js";
+
 
 export const config = { runtime: "nodejs" };
 
