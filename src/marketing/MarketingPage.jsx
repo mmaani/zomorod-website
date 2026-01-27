@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 const COPY = {
   en: {
     dir: "ltr",
-    langLabel: "AR",
+    langLabel: "عربي",
     brandName: "Zomorod Medical Supplies LLC",
     tagline: "Your trusted partner for high-quality medical consumables and supplies in Jordan.",
     ctaStaff: "Staff Login",
