@@ -4,11 +4,15 @@ import { logout as doLogout } from "./auth";
 export default function CRMLayout() {
   const nav = useNavigate();
 
+
   function handleLogout() {
+        <NavLink to="/crm/products" className={navLinkClass} end>Products</NavLink>
+        <NavLink to="/crm/suppliers" className={navLinkClass}>Suppliers</NavLink>
     doLogout();
     nav("/login", { replace: true });
-  }
 
+  }
+  
   const linkClass = ({ isActive }) =>
     `nav__link ${isActive ? "is-active" : ""}`;
 

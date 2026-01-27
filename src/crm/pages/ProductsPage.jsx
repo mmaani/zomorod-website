@@ -458,11 +458,23 @@ export default function ProductsPage() {
             </div>
 
             <div className="field">
-              <label>Supplier Name (optional)</label>
-              <input
-                value={bForm.supplierName}
-                onChange={(e) => setBForm((s) => ({ ...s, supplierName: e.target.value }))}
-              />
+              <label>Supplier Name </label>
+              <select
+ value={bForm.supplierId || ""}
+       onChange={(e) => setBForm({ ...bForm, supplierId: e.target.value ? Number(e.target.value) : null })}
+     >
+       <option value="">Select supplier...</option>
+       {suppliers.map((s) => (
+         <option key={s.id} value={s.id}>{s.name}</option>
+       ))}
+     </select>
+     <input
+       placeholder="Supplier Name (optional)"
+       value={bForm.supplierName}
+       onChange={(e) => setBForm({ ...bForm, supplierName: e.target.value })}
+     />
+
+
             </div>
 
             <div className="field">

@@ -30,10 +30,11 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<DashboardPage />} />
-          <Route path="products" element={<ProductsPage />} />
-          <Route path="clients" element={<ClientsPage />} />
-          <Route path="sales" element={<SalesPage />} />
+             <Route path="dashboard" element={<DashboardPage />} />
+             <Route path="products" element={<ProductsPage />} />
+            <Route path="suppliers" element={<SuppliersPage />} />
+            <Route path="clients" element={<ClientsPage />} />
+            <Route path="sales" element={<SalesPage />} />
         </Route>
 
         {/* Fallback */}

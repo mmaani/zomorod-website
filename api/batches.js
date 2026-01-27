@@ -68,6 +68,10 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  
+ const supplierId = n(body?.supplierId);
+ const supplierId = n(body?.supplierId);
+
   const auth = await requireUser(request, { rolesAny: ['main'] });
   if (auth instanceof Response) return auth;
 
@@ -97,6 +101,15 @@ export async function POST(request) {
 
   try {
     const result = await sql.begin(async (tx) => {
+
+ INSERT INTO batches (
+          product_id, warehouse_id, lot_number, purchase_date, expiry_date,
+         purchase_price_jod, qty_received, supplier_name, supplier_invoice_no, supplier_id
+        )
+        VALUES (
+          ${productId}, ${warehouseId}, ${lotNumber}, ${purchaseDate}, ${expiryDate},
+          ${purchasePriceJod}, ${qtyReceived}, ${supplierName}, ${supplierInvoiceNo}, ${supplierId || null}
+        )
       const warehouseId = 1;
       const existing = await tx`
         SELECT id, qty_received, purchase_price_jod
@@ -160,6 +173,7 @@ export async function POST(request) {
     console.error('POST /api/batches failed:', err);
     return Response.json({ ok: false, error: 'Server error' }, { status: 500 });
   }
+  
 }
 
 export async function DELETE(request) {

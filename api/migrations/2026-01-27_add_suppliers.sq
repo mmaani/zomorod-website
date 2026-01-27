@@ -1,0 +1,32 @@
+-- 1) suppliers table
+CREATE TABLE IF NOT EXISTS suppliers (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  phone TEXT,
+  email TEXT,
+  address TEXT,
+  notes TEXT,
+  is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 2) batches.supplier_id column
+ALTER TABLE batches
+ADD COLUMN IF NOT EXISTS supplier_id INTEGER;
+
+-- 3) FK constraint (safe-add)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'batches_supplier_id_fkey'
+  ) THEN
+    ALTER TABLE batches
+    ADD CONSTRAINT batches_supplier_id_fkey
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+    ON DELETE SET NULL;
+  END IF;
+END$$;
+
+-- Helpful index
+CREATE INDEX IF NOT EXISTS idx_batches_supplier_id ON batches(supplier_id);
