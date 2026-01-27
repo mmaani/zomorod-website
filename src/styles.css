@@ -1,43 +1,56 @@
 /* ================================
-   Global Design System (Marketing + CRM base)
+   Global Design System (Marketing + CRM base) — ZOMOROD Theme
    ================================ */
 
 :root{
-  --bg: #0b1220;
-  --surface: #0f1b33;
-  --surface-2: #14264a;
-  --text: #e8eefc;
-  --muted: rgba(232,238,252,.72);
-  --muted-2: rgba(232,238,252,.55);
-  --border: rgba(232,238,252,.14);
+  /* Core */
+  --bg: #0b1220;                 /* deep night */
+  --surface: #0f1b33;            /* card base */
+  --surface-2: #14264a;          /* elevated */
+  --text: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.72);
+  --muted-2: rgba(255,255,255,.55);
+  --border: rgba(255,255,255,.12);
 
-  --brand: #38bdf8;         /* cyan */
-  --brand-2: #22c55e;       /* green */
+  /* ZOMOROD Brand (from logo feel) */
+  --brand: #0ea371;              /* emerald */
+  --brand-2: #0a7f59;            /* deeper emerald */
+  --accent: #d6b25e;             /* gold accent */
+
+  /* States */
   --warn: #f59e0b;
   --danger: #ef4444;
 
+  /* Effects */
   --shadow: 0 10px 30px rgba(0,0,0,.35);
   --radius: 14px;
   --radius-sm: 10px;
 
-  --focus: 0 0 0 3px rgba(56,189,248,.25);
+  /* Focus ring uses emerald */
+  --focus: 0 0 0 3px rgba(14,163,113,.25);
 
   --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
 *{ box-sizing: border-box; }
 html, body{ height: 100%; }
+
 body{
   margin: 0;
   font-family: var(--font);
-  background: radial-gradient(1200px 800px at 20% 10%, rgba(56,189,248,.12), transparent 55%),
-              radial-gradient(900px 650px at 90% 10%, rgba(34,197,94,.10), transparent 50%),
-              var(--bg);
   color: var(--text);
   line-height: 1.5;
+
+  /* Brand background glow: emerald + gold (matches identity) */
+  background:
+    radial-gradient(1100px 760px at 18% 10%, rgba(14,163,113,.18), transparent 58%),
+    radial-gradient(900px 620px at 88% 12%, rgba(214,178,94,.12), transparent 58%),
+    radial-gradient(720px 520px at 70% 85%, rgba(10,127,89,.10), transparent 60%),
+    var(--bg);
 }
 
 img{ max-width: 100%; height: auto; display: block; }
+
 a{ color: var(--brand); text-decoration: none; }
 a:hover{ text-decoration: underline; }
 
@@ -46,6 +59,7 @@ a:hover{ text-decoration: underline; }
   margin: 0 auto;
 }
 
+/* Cards */
 .card{
   background: rgba(15,27,51,.85);
   border: 1px solid var(--border);
@@ -68,6 +82,7 @@ a:hover{ text-decoration: underline; }
 .h2{ font-size: clamp(22px, 2.4vw, 30px); margin: 0 0 10px; }
 .p{ color: var(--muted); margin: 0 0 12px; }
 
+/* Badges */
 .badge{
   display: inline-flex;
   align-items: center;
@@ -76,64 +91,82 @@ a:hover{ text-decoration: underline; }
   border-radius: 999px;
   font-size: 12px;
   border: 1px solid var(--border);
-  background: rgba(232,238,252,.06);
+  background: rgba(255,255,255,.06);
   color: var(--text);
+}
+
+/* Optional strong/soft badge variants */
+.badge-strong{
+  background: rgba(14,163,113,.18);
+  border-color: rgba(14,163,113,.30);
+  color: rgba(255,255,255,.92);
+}
+.badge-gold{
+  background: rgba(214,178,94,.14);
+  border-color: rgba(214,178,94,.30);
+  color: rgba(255,255,255,.90);
 }
 
 /* Buttons */
 .btn{
   appearance: none;
   border: 1px solid var(--border);
-  background: rgba(232,238,252,.06);
+  background: rgba(255,255,255,.06);
   color: var(--text);
   border-radius: 12px;
   padding: 10px 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform .05s ease, background .15s ease, border-color .15s ease;
+  transition: transform .05s ease, background .15s ease, border-color .15s ease, filter .15s ease;
   user-select: none;
 }
-.btn:hover{ background: rgba(232,238,252,.10); }
+
+.btn:hover{ background: rgba(255,255,255,.10); }
 .btn:active{ transform: translateY(1px); }
 .btn:focus{ outline: none; box-shadow: var(--focus); }
 
 .btn-primary{
-  border-color: rgba(56,189,248,.35);
-  background: linear-gradient(180deg, rgba(56,189,248,.28), rgba(56,189,248,.16));
+  border-color: rgba(14,163,113,.45);
+  background: linear-gradient(180deg, rgba(14,163,113,.28), rgba(10,127,89,.16));
 }
-.btn-success{
-  border-color: rgba(34,197,94,.35);
-  background: linear-gradient(180deg, rgba(34,197,94,.26), rgba(34,197,94,.14));
+.btn-primary:hover{ filter: brightness(1.03); }
+
+.btn-accent{
+  border-color: rgba(214,178,94,.40);
+  background: linear-gradient(180deg, rgba(214,178,94,.20), rgba(214,178,94,.10));
 }
 .btn-danger{
   border-color: rgba(239,68,68,.35);
   background: linear-gradient(180deg, rgba(239,68,68,.22), rgba(239,68,68,.12));
 }
-.btn-ghost{
-  background: transparent;
-}
-.btn:disabled{
-  opacity: .55;
-  cursor: not-allowed;
-}
+.btn-ghost{ background: transparent; }
+.btn:disabled{ opacity: .55; cursor: not-allowed; }
 
 /* Inputs */
 .input, select, textarea{
   width: 100%;
   border: 1px solid var(--border);
-  background: rgba(232,238,252,.05);
+  background: rgba(255,255,255,.05);
   color: var(--text);
   border-radius: 12px;
   padding: 10px 12px;
   outline: none;
 }
+
 .input:focus, select:focus, textarea:focus{
   box-shadow: var(--focus);
-  border-color: rgba(56,189,248,.35);
+  border-color: rgba(14,163,113,.40);
 }
-label{ display:block; font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+
+label{
+  display:block;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
 
 .field{ display: grid; gap: 6px; }
+
 .grid{
   display: grid;
   gap: 12px;
@@ -150,19 +183,22 @@ label{ display:block; font-size: 13px; color: var(--muted); margin: 0 0 6px; }
   overflow: auto;
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  background: rgba(15,27,51,.6);
+  background: rgba(15,27,51,.60);
 }
+
 table{
   width: 100%;
   border-collapse: collapse;
   min-width: 760px; /* keeps columns readable on desktop, scrolls on mobile */
 }
+
 th, td{
   padding: 12px 12px;
   border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: top;
 }
+
 th{
   position: sticky;
   top: 0;
@@ -172,10 +208,20 @@ th{
   letter-spacing: .02em;
   text-transform: uppercase;
 }
-tr:hover td{ background: rgba(232,238,252,.04); }
+
+tr:hover td{ background: rgba(255,255,255,.04); }
 
 /* Small helpers */
 .row{ display:flex; gap: 10px; align-items:center; flex-wrap: wrap; }
 .spacer{ flex: 1; }
 .muted{ color: var(--muted); }
 .small{ font-size: 12px; color: var(--muted); }
+
+/* Nice-to-have: subtle banners */
+.banner{
+  border: 1px solid rgba(239,68,68,.28);
+  background: rgba(239,68,68,.10);
+  color: rgba(255,255,255,.92);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
