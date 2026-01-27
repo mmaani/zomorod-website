@@ -1,5 +1,6 @@
-import { getSql } from './lib/db.js';
-import { verifyPassword, signJwt } from './lib/auth.js';
+import { getSql } from '../lib/db.js';
+import { verifyPassword, signJwt } from '../lib/auth.js';
+
 
 
 export async function POST(request) {

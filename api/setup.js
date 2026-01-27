@@ -1,5 +1,6 @@
-import { getSql } from './lib/db.js';
-import { hashPassword } from './lib/auth.js';
+import { getSql } from '../lib/db.js';
+import { verifyPassword, signJwt } from '../lib/auth.js';
+
 
 // This endpoint initializes the database with default roles and users.
 // It expects a JSON body containing `main`, `doctor`, and `general` user definitions
