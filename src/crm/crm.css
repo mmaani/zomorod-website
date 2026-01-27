@@ -1,10 +1,10 @@
 /* =========================
-   ZOMOROD CRM — Brand UI (Green Identity)
-   Based on logo palette:
-   Emerald:   #0e8e32
-   Deep Green:#03521e
-   Mint:      #d9e8d5
-   Graphite:  #394a4c
+   ZOMOROD CRM — Clean Brand UI (Green Identity)
+   Palette:
+   Emerald:    #0e8e32
+   Deep Green: #03521e
+   Mint:       #d9e8d5
+   Graphite:   #394a4c
    ========================= */
 
 :root{
@@ -12,13 +12,14 @@
   --z-primary-2: #03521e;
   --z-accent: #54b764;
 
-  /* Background now GREEN-tinted (not blue) */
-  --z-bg: #f3fbf5;               /* very light mint */
-  --z-bg-2: #e9f6ec;             /* soft mint */
+  /* Clean neutral background (NOT mint-tinted) */
+  --z-bg: #ffffff;
+  --z-bg-2: #f6f8fb;  /* very light neutral gray */
 
   --z-card: #ffffff;
   --z-text: #0b1220;
   --z-muted: #5b6770;
+
   --z-border: rgba(15, 23, 42, 0.10);
 
   --z-radius: 16px;
@@ -29,20 +30,19 @@
 
 * { box-sizing: border-box; }
 
-body {
+body{
   margin: 0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
   color: var(--z-text);
 
-  /* GREEN identity background glow */
+  /* Neutral base + subtle green identity glow (not “green page”) */
   background:
-    radial-gradient(1100px 700px at 15% 10%, rgba(14,142,50,0.14), transparent 58%),
-    radial-gradient(900px 600px at 88% 12%, rgba(84,183,100,0.10), transparent 60%),
-    radial-gradient(900px 700px at 55% 92%, rgba(3,82,30,0.08), transparent 62%),
+    radial-gradient(900px 520px at 12% 8%, rgba(14,142,50,0.10), transparent 60%),
+    radial-gradient(760px 460px at 90% 10%, rgba(84,183,100,0.08), transparent 62%),
     linear-gradient(180deg, var(--z-bg), var(--z-bg-2));
 }
 
-a { color: inherit; }
+a{ color: inherit; }
 
 /* Layout */
 .crm-shell{
@@ -122,7 +122,7 @@ a { color: inherit; }
   border-radius: 12px;
   border: 1px solid transparent;
   color: var(--z-muted);
-  font-weight: 700;
+  font-weight: 800;
   font-size: 14px;
 }
 
@@ -133,12 +133,12 @@ a { color: inherit; }
 }
 
 .crm-nav-link.active{
-  background: rgba(14,142,50,0.12);
-  border-color: rgba(14,142,50,0.28);
+  background: rgba(14,142,50,0.10);
+  border-color: rgba(14,142,50,0.26);
   color: var(--z-primary-2);
 }
 
-/* User box */
+/* User */
 .crm-user{
   display: flex;
   align-items: center;
@@ -147,7 +147,7 @@ a { color: inherit; }
 
 .crm-user-email{
   color: var(--z-muted);
-  font-weight: 700;
+  font-weight: 800;
   font-size: 13px;
   max-width: 260px;
   overflow: hidden;
@@ -159,7 +159,7 @@ a { color: inherit; }
 .crm-btn{
   border-radius: 12px;
   padding: 10px 14px;
-  font-weight: 800;
+  font-weight: 900;
   cursor: pointer;
   border: 1px solid transparent;
 }
@@ -172,7 +172,7 @@ a { color: inherit; }
 .crm-btn-primary:hover{ filter: brightness(1.03); }
 
 .crm-btn-outline{
-  background: transparent;
+  background: #ffffff;
   border-color: var(--z-border);
   color: var(--z-text);
 }
@@ -190,6 +190,7 @@ a { color: inherit; }
   padding: 16px;
 }
 
+/* Text helpers */
 .muted{ color: var(--z-muted); }
 
 .banner{
@@ -203,29 +204,26 @@ a { color: inherit; }
 
 /* ---------------------------------
    ✅ Dropdown readability FIX
-   (Your issue: options appear gray/white and hard to see)
    --------------------------------- */
 
-/* Make selects readable on the page */
-select,
-input,
-textarea{
+/* Ensure control text is readable */
+select, input, textarea{
   font: inherit;
   color: var(--z-text);
 }
 
-/* The option list (the popup) needs explicit colors */
+/* The open dropdown list (options) */
 select option{
-  color: #0b1220 !important;      /* strong readable text */
-  background: #ffffff !important; /* white background */
+  color: #0b1220 !important;
+  background: #ffffff !important;
 }
 
-/* Optional: nicer input styling (if your pages rely on default inputs) */
+/* Nice field styling (keeps UI consistent) */
 select, input, textarea{
   border: 1px solid var(--z-border);
   border-radius: 12px;
   padding: 10px 12px;
-  background: #fff;
+  background: #ffffff;
   outline: none;
 }
 select:focus, input:focus, textarea:focus{
@@ -233,7 +231,7 @@ select:focus, input:focus, textarea:focus{
   border-color: rgba(14,142,50,0.35);
 }
 
-/* Dashboard */
+/* Dashboard bits */
 .dash-hero{
   display: flex;
   align-items: flex-start;
@@ -265,7 +263,9 @@ select:focus, input:focus, textarea:focus{
   padding: 6px 10px;
   font-size: 12px;
   border: 1px solid var(--z-border);
-  font-weight: 800;
+  font-weight: 900;
+  background: rgba(57,74,76,0.06);
+  color: #394a4c;
 }
 
 .badge-strong{
@@ -274,46 +274,19 @@ select:focus, input:focus, textarea:focus{
   color: var(--z-primary-2);
 }
 
-.badge-soft{
-  background: rgba(57,74,76,0.08);
-  border-color: rgba(57,74,76,0.18);
-  color: #394a4c;
-}
-
 .dash-grid{
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-top: 12px;
 }
-
 @media (max-width: 900px){
   .dash-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-
 @media (max-width: 520px){
   .dash-grid{ grid-template-columns: 1fr; }
 }
 
-.stat-label{ color: var(--z-muted); font-size: 12px; font-weight: 800; }
-.stat-value{ font-size: 28px; font-weight: 900; margin-top: 6px; color: var(--z-primary-2); }
+.stat-label{ color: var(--z-muted); font-size: 12px; font-weight: 900; }
+.stat-value{ font-size: 28px; font-weight: 950; margin-top: 6px; color: var(--z-primary-2); }
 .stat-hint{ color: var(--z-muted); font-size: 12px; margin-top: 6px; }
-
-.quick-grid{
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-
-@media (max-width: 900px){
-  .quick-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-@media (max-width: 520px){
-  .quick-grid{ grid-template-columns: 1fr; }
-}
-
-.quick-card h4{ margin: 0 0 6px; }
-.quick-card p{ margin: 0 0 12px; color: var(--z-muted); font-size: 13px; }
-.quick-card .crm-btn{ width: 100%; }
