@@ -13,7 +13,6 @@ function n(v) {
 }
 
 async function readJson(req, res) {
-  // Vercel usually gives req.body already parsed, but not always.
   let body = req.body;
 
   if (typeof body === "string") {
@@ -202,7 +201,7 @@ export default async function handler(req, res) {
       return send(res, 201, { ok: true, id: productId });
     }
 
-    // ---------- PATCH /api/products (archive/unarchive) ----------
+    // ---------- PATCH /api/products ----------
     if (req.method === "PATCH") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
@@ -239,7 +238,7 @@ export default async function handler(req, res) {
       return send(res, 200, { ok: true });
     }
 
-    // ---------- DELETE /api/products?id=123 ----------
+    // ---------- DELETE /api/products ----------
     if (req.method === "DELETE") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
@@ -270,7 +269,6 @@ export default async function handler(req, res) {
       return send(res, 200, { ok: true });
     }
 
-    // Method not allowed
     return send(res, 405, { ok: false, error: "Method not allowed" });
   } catch (err) {
     console.error("api/products error:", err);
