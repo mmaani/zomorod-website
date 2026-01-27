@@ -1,50 +1,52 @@
 /* =========================
-   ZOMOROD CRM — Clean Brand UI (Green Identity)
-   Palette:
-   Emerald:    #0e8e32
-   Deep Green: #03521e
-   Mint:       #d9e8d5
-   Graphite:   #394a4c
+   ZOMOROD CRM — Brand UI (Dark + Green Identity)
+   - Matches styles.css readability
+   - Green identity background (no blue)
+   - Fixes dropdown option visibility
    ========================= */
 
 :root{
-  --z-primary: #0e8e32;
-  --z-primary-2: #03521e;
-  --z-accent: #54b764;
+  /* Brand */
+  --z-primary: #0e8e32;        /* emerald */
+  --z-primary-2: #03521e;      /* deep green */
+  --z-accent: #d6b25e;         /* gold-ish accent (optional) */
 
-  /* Clean neutral background (NOT mint-tinted) */
-  --z-bg: #ffffff;
-  --z-bg-2: #f6f8fb;  /* very light neutral gray */
+  /* Dark system (similar to styles.css) */
+  --z-bg: #07130c;             /* deep green-black */
+  --z-surface: rgba(11, 31, 20, 0.78);
+  --z-surface-2: rgba(11, 31, 20, 0.92);
 
-  --z-card: #ffffff;
-  --z-text: #0b1220;
-  --z-muted: #5b6770;
+  --z-text: rgba(255,255,255,.92);
+  --z-muted: rgba(255,255,255,.70);
+  --z-muted-2: rgba(255,255,255,.55);
 
-  --z-border: rgba(15, 23, 42, 0.10);
-
+  --z-border: rgba(255,255,255,.12);
+  --z-shadow: 0 10px 30px rgba(0,0,0,.35);
   --z-radius: 16px;
-  --z-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
 
-  --z-focus: 0 0 0 3px rgba(14,142,50,0.18);
+  --z-focus: 0 0 0 3px rgba(14,142,50,0.22);
 }
 
-* { box-sizing: border-box; }
+*{ box-sizing: border-box; }
 
 body{
   margin: 0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
   color: var(--z-text);
 
-  /* Neutral base + subtle green identity glow (not “green page”) */
+  /* GREEN identity background glow (no blue) */
   background:
-    radial-gradient(900px 520px at 12% 8%, rgba(14,142,50,0.10), transparent 60%),
-    radial-gradient(760px 460px at 90% 10%, rgba(84,183,100,0.08), transparent 62%),
-    linear-gradient(180deg, var(--z-bg), var(--z-bg-2));
+    radial-gradient(1100px 760px at 18% 10%, rgba(14,142,50,.22), transparent 58%),
+    radial-gradient(900px 620px at 88% 12%, rgba(3,82,30,.18), transparent 60%),
+    radial-gradient(760px 560px at 55% 92%, rgba(214,178,94,.10), transparent 62%),
+    var(--z-bg);
 }
 
 a{ color: inherit; }
 
-/* Layout */
+/* =========================
+   Layout
+   ========================= */
 .crm-shell{
   min-height: 100vh;
   display: flex;
@@ -58,13 +60,17 @@ a{ color: inherit; }
   padding: 18px 16px 40px;
 }
 
-/* Topbar */
+/* =========================
+   Topbar
+   ========================= */
 .crm-topbar{
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(255,255,255,0.92);
+
+  background: rgba(11, 31, 20, 0.72);
   backdrop-filter: blur(10px);
+
   border-bottom: 1px solid var(--z-border);
 }
 
@@ -72,13 +78,16 @@ a{ color: inherit; }
   max-width: 1160px;
   margin: 0 auto;
   padding: 12px 16px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
 }
 
-/* Brand */
+/* =========================
+   Brand
+   ========================= */
 .crm-brand{
   display: flex;
   align-items: center;
@@ -92,6 +101,8 @@ a{ color: inherit; }
   height: 34px;
   border-radius: 10px;
   object-fit: contain;
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--z-border);
 }
 
 .crm-brand-text{
@@ -101,13 +112,16 @@ a{ color: inherit; }
 .crm-brand-text strong{
   font-weight: 900;
   letter-spacing: .02em;
+  color: var(--z-text);
 }
 .crm-brand-text span{
   font-size: 12px;
   color: var(--z-muted);
 }
 
-/* Nav */
+/* =========================
+   Nav
+   ========================= */
 .crm-nav{
   display: flex;
   gap: 8px;
@@ -121,24 +135,27 @@ a{ color: inherit; }
   padding: 8px 10px;
   border-radius: 12px;
   border: 1px solid transparent;
+
   color: var(--z-muted);
   font-weight: 800;
   font-size: 14px;
 }
 
 .crm-nav-link:hover{
-  background: rgba(14,142,50,0.06);
-  border-color: rgba(14,142,50,0.18);
+  background: rgba(14,142,50,0.10);
+  border-color: rgba(14,142,50,0.22);
   color: var(--z-text);
 }
 
 .crm-nav-link.active{
-  background: rgba(14,142,50,0.10);
-  border-color: rgba(14,142,50,0.26);
-  color: var(--z-primary-2);
+  background: rgba(14,142,50,0.16);
+  border-color: rgba(14,142,50,0.30);
+  color: var(--z-text);
 }
 
-/* User */
+/* =========================
+   User box
+   ========================= */
 .crm-user{
   display: flex;
   align-items: center;
@@ -155,7 +172,9 @@ a{ color: inherit; }
   white-space: nowrap;
 }
 
-/* Buttons */
+/* =========================
+   Buttons
+   ========================= */
 .crm-btn{
   border-radius: 12px;
   padding: 10px 14px;
@@ -165,73 +184,48 @@ a{ color: inherit; }
 }
 
 .crm-btn-primary{
-  background: linear-gradient(180deg, var(--z-primary), var(--z-primary-2));
-  color: #ffffff;
+  background: linear-gradient(180deg, rgba(14,142,50,1), rgba(3,82,30,1));
+  color: #07130c;
   box-shadow: var(--z-shadow);
+  border-color: rgba(14,142,50,0.40);
 }
-.crm-btn-primary:hover{ filter: brightness(1.03); }
+.crm-btn-primary:hover{ filter: brightness(1.04); }
 
 .crm-btn-outline{
-  background: #ffffff;
+  background: rgba(255,255,255,0.06);
   border-color: var(--z-border);
   color: var(--z-text);
 }
 .crm-btn-outline:hover{
-  border-color: rgba(14,142,50,0.28);
-  background: rgba(14,142,50,0.06);
+  border-color: rgba(14,142,50,0.32);
+  background: rgba(14,142,50,0.10);
 }
 
-/* Cards */
+/* =========================
+   Cards / banners
+   ========================= */
 .crm-card{
-  background: var(--z-card);
+  background: var(--z-surface);
   border: 1px solid var(--z-border);
   border-radius: var(--z-radius);
   box-shadow: var(--z-shadow);
   padding: 16px;
 }
 
-/* Text helpers */
 .muted{ color: var(--z-muted); }
 
 .banner{
-  border: 1px solid rgba(220, 38, 38, 0.25);
-  background: rgba(220, 38, 38, 0.08);
-  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.10);
+  color: var(--z-text);
   border-radius: 12px;
   padding: 10px 12px;
   margin-top: 10px;
 }
 
-/* ---------------------------------
-   ✅ Dropdown readability FIX
-   --------------------------------- */
-
-/* Ensure control text is readable */
-select, input, textarea{
-  font: inherit;
-  color: var(--z-text);
-}
-
-/* The open dropdown list (options) */
-select option{
-  color: #0b1220 !important;
-  background: #ffffff !important;
-}
-
-/* Nice field styling (keeps UI consistent) */
-select, input, textarea{
-  border: 1px solid var(--z-border);
-  border-radius: 12px;
-  padding: 10px 12px;
-  background: #ffffff;
-  outline: none;
-}
-select:focus, input:focus, textarea:focus{
-  box-shadow: var(--z-focus);
-  border-color: rgba(14,142,50,0.35);
-}
-
-/* Dashboard bits */
+/* =========================
+   Dashboard
+   ========================= */
 .dash-hero{
   display: flex;
   align-items: flex-start;
@@ -243,6 +237,7 @@ select:focus, input:focus, textarea:focus{
   margin: 0;
   font-size: 22px;
   letter-spacing: .01em;
+  color: var(--z-text);
 }
 
 .dash-sub{
@@ -264,14 +259,19 @@ select:focus, input:focus, textarea:focus{
   font-size: 12px;
   border: 1px solid var(--z-border);
   font-weight: 900;
-  background: rgba(57,74,76,0.06);
-  color: #394a4c;
+  color: var(--z-text);
+  background: rgba(255,255,255,.06);
 }
 
 .badge-strong{
-  background: rgba(14,142,50,0.12);
-  border-color: rgba(14,142,50,0.25);
-  color: var(--z-primary-2);
+  background: rgba(14,142,50,0.18);
+  border-color: rgba(14,142,50,0.30);
+}
+
+.badge-soft{
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.14);
+  color: var(--z-muted);
 }
 
 .dash-grid{
@@ -287,6 +287,47 @@ select:focus, input:focus, textarea:focus{
   .dash-grid{ grid-template-columns: 1fr; }
 }
 
-.stat-label{ color: var(--z-muted); font-size: 12px; font-weight: 900; }
-.stat-value{ font-size: 28px; font-weight: 950; margin-top: 6px; color: var(--z-primary-2); }
-.stat-hint{ color: var(--z-muted); font-size: 12px; margin-top: 6px; }
+.stat-label{
+  color: var(--z-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+.stat-value{
+  font-size: 28px;
+  font-weight: 950;
+  margin-top: 6px;
+  color: rgba(255,255,255,.95);
+}
+.stat-hint{
+  color: var(--z-muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* =========================
+   Forms / Inputs / Dropdowns (visibility fix)
+   ========================= */
+input, select, textarea{
+  font: inherit;
+  color: var(--z-text);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--z-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+input::placeholder, textarea::placeholder{
+  color: rgba(255,255,255,0.50);
+}
+
+input:focus, select:focus, textarea:focus{
+  box-shadow: var(--z-focus);
+  border-color: rgba(14,142,50,0.35);
+}
+
+/* IMPORTANT: dropdown popup options (fix gray/white unreadable issue) */
+select option{
+  color: #0b1220 !important;
+  background: #ffffff !important;
+}
