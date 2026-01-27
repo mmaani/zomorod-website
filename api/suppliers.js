@@ -8,9 +8,18 @@ function send(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
+function n(v) {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
+}
+
+function cleanStr(v) {
+  const s = String(v ?? "").trim();
+  return s ? s : null;
+}
+
 async function readJson(req) {
   let body = req.body;
-
   if (typeof body === "string") {
     try {
       return JSON.parse(body || "{}");
@@ -18,7 +27,6 @@ async function readJson(req) {
       throw new Error("Invalid JSON body");
     }
   }
-
   if (body && typeof body === "object") return body;
 
   const chunks = [];
@@ -32,9 +40,14 @@ async function readJson(req) {
   }
 }
 
-function s(v) {
-  const x = String(v ?? "").trim();
-  return x ? x : "";
+async function loadCategories(sql) {
+  // We reuse product_categories as “potential product categories supplier can supply”
+  const rows = await sql`
+    SELECT id, name
+    FROM product_categories
+    ORDER BY name ASC
+  `;
+  return rows || [];
 }
 
 export default async function handler(req, res) {
@@ -44,14 +57,16 @@ export default async function handler(req, res) {
 
     // -------------------------
     // GET /api/suppliers
+    // returns: suppliers + categories
     // -------------------------
     if (method === "GET") {
       const auth = await requireUserFromReq(req, res);
       if (!auth) return;
 
-      const rows = await sql`
+      const suppliers = await sql`
         SELECT
           s.id,
+          s.name,
           s.business_name,
           s.contact_name,
           s.phone,
@@ -59,37 +74,36 @@ export default async function handler(req, res) {
           s.website,
           s.supplier_country,
           s.supplier_city,
+          s.created_at,
+          s.updated_at,
           COALESCE(
-            json_agg(
-              DISTINCT jsonb_build_object('id', pc.id, 'name', pc.name)
-            ) FILTER (WHERE pc.id IS NOT NULL),
-            '[]'::json
-          ) AS categories
+            ARRAY_AGG(sc.category_id) FILTER (WHERE sc.category_id IS NOT NULL),
+            '{}'::int[]
+          ) AS category_ids
         FROM suppliers s
         LEFT JOIN supplier_categories sc ON sc.supplier_id = s.id
-        LEFT JOIN product_categories pc ON pc.id = sc.category_id
         GROUP BY s.id
-        ORDER BY COALESCE(NULLIF(s.business_name,''), NULLIF(s.contact_name,''), s.name, '') ASC
+        ORDER BY COALESCE(NULLIF(s.business_name, ''), s.name) ASC, s.id ASC
       `;
 
-      // Backward compatibility:
-      // If your old UI relied on `name`, we return `name` as alias to business_name.
-      const suppliers = rows.map((r) => ({
-        id: r.id,
-        // preferred
-        business_name: r.business_name || "",
-        contact_name: r.contact_name || "",
-        // legacy field
-        name: r.business_name || r.contact_name || "",
-        phone: r.phone || "",
-        email: r.email || "",
-        website: r.website || "",
-        supplier_country: r.supplier_country || "",
-        supplier_city: r.supplier_city || "",
-        categories: Array.isArray(r.categories) ? r.categories : [],
-      }));
+      const categories = await loadCategories(sql);
 
-      return send(res, 200, { ok: true, suppliers });
+      return send(res, 200, {
+        ok: true,
+        suppliers: (suppliers || []).map((r) => ({
+          id: r.id,
+          name: r.name,
+          businessName: r.business_name ?? "",
+          contactName: r.contact_name ?? "",
+          phone: r.phone ?? "",
+          email: r.email ?? "",
+          website: r.website ?? "",
+          supplierCountry: r.supplier_country ?? "",
+          supplierCity: r.supplier_city ?? "",
+          categoryIds: Array.isArray(r.category_ids) ? r.category_ids : [],
+        })),
+        categories: categories.map((c) => ({ id: c.id, name: c.name })),
+      });
     }
 
     // -------------------------
@@ -106,48 +120,64 @@ export default async function handler(req, res) {
         return send(res, 400, { ok: false, error: "Invalid JSON body" });
       }
 
-      const businessNameRaw = s(body?.businessName);
-      const contactName = s(body?.contactName);
-      const businessName = businessNameRaw || contactName; // ✅ rule: fallback
-      const phone = s(body?.phone) || null;
-      const email = s(body?.email) || null;
-      const website = s(body?.website) || null;
+      // UI label is "Business Name" but you also keep "name" in DB (NOT NULL)
+      // We'll store:
+      // - name: always required (fallback to business/contact)
+      // - business_name: optional but if empty -> becomes contact_name (rule)
+      const businessNameRaw = cleanStr(body?.businessName);
+      const contactName = cleanStr(body?.contactName);
+      const phone = cleanStr(body?.phone);
+      const email = cleanStr(body?.email);
+      const website = cleanStr(body?.website);
+      const supplierCountry = cleanStr(body?.supplierCountry);
+      const supplierCity = cleanStr(body?.supplierCity);
 
-      const supplierCountry = s(body?.supplierCountry) || null; // ISO2 e.g. "JO"
-      const supplierCity = s(body?.supplierCity) || null;
+      // Rule: if business name empty => set it to contact name
+      const businessName = businessNameRaw || contactName || null;
 
-      const categoryNames = Array.isArray(body?.categoryNames)
-        ? body.categoryNames.map((x) => s(x)).filter(Boolean)
-        : [];
+      // name must exist (db NOT NULL).
+      // We’ll set name to businessName if present, else contactName, else body.name
+      const name =
+        cleanStr(body?.name) ||
+        businessName ||
+        contactName;
 
-      if (!businessName) {
-        return send(res, 400, { ok: false, error: "Business Name or Contact Name is required" });
+      if (!name) {
+        return send(res, 400, { ok: false, error: "Business Name (or Contact Name) is required" });
       }
 
+      const categoryIds = Array.isArray(body?.categoryIds)
+        ? body.categoryIds.map(n).filter((x) => x > 0)
+        : [];
+
       const result = await sql.begin(async (tx) => {
-        const ins = await tx`
-          INSERT INTO suppliers (business_name, contact_name, phone, email, website, supplier_country, supplier_city, updated_at)
-          VALUES (${businessName}, ${contactName || null}, ${phone}, ${email}, ${website}, ${supplierCountry}, ${supplierCity}, NOW())
+        const rows = await tx`
+          INSERT INTO suppliers (
+            name, business_name, contact_name, phone, email, website,
+            supplier_country, supplier_city
+          )
+          VALUES (
+            ${name},
+            ${businessName},
+            ${contactName},
+            ${phone},
+            ${email},
+            ${website},
+            ${supplierCountry},
+            ${supplierCity}
+          )
           RETURNING id
         `;
-        const supplierId = ins[0].id;
+        const supplierId = rows?.[0]?.id;
 
-        // Upsert categories and create junction rows
-        for (const name of categoryNames) {
-          const cat = await tx`
-            INSERT INTO product_categories (name)
-            VALUES (${name})
-            ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-            RETURNING id
-          `;
-          const categoryId = cat?.[0]?.id;
-          if (!categoryId) continue;
-
-          await tx`
-            INSERT INTO supplier_categories (supplier_id, category_id)
-            VALUES (${supplierId}, ${categoryId})
-            ON CONFLICT DO NOTHING
-          `;
+        if (supplierId && categoryIds.length) {
+          for (const cid of categoryIds) {
+            await tx`
+              INSERT INTO supplier_categories (supplier_id, category_id)
+              VALUES (${supplierId}, ${cid})
+              ON CONFLICT (supplier_id, category_id) DO NOTHING
+            `;
+          }
         }
 
         return supplierId;
@@ -170,34 +200,35 @@ export default async function handler(req, res) {
         return send(res, 400, { ok: false, error: "Invalid JSON body" });
       }
 
-      const id = Number(body?.id);
-      if (!id) return send(res, 400, { ok: false, error: "ID is required" });
+      const id = n(body?.id);
+      if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
-      const businessNameRaw = s(body?.businessName);
-      const contactName = s(body?.contactName);
-      const businessName = businessNameRaw || contactName; // ✅ rule: fallback
+      const businessNameRaw = cleanStr(body?.businessName);
+      const contactName = cleanStr(body?.contactName);
+      const phone = cleanStr(body?.phone);
+      const email = cleanStr(body?.email);
+      const website = cleanStr(body?.website);
+      const supplierCountry = cleanStr(body?.supplierCountry);
+      const supplierCity = cleanStr(body?.supplierCity);
 
-      const phone = s(body?.phone) || null;
-      const email = s(body?.email) || null;
-      const website = s(body?.website) || null;
+      const businessName = businessNameRaw || contactName || null;
+      const name = cleanStr(body?.name) || businessName || contactName;
 
-      const supplierCountry = s(body?.supplierCountry) || null;
-      const supplierCity = s(body?.supplierCity) || null;
-
-      const categoryNames = Array.isArray(body?.categoryNames)
-        ? body.categoryNames.map((x) => s(x)).filter(Boolean)
-        : null; // null = do not modify; [] = clear all
-
-      if (!businessName) {
-        return send(res, 400, { ok: false, error: "Business Name or Contact Name is required" });
+      if (!name) {
+        return send(res, 400, { ok: false, error: "Business Name (or Contact Name) is required" });
       }
+
+      const categoryIds = Array.isArray(body?.categoryIds)
+        ? body.categoryIds.map(n).filter((x) => x > 0)
+        : [];
 
       await sql.begin(async (tx) => {
         await tx`
           UPDATE suppliers
           SET
+            name = ${name},
             business_name = ${businessName},
-            contact_name = ${contactName || null},
+            contact_name = ${contactName},
             phone = ${phone},
             email = ${email},
             website = ${website},
@@ -207,24 +238,15 @@ export default async function handler(req, res) {
           WHERE id = ${id}
         `;
 
-        if (categoryNames !== null) {
-          // Replace all categories for this supplier
-          await tx`DELETE FROM supplier_categories WHERE supplier_id = ${id}`;
+        // Replace category assignments (simple + reliable)
+        await tx`DELETE FROM supplier_categories WHERE supplier_id = ${id}`;
 
-          for (const name of categoryNames) {
-            const cat = await tx`
-              INSERT INTO product_categories (name)
-              VALUES (${name})
-              ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-              RETURNING id
-            `;
-            const categoryId = cat?.[0]?.id;
-            if (!categoryId) continue;
-
+        if (categoryIds.length) {
+          for (const cid of categoryIds) {
             await tx`
               INSERT INTO supplier_categories (supplier_id, category_id)
-              VALUES (${id}, ${categoryId})
-              ON CONFLICT DO NOTHING
+              VALUES (${id}, ${cid})
+              ON CONFLICT (supplier_id, category_id) DO NOTHING
             `;
           }
         }
@@ -241,11 +263,11 @@ export default async function handler(req, res) {
       if (!auth) return;
 
       const url = new URL(req.url, "http://localhost");
-      const id = Number(url.searchParams.get("id"));
+      const id = n(url.searchParams.get("id"));
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
       const references = await sql`
-        SELECT COUNT(*) AS count
+        SELECT COUNT(*)::int AS count
         FROM batches
         WHERE supplier_id = ${id}
           AND COALESCE(is_void, false) = false
@@ -254,8 +276,12 @@ export default async function handler(req, res) {
         return send(res, 400, { ok: false, error: "Cannot delete supplier with existing batches" });
       }
 
-      // supplier_categories will auto-delete via ON DELETE CASCADE if you used it
-      await sql`DELETE FROM suppliers WHERE id = ${id}`;
+      await sql.begin(async (tx) => {
+        // supplier_categories will cascade delete, but safe anyway
+        await tx`DELETE FROM supplier_categories WHERE supplier_id = ${id}`;
+        await tx`DELETE FROM suppliers WHERE id = ${id}`;
+      });
+
       return send(res, 200, { ok: true });
     }
 

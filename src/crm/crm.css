@@ -1,17 +1,18 @@
 /* =========================
    ZOMOROD CRM — Brand UI (Dark + Green Identity)
-   - Matches styles.css readability
-   - Green identity background (no blue)
-   - Fixes dropdown option visibility
+   - High readability like styles.css
+   - Dark green background (no blue tint)
+   - Supports existing page classes: container/card/table/button/form/field/list
+   - Fixes dropdown popup option visibility
    ========================= */
 
 :root{
   /* Brand */
   --z-primary: #0e8e32;        /* emerald */
   --z-primary-2: #03521e;      /* deep green */
-  --z-accent: #d6b25e;         /* gold-ish accent (optional) */
+  --z-accent: #d6b25e;         /* gold accent (optional) */
 
-  /* Dark system (similar to styles.css) */
+  /* Dark system */
   --z-bg: #07130c;             /* deep green-black */
   --z-surface: rgba(11, 31, 20, 0.78);
   --z-surface-2: rgba(11, 31, 20, 0.92);
@@ -22,19 +23,24 @@
 
   --z-border: rgba(255,255,255,.12);
   --z-shadow: 0 10px 30px rgba(0,0,0,.35);
+
   --z-radius: 16px;
+  --z-radius-sm: 12px;
 
   --z-focus: 0 0 0 3px rgba(14,142,50,0.22);
 }
 
 *{ box-sizing: border-box; }
 
+html, body{ height: 100%; }
+
 body{
   margin: 0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
   color: var(--z-text);
+  line-height: 1.5;
 
-  /* GREEN identity background glow (no blue) */
+  /* Green identity background glow (no blue) */
   background:
     radial-gradient(1100px 760px at 18% 10%, rgba(14,142,50,.22), transparent 58%),
     radial-gradient(900px 620px at 88% 12%, rgba(3,82,30,.18), transparent 60%),
@@ -42,10 +48,48 @@ body{
     var(--z-bg);
 }
 
-a{ color: inherit; }
+a{ color: inherit; text-decoration: none; }
+a:hover{ text-decoration: underline; }
 
 /* =========================
-   Layout
+   Shared layout helpers (your pages already use these)
+   ========================= */
+.container{
+  width: min(1160px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 18px 0 40px;
+}
+
+.card{
+  background: var(--z-surface);
+  border: 1px solid var(--z-border);
+  border-radius: var(--z-radius);
+  box-shadow: var(--z-shadow);
+  padding: 16px;
+}
+
+.muted{ color: var(--z-muted); }
+.small{ font-size: 12px; color: var(--z-muted); }
+
+.banner{
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.10);
+  color: var(--z-text);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+
+/* Lists used in Products page tiers */
+.list{
+  margin: 0;
+  padding-left: 18px;
+  color: var(--z-text);
+}
+.list li{ margin: 4px 0; }
+
+/* =========================
+   CRM Shell + Topbar
    ========================= */
 .crm-shell{
   min-height: 100vh;
@@ -60,9 +104,6 @@ a{ color: inherit; }
   padding: 18px 16px 40px;
 }
 
-/* =========================
-   Topbar
-   ========================= */
 .crm-topbar{
   position: sticky;
   top: 0;
@@ -85,9 +126,6 @@ a{ color: inherit; }
   gap: 14px;
 }
 
-/* =========================
-   Brand
-   ========================= */
 .crm-brand{
   display: flex;
   align-items: center;
@@ -119,9 +157,7 @@ a{ color: inherit; }
   color: var(--z-muted);
 }
 
-/* =========================
-   Nav
-   ========================= */
+/* Nav */
 .crm-nav{
   display: flex;
   gap: 8px;
@@ -136,26 +172,25 @@ a{ color: inherit; }
   border-radius: 12px;
   border: 1px solid transparent;
 
-  color: var(--z-muted);
-  font-weight: 800;
+  color: var(--z-text);          /* ✅ make always readable */
+  opacity: .86;                   /* subtle muted effect */
+  font-weight: 900;
   font-size: 14px;
 }
 
 .crm-nav-link:hover{
-  background: rgba(14,142,50,0.10);
-  border-color: rgba(14,142,50,0.22);
-  color: var(--z-text);
+  opacity: 1;
+  background: rgba(14,142,50,0.12);
+  border-color: rgba(14,142,50,0.24);
 }
 
 .crm-nav-link.active{
-  background: rgba(14,142,50,0.16);
-  border-color: rgba(14,142,50,0.30);
-  color: var(--z-text);
+  opacity: 1;
+  background: rgba(14,142,50,0.18);
+  border-color: rgba(14,142,50,0.32);
 }
 
-/* =========================
-   User box
-   ========================= */
+/* User box */
 .crm-user{
   display: flex;
   align-items: center;
@@ -163,7 +198,8 @@ a{ color: inherit; }
 }
 
 .crm-user-email{
-  color: var(--z-muted);
+  color: var(--z-text);          /* ✅ readable */
+  opacity: .78;
   font-weight: 800;
   font-size: 13px;
   max-width: 260px;
@@ -173,9 +209,10 @@ a{ color: inherit; }
 }
 
 /* =========================
-   Buttons
+   Buttons (supports both crm-btn and existing .button styles)
    ========================= */
-.crm-btn{
+.crm-btn,
+button{
   border-radius: 12px;
   padding: 10px 14px;
   font-weight: 900;
@@ -183,130 +220,52 @@ a{ color: inherit; }
   border: 1px solid transparent;
 }
 
-.crm-btn-primary{
+/* Primary buttons */
+.crm-btn-primary,
+.button--primary,
+button[type="submit"]{
   background: linear-gradient(180deg, rgba(14,142,50,1), rgba(3,82,30,1));
-  color: #07130c;
+  color: #ffffff;                /* ✅ WAS dark before — that caused unreadable text */
   box-shadow: var(--z-shadow);
   border-color: rgba(14,142,50,0.40);
 }
-.crm-btn-primary:hover{ filter: brightness(1.04); }
+.crm-btn-primary:hover,
+.button--primary:hover,
+button[type="submit"]:hover{
+  filter: brightness(1.05);
+}
 
-.crm-btn-outline{
+/* Ghost/outline */
+.crm-btn-outline,
+.button--ghost,
+button:not([type="submit"]){
   background: rgba(255,255,255,0.06);
   border-color: var(--z-border);
   color: var(--z-text);
 }
-.crm-btn-outline:hover{
+.crm-btn-outline:hover,
+.button--ghost:hover{
   border-color: rgba(14,142,50,0.32);
   background: rgba(14,142,50,0.10);
 }
 
-/* =========================
-   Cards / banners
-   ========================= */
-.crm-card{
-  background: var(--z-surface);
-  border: 1px solid var(--z-border);
-  border-radius: var(--z-radius);
-  box-shadow: var(--z-shadow);
-  padding: 16px;
-}
-
-.muted{ color: var(--z-muted); }
-
-.banner{
-  border: 1px solid rgba(239, 68, 68, 0.28);
-  background: rgba(239, 68, 68, 0.10);
-  color: var(--z-text);
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin-top: 10px;
+button:disabled{
+  opacity: .55;
+  cursor: not-allowed;
 }
 
 /* =========================
-   Dashboard
+   Forms / Inputs / Dropdowns
    ========================= */
-.dash-hero{
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-}
+.form{ display: grid; gap: 12px; }
+.field{ display: grid; gap: 6px; }
 
-.dash-title{
-  margin: 0;
-  font-size: 22px;
-  letter-spacing: .01em;
-  color: var(--z-text);
-}
-
-.dash-sub{
-  margin-top: 6px;
-  color: var(--z-muted);
+label{
   font-size: 13px;
-  line-height: 1.4;
-}
-
-.badges{
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.badge{
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 12px;
-  border: 1px solid var(--z-border);
-  font-weight: 900;
-  color: var(--z-text);
-  background: rgba(255,255,255,.06);
-}
-
-.badge-strong{
-  background: rgba(14,142,50,0.18);
-  border-color: rgba(14,142,50,0.30);
-}
-
-.badge-soft{
-  background: rgba(255,255,255,0.06);
-  border-color: rgba(255,255,255,0.14);
+  font-weight: 800;
   color: var(--z-muted);
 }
 
-.dash-grid{
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-@media (max-width: 900px){
-  .dash-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 520px){
-  .dash-grid{ grid-template-columns: 1fr; }
-}
-
-.stat-label{
-  color: var(--z-muted);
-  font-size: 12px;
-  font-weight: 900;
-}
-.stat-value{
-  font-size: 28px;
-  font-weight: 950;
-  margin-top: 6px;
-  color: rgba(255,255,255,.95);
-}
-.stat-hint{
-  color: var(--z-muted);
-  font-size: 12px;
-  margin-top: 6px;
-}
-
-/* =========================
-   Forms / Inputs / Dropdowns (visibility fix)
-   ========================= */
 input, select, textarea{
   font: inherit;
   color: var(--z-text);
@@ -318,13 +277,100 @@ input, select, textarea{
 }
 
 input::placeholder, textarea::placeholder{
-  color: rgba(255,255,255,0.50);
+  color: rgba(255,255,255,0.52);
 }
 
 input:focus, select:focus, textarea:focus{
   box-shadow: var(--z-focus);
   border-color: rgba(14,142,50,0.35);
 }
+
+/* ✅ IMPORTANT: dropdown popup options (fix gray/white unreadable issue) */
+select option{
+  color: #0b1220 !important;
+  background: #ffffff !important;
+}
+
+/* =========================
+   Tables (your pages use .table wrapper)
+   ========================= */
+.table{
+  width: 100%;
+  overflow: auto;
+  border-radius: var(--z-radius);
+  border: 1px solid var(--z-border);
+  background: rgba(11, 31, 20, 0.55);
+}
+
+table{
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+th, td{
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--z-border);
+  text-align: left;
+  vertical-align: top;
+  color: var(--z-text);
+}
+
+th{
+  position: sticky;
+  top: 0;
+  background: var(--z-surface-2);
+  color: var(--z-muted);
+  font-size: 12px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+tr:hover td{
+  background: rgba(255,255,255,.04);
+}
+
+/* =========================
+   Login page helpers (your LoginPage.jsx uses these)
+   ========================= */
+.crm-container{
+  min-height: calc(100vh - 40px);
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+
+.crm-title{
+  margin: 0 0 12px;
+  font-size: 22px;
+  letter-spacing: .01em;
+}
+
+.crm-form{
+  display: grid;
+  gap: 10px;
+}
+
+.crm-label{
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--z-muted);
+  margin-top: 6px;
+}
+
+.crm-input{
+  width: 100%;
+}
+
+.crm-error{
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.10);
+  color: var(--z-text);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+/* Remember me row (for your next login change) */
 .crm-remember{
   margin-top: 6px;
   display: flex;
@@ -336,7 +382,7 @@ input:focus, select:focus, textarea:focus{
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--z-muted);
   user-select: none;
 }
@@ -345,10 +391,4 @@ input:focus, select:focus, textarea:focus{
   width: 18px;
   height: 18px;
   accent-color: var(--z-primary);
-}
-
-/* IMPORTANT: dropdown popup options (fix gray/white unreadable issue) */
-select option{
-  color: #0b1220 !important;
-  background: #ffffff !important;
 }
