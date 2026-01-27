@@ -1,5 +1,14 @@
 import { apiFetch } from "./api.js";
 
+/*
+ * Authentication helpers for the client‑side CRM.  Handles storing and
+ * retrieving JWTs and user information from localStorage, logging in
+ * and out and checking for roles.  The previous implementation used
+ * inconsistent keys when persisting tokens and users which broke
+ * session persistence.  This version centralises the key names and
+ * calls the helpers accordingly.
+ */
+
 const TOKEN_KEY = "zcrm_token";
 const USER_KEY = "zcrm_user";
 
@@ -39,16 +48,15 @@ export function logout() {
 export async function login(email, password) {
   const res = await apiFetch("/login", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: { email, password },
   });
-
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.ok) {
     throw new Error(data.error || `Login failed (${res.status})`);
   }
-
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("user", JSON.stringify(data.user));
+  // Persist the session using the correct helper functions
+  setToken(data.token);
+  setUser(data.user);
   return data;
 }
 

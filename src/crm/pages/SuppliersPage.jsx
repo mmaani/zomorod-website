@@ -2,27 +2,38 @@ import React, { useState, useEffect } from "react";
 import { apiFetch } from "../api.js";
 import { hasRole } from "../auth";
 
+/*
+ * Supplier management page.  Lists suppliers and allows creation,
+ * modification and deletion for users with the 'main' role.  The
+ * previous version assumed that `apiFetch` returned a JSON object; it
+ * now correctly calls `.json()` on the Response.
+ */
+
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState([]);
   const [form, setForm] = useState({ id: null, name: "", contactName: "", phone: "", email: "" });
 
   async function load() {
-    const data = await apiFetch("/api/suppliers");
-    if (data.ok) setSuppliers(data.suppliers);
+    const res = await apiFetch("/api/suppliers");
+    if (!res) return;
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok) setSuppliers(data.suppliers || []);
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name) return alert("Name required");
     const method = form.id ? "PATCH" : "POST";
-    await apiFetch("/api/suppliers", { method, body: form });
+    await apiFetch("/api/suppliers", { method, body: { ...form } });
     setForm({ id: null, name: "", contactName: "", phone: "", email: "" });
     load();
   };
 
-  const handleEdit = (s) => setForm({ ...s });
+  const handleEdit = (s) => setForm({ id: s.id, name: s.name, contactName: s.contact_name || "", phone: s.phone || "", email: s.email || "" });
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure?")) return;
@@ -41,12 +52,22 @@ export default function SuppliersPage() {
           <input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           <input placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           <button type="submit">{form.id ? "Update" : "Add"}</button>
-          {form.id && <button type="button" onClick={() => setForm({ id: null, name: "", contactName: "", phone: "", email: "" })}>Cancel</button>}
+          {form.id && (
+            <button type="button" onClick={() => setForm({ id: null, name: "", contactName: "", phone: "", email: "" })}>
+              Cancel
+            </button>
+          )}
         </form>
       )}
       <table className="table">
         <thead>
-          <tr><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Actions</th></tr>
+          <tr>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Actions</th>
+          </tr>
         </thead>
         <tbody>
           {suppliers.map((s) => (

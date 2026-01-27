@@ -1,40 +1,34 @@
 import { getSql } from '../lib/db.js';
-import { verifyPassword, signJwt } from '../lib/auth.js';
+import { hashPassword } from '../lib/auth.js';
 
+/*
+ * Database bootstrap endpoint.  This function seeds the roles table and
+ * upserts three default users (main, doctor and general).  It is
+ * protected by an X-Setup-Token header that must match the
+ * SETUP_TOKEN environment variable.  The previous version imported
+ * unused helpers and forgot to import `hashPassword`, causing a
+ * runtime ReferenceError.  These issues have been corrected.
+ */
 
-// This endpoint initializes the database with default roles and users.
-// It expects a JSON body containing `main`, `doctor`, and `general` user definitions
-// and requires a valid X-Setup-Token header matching the SETUP_TOKEN env variable.
 export async function POST(request) {
   try {
     const headerToken = request.headers.get('x-setup-token') || '';
     const envToken = process.env.SETUP_TOKEN || '';
-
     if (!envToken) {
-      return Response.json(
-        { ok: false, error: 'SETUP_TOKEN is not set in Vercel env vars' },
-        { status: 500 }
-      );
+      return Response.json({ ok: false, error: 'SETUP_TOKEN is not set in Vercel env vars' }, { status: 500 });
     }
-
     if (!headerToken || headerToken !== envToken) {
-      return Response.json(
-        { ok: false, error: 'Invalid setup token' },
-        { status: 401 }
-      );
+      return Response.json({ ok: false, error: 'Invalid setup token' }, { status: 401 });
     }
-
     let body;
     try {
       body = await request.json();
     } catch {
       return Response.json({ ok: false, error: 'Invalid JSON body' }, { status: 400 });
     }
-
     const sql = getSql();
     const roleNames = ['main', 'doctor', 'general'];
     const roleIdByName = {};
-
     for (const name of roleNames) {
       const rows = await sql`
         INSERT INTO roles (name)
@@ -44,16 +38,13 @@ export async function POST(request) {
       `;
       roleIdByName[name] = rows[0].id;
     }
-
     async function upsertUser(roleKey, u) {
       const fullName = String(u?.fullName || '').trim();
       const email = String(u?.email || '').trim().toLowerCase();
       const password = String(u?.password || '');
-
       if (!fullName || !email || !password) {
         throw new Error(`Missing fields for ${roleKey} user`);
       }
-
       const passwordHash = await hashPassword(password);
       const userRows = await sql`
         INSERT INTO users (full_name, email, password_hash, is_active)
@@ -73,17 +64,12 @@ export async function POST(request) {
       `;
       return { id: user.id, fullName: user.full_name, email: user.email, role: roleKey };
     }
-
     const results = [];
     results.push(await upsertUser('main', body.main));
     results.push(await upsertUser('doctor', body.doctor));
     results.push(await upsertUser('general', body.general));
-
     return Response.json({ ok: true, users: results }, { status: 200 });
   } catch (e) {
-    return Response.json(
-      { ok: false, error: 'Server error', detail: String(e?.message || e) },
-      { status: 500 }
-    );
+    return Response.json({ ok: false, error: 'Server error', detail: String(e?.message || e) }, { status: 500 });
   }
 }

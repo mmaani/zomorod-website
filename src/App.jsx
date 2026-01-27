@@ -11,9 +11,15 @@ import DashboardPage from "./crm/pages/DashboardPage.jsx";
 import ProductsPage from "./crm/pages/ProductsPage.jsx";
 import ClientsPage from "./crm/pages/ClientsPage.jsx";
 import SalesPage from "./crm/pages/SalesPage.jsx";
+import SuppliersPage from "./crm/pages/SuppliersPage.jsx";
 
-// If you created SuppliersPage already, import it. If not, comment it out.
-// import SuppliersPage from "./crm/pages/SuppliersPage.jsx";
+/*
+ * Top‑level app router.  Defines both the marketing site and the
+ * protected CRM routes.  The suppliers route was previously
+ * commented out despite the navigation link existing in the CRM
+ * layout.  This update imports the SuppliersPage component and
+ * enables the route so users can manage suppliers from the CRM.
+ */
 
 export default function App() {
   return (
@@ -42,7 +48,7 @@ export default function App() {
           <Route path="products" element={<ProductsPage />} />
           <Route path="clients" element={<ClientsPage />} />
           <Route path="sales" element={<SalesPage />} />
-          {/* <Route path="suppliers" element={<SuppliersPage />} /> */}
+          <Route path="suppliers" element={<SuppliersPage />} />
         </Route>
 
         {/* Fallback */}
