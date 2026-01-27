@@ -6,7 +6,7 @@ export default function ClientsPage() {
   const [clients, setClients] = useState([]);
   const [form, setForm] = useState({
     id: null,
-    clientType: "customer",
+    clientType: "pharmacy",
     name: "",
     website: "",
     contactPerson: "",
@@ -50,7 +50,7 @@ export default function ClientsPage() {
 
     setForm({
       id: null,
-      clientType: "customer",
+      clientType: "pharmacy",
       name: "",
       website: "",
       contactPerson: "",
@@ -63,7 +63,7 @@ export default function ClientsPage() {
   const handleEdit = (c) =>
     setForm({
       id: c.id,
-      clientType: c.client_type || "customer",
+      clientType: c.client_type || "pharmacy",
       name: c.name || "",
       website: c.website || "",
       contactPerson: c.contact_person || "",
@@ -92,10 +92,10 @@ export default function ClientsPage() {
           <h3>{form.id ? "Edit Client" : "Add Client"}</h3>
 
           <select value={form.clientType} onChange={(e) => setForm({ ...form, clientType: e.target.value })}>
+            <option value="pharmacy">Pharmacy</option>
             <option value="customer">Customer</option>
             <option value="hospital">Hospital</option>
             <option value="clinic">Clinic</option>
-            <option value="pharmacy">Pharmacy</option>
             <option value="distributor">Distributor</option>
             <option value="other">Other</option>
           </select>
@@ -118,7 +118,7 @@ export default function ClientsPage() {
               onClick={() =>
                 setForm({
                   id: null,
-                  clientType: "customer",
+                  clientType: "pharmacy",
                   name: "",
                   website: "",
                   contactPerson: "",

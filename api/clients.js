@@ -75,7 +75,7 @@ export default async function handler(req, res) {
         return send(res, 400, { ok: false, error: "Invalid JSON body" });
       }
 
-      const clientType = cleanStr(body?.clientType) || "customer"; // must NOT be null
+      const clientType = cleanStr(body?.clientType) || "pharmacy"; // must NOT be null
       const name = cleanStr(body?.name);
       const website = cleanStr(body?.website);
       const email = cleanStr(body?.email);
@@ -108,7 +108,7 @@ export default async function handler(req, res) {
       const id = Number(body?.id);
       if (!id) return send(res, 400, { ok: false, error: "ID is required" });
 
-      const clientType = cleanStr(body?.clientType) || "customer";
+      const clientType = cleanStr(body?.clientType) || "pharmacy";
       const name = cleanStr(body?.name);
       const website = cleanStr(body?.website);
       const email = cleanStr(body?.email);
