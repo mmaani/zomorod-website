@@ -1,5 +1,5 @@
-import { getSql } from '../lib/db.js';
-import { requireUser } from '../lib/requireAuth.js';
+import { getSql } from './lib/db.js';
+import { requireUser } from './lib/requireAuth.js';
 
 export const config = { runtime: 'nodejs' };
 

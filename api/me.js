@@ -1,4 +1,4 @@
-import { requireAuth } from '../lib/rbac.js';
+import { requireAuth } from './lib/rbac.js';
 
 // Returns basic user info (userId and roles) for an authenticated request.
 // The `requireAuth` helper returns { ok, userId, roles } or { ok: false, response }.
