@@ -13,9 +13,9 @@
   --border: rgba(255,255,255,.12);
 
   /* ZOMOROD Brand */
-  --brand: #0ea371;              /* emerald */
-  --brand-2: #0a7f59;            /* deeper emerald */
-  --accent: #d6b25e;             /* gold accent */
+  --brand: #0e8e32;       /* emerald */
+  --brand-2: #03521e;     /* deep green */
+  --accent: #54b764;      /* lighter green accent (optional) */
 
   /* States */
   --warn: #f59e0b;
@@ -27,7 +27,8 @@
   --radius-sm: 10px;
 
   /* Focus ring uses emerald */
-  --focus: 0 0 0 3px rgba(14,163,113,.25);
+   --focus: 0 0 0 3px rgba(14,142,50,.25);
+
 
   --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
@@ -41,13 +42,13 @@ body{
   color: var(--text);
   line-height: 1.5;
 
-  /* Brand background glow: emerald + gold (no blue/cyan) */
   background:
-    radial-gradient(1100px 760px at 18% 10%, rgba(14,163,113,.22), transparent 58%),
-    radial-gradient(900px 620px at 88% 12%, rgba(214,178,94,.12), transparent 58%),
-    radial-gradient(720px 520px at 70% 85%, rgba(10,127,89,.14), transparent 60%),
+    radial-gradient(1100px 760px at 18% 10%, rgba(14,142,50,.18), transparent 58%),
+    radial-gradient(900px 620px at 88% 12%, rgba(84,183,100,.12), transparent 58%),
+    radial-gradient(720px 520px at 70% 85%, rgba(3,82,30,.10), transparent 60%),
     var(--bg);
 }
+
 
 img{ max-width: 100%; height: auto; display: block; }
 
@@ -149,6 +150,19 @@ a:hover{ text-decoration: underline; }
   padding: 10px 12px;
   outline: none;
 }
+/* Dropdown readability (fix gray/white issue) */
+select{
+  color: var(--text);
+  background: rgba(255,255,255,.06);
+}
+
+/* Most browsers apply option styles in their own UI,
+   but this still improves readability where supported */
+select option{
+  color: #0b1220;
+  background: #ffffff;
+}
+
 
 /* ✅ Dropdown/options visibility fix */
 select{

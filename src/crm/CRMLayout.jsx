@@ -12,18 +12,19 @@ export default function CRMLayout() {
     nav("/crm/login", { replace: true });
   }
 
-  const navLinkClass = ({ isActive }) => "crm-nav-link" + (isActive ? " active" : "");
+  const navLinkClass = ({ isActive }) =>
+    "crm-nav-link" + (isActive ? " active" : "");
 
   return (
     <div className="crm-shell">
       <header className="crm-topbar">
         <div className="crm-topbar-inner">
-          <div className="crm-brand" onClick={() => nav("/crm/dashboard")} title="Go to Dashboard">
-            {/* Put your logo in /public as /zomorod-mark.png (or change src below) */}
-            <img className="crm-brand-mark" src="/zomorod-mark.png" alt="Zomorod" />
+          <div className="crm-brand" onClick={() => nav("/crm/dashboard")}>
+            {/* Use your logo mark here. Put it in /public for easiest use */}
+            <img className="crm-brand-mark" src="/favicon.ico" alt="Zomorod" />
             <div className="crm-brand-text">
               <strong>ZOMOROD CRM</strong>
-              <span>Medical Supplies • Inventory & Sales</span>
+              <span>Medical Supplies</span>
             </div>
           </div>
 
