@@ -1,141 +1,208 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
+const COPY = {
+  en: {
+    dir: "ltr",
+    langLabel: "AR",
+    brandName: "Zomorod Medical Supplies LLC",
+    tagline: "Your trusted partner for high-quality medical consumables and supplies in Jordan.",
+    ctaStaff: "Staff Login",
+    ctaWhatsapp: "Message us on WhatsApp",
+    sections: {
+      who: {
+        title: "Who We Are",
+        p1: `Zomorod Medical Supplies is an Amman-based provider of medical consumables and supplies.
+             We work with trusted manufacturers to deliver compliant, documented, and reliable products
+             to clinics, hospitals, and distributors across Jordan.`,
+        p2: `We focus on a compliance-first approach: clear documentation, traceable sourcing,
+             and consistent quality — so healthcare providers can purchase with confidence.`,
+      },
+      products: {
+        title: "Our Products",
+        cards: [
+          {
+            title: "Personal Protective Equipment (PPE)",
+            body: "Face masks, gloves, gowns, shoe covers and essential protection items for safe clinical practice.",
+          },
+          {
+            title: "Medical Consumables",
+            body: "Syringes, dressings, infusion and catheter-related products, sterile kits, and daily-use disposables.",
+          },
+          {
+            title: "Devices & Accessories",
+            body: "Selected devices and supporting items chosen for reliability, safety, and practical field use.",
+          },
+        ],
+      },
+      operate: {
+        title: "Where We Operate",
+        p1: `Headquartered in Amman, we serve hospitals, clinics, labs, and medical distributors across Jordan.
+             We also support cross-border opportunities when compliant and approved.`,
+        p2: `Our operations prioritize documentation, traceability, and timely delivery — with local follow-up and support.`,
+      },
+      why: {
+        title: "Why Choose Zomorod?",
+        bullets: [
+          { t: "Quality assurance", b: "Sourcing from reputable manufacturers, with internal checks and controlled documentation." },
+          { t: "Complete documentation", b: "CoAs/CoCs and product documentation prepared for regulatory and tender requirements." },
+          { t: "Competitive pricing", b: "Smart sourcing and volume options to keep pricing fair and scalable." },
+          { t: "Reliable distribution", b: "Timely delivery with a professional, traceable supply process." },
+        ],
+      },
+      contact: {
+        title: "Get in Touch",
+        p1: "To request a quote or learn more, contact us anytime:",
+        email: "info@zomorodmedical.com",
+        phoneLabel: "+962 79 175 2686",
+      },
+    },
+  },
+
+  ar: {
+    dir: "rtl",
+    langLabel: "EN",
+    brandName: "شركة زمرد للمستلزمات الطبية ذ.م.م",
+    tagline: "شريكك الموثوق لتوريد المستلزمات الطبية عالية الجودة في الأردن.",
+    ctaStaff: "دخول الموظفين",
+    ctaWhatsapp: "راسلنا على واتساب",
+    sections: {
+      who: {
+        title: "من نحن",
+        p1: `زمرد للمستلزمات الطبية شركة مقرّها عمّان، متخصصة في توريد المستهلكات والمستلزمات الطبية.
+             نتعاون مع مُصنّعين موثوقين لتقديم منتجات مطابقة للمواصفات ومدعومة بالوثائق إلى العيادات
+             والمستشفيات والموزعين في الأردن.`,
+        p2: `نعتمد نهجًا يضع الامتثال أولاً: توثيق واضح، وتتبع للمصدر، وجودة ثابتة —
+             لتتمكن الجهات الصحية من الشراء بثقة.`,
+      },
+      products: {
+        title: "منتجاتنا",
+        cards: [
+          {
+            title: "معدات الوقاية الشخصية (PPE)",
+            body: "كمامات، قفازات، أرواب طبية، أغطية أحذية، ومستلزمات الوقاية الأساسية لبيئة عمل آمنة.",
+          },
+          {
+            title: "المستهلكات الطبية",
+            body: "محاقن، ضمادات، مستلزمات التسريب والقساطر، أطقم معقمة، ومستهلكات الاستخدام اليومي.",
+          },
+          {
+            title: "الأجهزة والملحقات",
+            body: "منتجات مختارة من الأجهزة والملحقات المساندة وفق معايير الاعتمادية والسلامة وسهولة الاستخدام.",
+          },
+        ],
+      },
+      operate: {
+        title: "أين نعمل",
+        p1: `يقع مقرنا في عمّان، ونخدم المستشفيات والعيادات والمختبرات والموزعين في مختلف محافظات الأردن.
+             كما ندعم فرص التوسع الإقليمي عند توفر الاعتمادات والامتثال المطلوب.`,
+        p2: `تركيزنا على التوثيق والتتبع وسرعة التوريد — مع متابعة محلية ودعم مهني.`,
+      },
+      why: {
+        title: "لماذا زمرد؟",
+        bullets: [
+          { t: "ضمان الجودة", b: "توريد من مُصنّعين موثوقين مع فحوصات داخلية وتوثيق مضبوط." },
+          { t: "وثائق مكتملة", b: "تهيئة وثائق المنتج وشهادات المطابقة لدعم المتطلبات التنظيمية والمناقصات." },
+          { t: "أسعار تنافسية", b: "توريد ذكي وخيارات كميات لتسعير عادل قابل للتوسع." },
+          { t: "توزيع موثوق", b: "تسليم في الوقت المناسب ضمن سلسلة توريد قابلة للتتبع وبطريقة احترافية." },
+        ],
+      },
+      contact: {
+        title: "تواصل معنا",
+        p1: "لطلب عرض سعر أو معرفة المزيد، تواصل معنا عبر:",
+        email: "info@zomorodmedical.com",
+        phoneLabel: "+962 79 175 2686",
+      },
+    },
+  },
+};
+
 export default function MarketingPage() {
+  const [lang, setLang] = useState("en");
+  const t = useMemo(() => COPY[lang], [lang]);
+
   return (
-    <main className="marketing-page" style={{ padding: "2rem", maxWidth: 720, margin: "0 auto" }}>
-      <header style={{ textAlign: "center", marginBottom: "2rem" }}>
-        <img
-          src="/logo.png"
-          alt="Zomorod Medical Supplies LLC logo"
-          style={{ width: 120, height: 120, objectFit: "contain" }}
-        />
-        <h1 style={{ marginTop: "1rem", marginBottom: "0.5rem" }}>
-          Zomorod Medical Supplies LLC
-        </h1>
-        <p style={{ fontSize: "1.2rem", color: "#555" }}>
-          Your trusted partner for high‑quality medical consumables and supplies in Jordan.
-        </p>
-      </header>
-
-      {/* Who We Are */}
-      <section style={{ marginBottom: "2rem" }}>
-        <h2>Who We Are</h2>
-        <p>
-          Zomorod Medical Supplies is an Amman‑based provider of high‑quality medical
-          consumables and equipment. We partner with respected manufacturers worldwide
-          to bring innovative products to clinics, hospitals and distributors across Jordan.
-          Our mission is to ensure healthcare providers have access to safe, reliable and
-          competitively priced products supported by thorough documentation and local expertise.
-        </p>
-        <p>
-          As a trusted distributor, we act as agents for well‑known global companies and
-          work hard to deliver integrated medical solutions that meet the stringent demands
-          of modern healthcare.
-        </p>
-      </section>
-
-      {/* Our Products */}
-      <section style={{ marginBottom: "2rem" }}>
-        <h2>Our Products</h2>
-        <div className="grid">
-          <div className="card">
-            <div className="card__label">Personal Protective Equipment</div>
-            <p className="card__value">
-              Face masks, gloves, gowns, shoe covers and other PPE to keep
-              healthcare professionals and patients safe.
-            </p>
-          </div>
-          <div className="card">
-            <div className="card__label">Medical Consumables</div>
-            <p className="card__value">
-              Syringes, catheters, infusion sets, dressings and sterile kits
-              sourced from trusted manufacturers to ensure quality and safety.
-            </p>
-          </div>
-          <div className="card">
-            <div className="card__label">Equipment & Devices</div>
-            <p className="card__value">
-              Diagnostic tools, monitoring devices, surgical instruments and
-              supporting equipment chosen for reliability and compliance.
-            </p>
-          </div>
+    <main className="mkt-page" dir={t.dir}>
+      <header className="mkt-hero card">
+        <div className="mkt-hero-top">
+          <img className="mkt-logo" src="/logo.png" alt="Zomorod logo" />
+          <button
+            type="button"
+            className="btn btn-ghost mkt-lang"
+            onClick={() => setLang((s) => (s === "en" ? "ar" : "en"))}
+            aria-label="Toggle language"
+            title="Toggle language"
+          >
+            {t.langLabel}
+          </button>
         </div>
-      </section>
 
-      {/* Where We Operate */}
-      <section style={{ marginBottom: "2rem" }}>
-        <h2>Where We Operate</h2>
-        <p>
-          Headquartered in Amman, we distribute medical supplies throughout Jordan’s hospitals,
-          clinics and laboratories and support partners across the wider Middle East. Jordan devotes
-          around nine percent of its GDP to healthcare and operates more than one hundred hospitals,
-          giving the country one of the region’s strongest healthcare infrastructures.
-          This foundation, along with Jordan’s reputation as a regional healthcare leader and medical
-          tourism destination, allows us to efficiently deliver our products wherever
-          they are needed.
-        </p>
-        <p>
-          By leveraging our logistics network and partnerships with global manufacturers, we ensure timely
-          delivery and ongoing support for healthcare providers not only in Jordan but also in neighbouring
-          markets across the Middle East. Whether you’re a hospital in Amman or a clinic elsewhere in the region,
-          Zomorod stands ready to supply high‑quality consumables, personal protective equipment and specialised devices.
-        </p>
-      </section>
+        <h1 className="mkt-title">{t.brandName}</h1>
+        <p className="mkt-tagline">{t.tagline}</p>
 
-      {/* Why Choose Us */}
-      <section style={{ marginBottom: "2rem" }}>
-        <h2>Why Choose Zomorod?</h2>
-        <ul style={{ listStyle: "disc", paddingLeft: "20px", lineHeight: 1.8 }}>
-          <li>
-            <strong>Quality assurance:</strong> We source from reputable manufacturers and
-            inspect every shipment to ensure products meet international standards.
-          </li>
-          <li>
-            <strong>Complete documentation:</strong> All consumables and equipment include certificates
-            of compliance and are supported by detailed documentation for regulatory purposes.
-          </li>
-          <li>
-            <strong>Competitive pricing:</strong> Our local presence and relationships with suppliers allow
-            us to offer fair prices and volume discounts.
-          </li>
-          <li>
-            <strong>Reliable distribution:</strong> We provide timely delivery to hospitals, clinics and
-            distributors across Jordan, backed by local after‑sales support.
-          </li>
-        </ul>
-      </section>
-
-      {/* Get in Touch */}
-      <section style={{ marginBottom: "2rem" }}>
-        <h2>Get in Touch</h2>
-        <p>
-          To request a quote, place an order or learn more about our product range,
-          please reach out via email, phone or WhatsApp.
-        </p>
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          <li>
-            <strong>Email:</strong>{" "}
-            <a href="mailto:info@zomorodmedical.com">info@zomorodmedical.com</a>
-          </li>
-          <li>
-            <strong>Phone:</strong>{" "}
-            <a href="tel:+962791752686">+962 79 175 2686</a>
-          </li>
-        </ul>
-        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "1rem" }}>
-          <Link to="/login" className="button button--primary" style={{ flex: 1, textAlign: "center" }}>
-            Staff Login
+        <div className="mkt-cta-row">
+          <Link to="/login" className="btn btn-primary mkt-cta">
+            {t.ctaStaff}
           </Link>
           <a
+            className="btn mkt-cta"
             href="https://api.whatsapp.com/send?phone=962791752686"
-            className="button button--ghost"
-            style={{ flex: 1, textAlign: "center" }}
             target="_blank"
             rel="noopener noreferrer"
           >
-            Message us on WhatsApp
+            {t.ctaWhatsapp}
           </a>
+        </div>
+      </header>
+
+      <section className="mkt-section card">
+        <h2 className="mkt-h2">{t.sections.who.title}</h2>
+        <p className="mkt-p">{t.sections.who.p1}</p>
+        <p className="mkt-p">{t.sections.who.p2}</p>
+      </section>
+
+      <section className="mkt-section card">
+        <h2 className="mkt-h2">{t.sections.products.title}</h2>
+        <div className="mkt-grid">
+          {t.sections.products.cards.map((c, idx) => (
+            <div className="mkt-card" key={idx}>
+              <div className="mkt-card-title">{c.title}</div>
+              <p className="mkt-card-body">{c.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mkt-section card">
+        <h2 className="mkt-h2">{t.sections.operate.title}</h2>
+        <p className="mkt-p">{t.sections.operate.p1}</p>
+        <p className="mkt-p">{t.sections.operate.p2}</p>
+      </section>
+
+      <section className="mkt-section card">
+        <h2 className="mkt-h2">{t.sections.why.title}</h2>
+        <ul className="mkt-list">
+          {t.sections.why.bullets.map((b, idx) => (
+            <li key={idx}>
+              <b>{b.t}:</b> {b.b}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="mkt-section card">
+        <h2 className="mkt-h2">{t.sections.contact.title}</h2>
+        <p className="mkt-p">{t.sections.contact.p1}</p>
+
+        <div className="mkt-contact">
+          <div className="mkt-contact-row">
+            <span className="mkt-contact-label">Email</span>
+            <a href={`mailto:${t.sections.contact.email}`}>{t.sections.contact.email}</a>
+          </div>
+          <div className="mkt-contact-row">
+            <span className="mkt-contact-label">{lang === "ar" ? "هاتف" : "Phone"}</span>
+            <a href="tel:+962791752686">{t.sections.contact.phoneLabel}</a>
+          </div>
         </div>
       </section>
     </main>
