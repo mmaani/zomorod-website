@@ -3,16 +3,16 @@
    ================================ */
 
 :root{
-  /* Core */
-  --bg: #296e36;                 /* deep night */
-  --surface: #23bc9d;            /* card base */
-  --surface-2: #0e992c;          /* elevated */
+  /* Core (shifted to green-tinted dark, not blue) */
+  --bg: #07130f;                 /* deep emerald night */
+  --surface: #0b1d16;            /* card base (green/charcoal) */
+  --surface-2: #0e2a20;          /* elevated surface */
   --text: rgba(255,255,255,.92);
   --muted: rgba(255,255,255,.72);
   --muted-2: rgba(255,255,255,.55);
   --border: rgba(255,255,255,.12);
 
-  /* ZOMOROD Brand (from logo feel) */
+  /* ZOMOROD Brand */
   --brand: #0ea371;              /* emerald */
   --brand-2: #0a7f59;            /* deeper emerald */
   --accent: #d6b25e;             /* gold accent */
@@ -41,11 +41,11 @@ body{
   color: var(--text);
   line-height: 1.5;
 
-  /* Brand background glow: emerald + gold (matches identity) */
+  /* Brand background glow: emerald + gold (no blue/cyan) */
   background:
-    radial-gradient(1100px 760px at 18% 10%, rgba(14,163,113,.18), transparent 58%),
+    radial-gradient(1100px 760px at 18% 10%, rgba(14,163,113,.22), transparent 58%),
     radial-gradient(900px 620px at 88% 12%, rgba(214,178,94,.12), transparent 58%),
-    radial-gradient(720px 520px at 70% 85%, rgba(10,127,89,.10), transparent 60%),
+    radial-gradient(720px 520px at 70% 85%, rgba(10,127,89,.14), transparent 60%),
     var(--bg);
 }
 
@@ -61,7 +61,7 @@ a:hover{ text-decoration: underline; }
 
 /* Cards */
 .card{
-  background: rgba(15,27,51,.85);
+  background: rgba(11,29,22,.86); /* from --surface tone */
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -94,8 +94,6 @@ a:hover{ text-decoration: underline; }
   background: rgba(255,255,255,.06);
   color: var(--text);
 }
-
-/* Optional strong/soft badge variants */
 .badge-strong{
   background: rgba(14,163,113,.18);
   border-color: rgba(14,163,113,.30);
@@ -120,7 +118,6 @@ a:hover{ text-decoration: underline; }
   transition: transform .05s ease, background .15s ease, border-color .15s ease, filter .15s ease;
   user-select: none;
 }
-
 .btn:hover{ background: rgba(255,255,255,.10); }
 .btn:active{ transform: translateY(1px); }
 .btn:focus{ outline: none; box-shadow: var(--focus); }
@@ -142,15 +139,24 @@ a:hover{ text-decoration: underline; }
 .btn-ghost{ background: transparent; }
 .btn:disabled{ opacity: .55; cursor: not-allowed; }
 
-/* Inputs */
+/* Inputs + Selects */
 .input, select, textarea{
   width: 100%;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,.05);
+  background: rgba(255,255,255,.06);
   color: var(--text);
   border-radius: 12px;
   padding: 10px 12px;
   outline: none;
+}
+
+/* ✅ Dropdown/options visibility fix */
+select{
+  color: rgba(255,255,255,.92);
+}
+select option{
+  background: #0b1d16;      /* dark green surface */
+  color: rgba(255,255,255,.92);
 }
 
 .input:focus, select:focus, textarea:focus{
@@ -167,10 +173,7 @@ label{
 
 .field{ display: grid; gap: 6px; }
 
-.grid{
-  display: grid;
-  gap: 12px;
-}
+.grid{ display: grid; gap: 12px; }
 .grid-2{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .grid-3{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 900px){
@@ -183,32 +186,28 @@ label{
   overflow: auto;
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  background: rgba(15,27,51,.60);
+  background: rgba(11,29,22,.60);
 }
-
 table{
   width: 100%;
   border-collapse: collapse;
-  min-width: 760px; /* keeps columns readable on desktop, scrolls on mobile */
+  min-width: 760px;
 }
-
 th, td{
   padding: 12px 12px;
   border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: top;
 }
-
 th{
   position: sticky;
   top: 0;
-  background: rgba(15,27,51,.92);
+  background: rgba(11,29,22,.92);
   color: var(--muted);
   font-size: 12px;
   letter-spacing: .02em;
   text-transform: uppercase;
 }
-
 tr:hover td{ background: rgba(255,255,255,.04); }
 
 /* Small helpers */
@@ -217,7 +216,7 @@ tr:hover td{ background: rgba(255,255,255,.04); }
 .muted{ color: var(--muted); }
 .small{ font-size: 12px; color: var(--muted); }
 
-/* Nice-to-have: subtle banners */
+/* Banners */
 .banner{
   border: 1px solid rgba(239,68,68,.28);
   background: rgba(239,68,68,.10);
