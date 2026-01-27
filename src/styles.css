@@ -4,9 +4,9 @@
 
 :root{
   /* Core */
-  --bg: #0b1220;                 /* deep night */
-  --surface: #0f1b33;            /* card base */
-  --surface-2: #14264a;          /* elevated */
+  --bg: #296e36;                 /* deep night */
+  --surface: #23bc9d;            /* card base */
+  --surface-2: #0e992c;          /* elevated */
   --text: rgba(255,255,255,.92);
   --muted: rgba(255,255,255,.72);
   --muted-2: rgba(255,255,255,.55);
