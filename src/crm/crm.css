@@ -21,6 +21,151 @@ body { background: var(--zms-bg); color: var(--zms-ink); }
   color: var(--zms-emerald);
   font-weight: 800;
 }
+:root {
+  /* Zomorod identity (adjust later if you give me exact HEX) */
+  --z-brand: #0f766e;        /* teal/emerald */
+  --z-brand-2: #115e59;      /* deeper */
+  --z-accent: #d4af37;       /* gold accent */
+  --z-bg: #f7f8fa;
+  --z-card: #ffffff;
+  --z-text: #0f172a;
+  --z-muted: #64748b;
+  --z-border: rgba(15, 23, 42, 0.08);
+
+  --z-radius: 16px;
+  --z-shadow: 0 8px 28px rgba(2, 6, 23, 0.08);
+}
+
+body {
+  background: var(--z-bg);
+  color: var(--z-text);
+}
+
+/* Layout helpers */
+.crm-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 18px 16px 40px;
+}
+
+.crm-card {
+  background: var(--z-card);
+  border: 1px solid var(--z-border);
+  border-radius: var(--z-radius);
+  box-shadow: var(--z-shadow);
+  padding: 16px;
+}
+
+.muted {
+  color: var(--z-muted);
+}
+
+.banner {
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+
+/* Dashboard */
+.dash-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.dash-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.dash-sub {
+  margin-top: 6px;
+  color: var(--z-muted);
+  font-size: 13px;
+}
+
+.dash-note {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--z-border);
+  background: rgba(15, 118, 110, 0.06);
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+@media (max-width: 900px) {
+  .dash-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .dash-grid { grid-template-columns: 1fr; }
+}
+
+.stat-card {
+  padding: 14px;
+}
+
+.stat-label {
+  color: var(--z-muted);
+  font-size: 13px;
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 800;
+  margin-top: 6px;
+}
+
+.stat-hint {
+  color: var(--z-muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.z-badges {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.z-badge {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid var(--z-border);
+}
+
+.z-badge-strong {
+  background: var(--z-brand);
+  color: white;
+  border-color: transparent;
+}
+
+.z-badge-soft {
+  background: rgba(212, 175, 55, 0.14);
+  color: #7a5d00;
+}
+
+.dash-actions {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--z-text);
+}
+
+.dash-actions li {
+  margin: 6px 0;
+}
+
 
 .crm-nav-link.active{
   color: var(--zms-emerald);

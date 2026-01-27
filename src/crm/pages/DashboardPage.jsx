@@ -35,22 +35,27 @@ export default function DashboardPage() {
 
       try {
         // Products
-        const pr = await apiFetch("/products");
+        const pr = await apiFetch("/api/products");
+        if (!pr) return;
         const pj = await pr.json().catch(() => ({}));
         if (!pr.ok || !pj.ok) throw new Error(pj.error || `Products HTTP ${pr.status}`);
         const products = Array.isArray(pj.products) ? pj.products : [];
 
         // Suppliers
         let suppliers = [];
-        const sr = await apiFetch("/suppliers");
-        const sj = await sr.json().catch(() => ({}));
-        if (sr.ok && sj.ok) suppliers = sj.suppliers || [];
+        const sr = await apiFetch("/api/suppliers");
+        if (sr) {
+          const sj = await sr.json().catch(() => ({}));
+          if (sr.ok && sj.ok) suppliers = sj.suppliers || [];
+        }
 
         // Clients
         let clients = [];
-        const cr = await apiFetch("/clients");
-        const cj = await cr.json().catch(() => ({}));
-        if (cr.ok && cj.ok) clients = cj.clients || [];
+        const cr = await apiFetch("/api/clients");
+        if (cr) {
+          const cj = await cr.json().catch(() => ({}));
+          if (cr.ok && cj.ok) clients = cj.clients || [];
+        }
 
         const onHandTotal = products.reduce((sum, p) => sum + (Number(p.onHandQty) || 0), 0);
 
@@ -75,51 +80,50 @@ export default function DashboardPage() {
     };
   }, []);
 
+  const roleLabel = user?.roles?.length ? user.roles.join(", ") : "-";
+
   return (
     <div className="crm-wrap">
       <div className="crm-card">
         <div className="dash-head">
           <div>
-            <h2 className="dash-title">Welcome back{user?.fullName ? `, ${user.fullName}` : ""} 👋</h2>
+            <h2 className="dash-title">
+              Welcome back{user?.fullName ? `, ${user.fullName}` : ""} 👋
+            </h2>
             <div className="dash-sub">
-              You are logged in as <b>{user?.email || "-"}</b>
-              {user?.roles?.length ? (
-                <>
-                  {" "}
-                  • Roles: <b>{user.roles.join(", ")}</b>
-                </>
-              ) : null}
+              Signed in as <b>{user?.email || "-"}</b> • Role: <b>{roleLabel}</b>
             </div>
           </div>
-          <div className="dash-brand-badge">
-            <span className="badge-strong">ZOMOROD</span>
-            <span className="badge-soft">CRM</span>
+
+          <div className="z-badges" aria-label="Brand badges">
+            <span className="z-badge z-badge-strong">ZOMOROD</span>
+            <span className="z-badge z-badge-soft">CRM</span>
           </div>
         </div>
 
         <div className="dash-note">
-          <b>Zomorod Medical Supplies</b> • Inventory, Suppliers, Clients, and Sales tracking.
+          <b>Zomorod Medical Supplies</b> — Inventory, Suppliers, Clients, and Sales tracking.
           {isMain ? " You have admin access." : " Limited access mode."}
         </div>
 
         {err ? <div className="banner">{err}</div> : null}
-        {loading ? <div className="muted">Loading dashboard…</div> : null}
+        {loading ? <div className="muted" style={{ marginTop: 10 }}>Loading dashboard…</div> : null}
       </div>
 
       <div className="dash-grid">
-        <StatCard label="Products" value={stats.products} hint="Active/archived based on view" />
-        <StatCard label="Suppliers" value={stats.suppliers} hint="Saved supplier profiles" />
-        <StatCard label="Clients" value={stats.clients} hint="Accounts & buyers" />
-        <StatCard label="Total On-Hand Units" value={stats.onHandTotal} hint="Sum of on-hand quantity across products" />
+        <StatCard label="Products" value={stats.products} hint="Active products in system" />
+        <StatCard label="Suppliers" value={stats.suppliers} hint="Supplier directory" />
+        <StatCard label="Clients" value={stats.clients} hint="Customer accounts" />
+        <StatCard label="On-Hand Units" value={stats.onHandTotal} hint="Total stock across products" />
       </div>
 
-      <div className="crm-card">
-        <h3 style={{ marginTop: 0 }}>Quick actions</h3>
+      <div className="crm-card" style={{ marginTop: 12 }}>
+        <h3 style={{ marginTop: 0, marginBottom: 8 }}>Next steps</h3>
         <ul className="dash-actions">
-          <li>Go to <b>Products</b> to add SKUs and receive batches.</li>
-          <li>Go to <b>Suppliers</b> to maintain your supplier directory.</li>
-          <li>Go to <b>Clients</b> to manage customer profiles.</li>
-          <li>Go to <b>Sales</b> to record invoices and reduce stock (next step).</li>
+          <li><b>Products</b>: add SKUs and receive batches.</li>
+          <li><b>Suppliers</b>: maintain supplier contacts for purchasing.</li>
+          <li><b>Clients</b>: manage customer profiles for sales.</li>
+          <li><b>Sales</b>: record invoices and reduce stock (we’ll build this next).</li>
         </ul>
       </div>
     </div>
