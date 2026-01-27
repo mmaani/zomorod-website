@@ -121,6 +121,7 @@ export default async function handler(req, res) {
       }
 
       const showPurchase = canSeePurchasePrice(auth.roles);
+
       const products = (rows || []).map((r) => {
         const item = {
           id: r.id,
@@ -128,7 +129,7 @@ export default async function handler(req, res) {
           category: r.category || "",
           officialName: r.official_name,
           marketName: r.market_name || "",
-          defaultSellPriceJod: r.default_sell_price_jod,
+          defaultSellPriceJod: n(r.default_sell_price_jod),
           onHandQty: n(r.on_hand_qty),
           priceTiers: tiersByProduct.get(r.id) || [],
           archivedAt: r.archived_at || null,
@@ -161,11 +162,18 @@ export default async function handler(req, res) {
       const categoryName = String(body?.category || "").trim();
       const officialName = String(body?.officialName || "").trim();
       const marketName = String(body?.marketName || "").trim();
-      const defaultSellPriceJod = Number(body?.defaultSellPriceJod || 0);
+
+      // ✅ selling price MUST NOT be negative
+      const defaultSellPriceJod = n(body?.defaultSellPriceJod);
+
       const priceTiers = Array.isArray(body?.priceTiers) ? body.priceTiers : [];
 
       if (!productCode || !officialName) {
         return send(res, 400, { ok: false, error: "productCode and officialName are required" });
+      }
+
+      if (defaultSellPriceJod < 0) {
+        return send(res, 400, { ok: false, error: "defaultSellPriceJod cannot be negative" });
       }
 
       let categoryId = null;
@@ -186,16 +194,22 @@ export default async function handler(req, res) {
       `;
       const productId = pRows?.[0]?.id;
 
+      // price tiers (skip invalid rows)
       for (const t of priceTiers) {
-        const minQty = Number(t?.minQty);
-        const unitPriceJod = Number(t?.unitPriceJod);
+        const minQty = n(t?.minQty);
+        const unitPriceJod = n(t?.unitPriceJod);
+
+        // min qty must be > 0
         if (!Number.isFinite(minQty) || minQty <= 0) continue;
+
+        // ✅ selling tier price must be > 0 (and not negative)
         if (!Number.isFinite(unitPriceJod) || unitPriceJod <= 0) continue;
 
         await sql`
           INSERT INTO product_price_tiers (product_id, min_qty, unit_price_jod)
           VALUES (${productId}, ${minQty}, ${unitPriceJod})
-          ON CONFLICT (product_id, min_qty) DO UPDATE SET unit_price_jod = EXCLUDED.unit_price_jod
+          ON CONFLICT (product_id, min_qty)
+          DO UPDATE SET unit_price_jod = EXCLUDED.unit_price_jod
         `;
       }
 
@@ -203,6 +217,7 @@ export default async function handler(req, res) {
     }
 
     // ---------- PATCH /api/products ----------
+    // (Currently used only for archive/unarchive)
     if (req.method === "PATCH") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
@@ -211,7 +226,7 @@ export default async function handler(req, res) {
       const body = await readJson(req, res);
       if (!body) return;
 
-      const id = Number(body?.id);
+      const id = n(body?.id);
       const archived = typeof body?.archived === "boolean" ? body.archived : null;
 
       if (!id || archived === null) {
@@ -246,7 +261,7 @@ export default async function handler(req, res) {
 
       const sql = getSql();
       const url = new URL(req.url, "http://localhost");
-      const id = Number(url.searchParams.get("id"));
+      const id = n(url.searchParams.get("id"));
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
       const rows = await sql`
