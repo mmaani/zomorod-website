@@ -5,10 +5,16 @@ const API_BASE = (import.meta.env.VITE_API_BASE || "/api").replace(/\/$/, "");
 function normalizePath(path) {
   if (!path) return API_BASE;
 
-  if (/^https?:\/\//i.test(path)) return path; // full URL
-  if (path.startsWith("/api/")) return path;   // already correct
+  // Full URL
+  if (/^https?:\/\//i.test(path)) return path;
 
+  // already /api/*
+  if (path.startsWith("/api/")) return path;
+
+  // ensure leading slash
   const p = path.startsWith("/") ? path : `/${path}`;
+
+  // prefix /api
   return `${API_BASE}${p}`;
 }
 
@@ -30,24 +36,8 @@ export async function apiFetch(path, options = {}) {
   if (res.status === 401) {
     logout();
     window.location.href = "/crm/login";
+    return res;
   }
 
   return res;
-}
-
-export async function apiJson(path, options = {}) {
-  const res = await apiFetch(path, options);
-  let data = null;
-  try {
-    data = await res.json();
-  } catch {
-    // ignore
-  }
-
-  if (!res.ok) {
-    const msg = data?.error || `HTTP ${res.status}`;
-    const detail = data?.detail ? `: ${data.detail}` : "";
-    throw new Error(`${msg}${detail}`);
-  }
-  return data;
 }

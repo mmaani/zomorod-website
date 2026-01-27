@@ -1,5 +1,5 @@
 import { getSql } from "../lib/db.js";
-import { requireUserFromReq } from "../lib/requireAuth.js";
+import { requireUser } from "../lib/requireAuth.js";
 
 function toDateOrNull(s) {
   const v = String(s || "").trim();
@@ -13,31 +13,48 @@ function n(v) {
   return Number.isFinite(x) ? x : 0;
 }
 
-function send(res, status, payload) {
-  res.statusCode = status;
-  res.setHeader("Content-Type", "application/json");
-  res.end(JSON.stringify(payload));
+async function readJson(req, res) {
+  let body = req.body;
+
+  if (typeof body === "string") {
+    try {
+      body = JSON.parse(body);
+    } catch {
+      res.status(400).json({ ok: false, error: "Invalid JSON body" });
+      return null;
+    }
+  }
+
+  if (!body) {
+    const chunks = [];
+    for await (const ch of req) chunks.push(ch);
+    const raw = Buffer.concat(chunks).toString("utf8");
+    try {
+      body = raw ? JSON.parse(raw) : {};
+    } catch {
+      res.status(400).json({ ok: false, error: "Invalid JSON body" });
+      return null;
+    }
+  }
+
+  return body || {};
 }
 
+// ✅ Vercel Node Serverless Function
 export default async function handler(req, res) {
   try {
-    // Optional: allow OPTIONS (safe)
-    if (req.method === "OPTIONS") {
-      res.statusCode = 204;
-      res.end();
-      return;
-    }
-
-    const sql = getSql();
-
-    // -------- GET /api/batches?productId=123 --------
+    // ---------- GET ----------
     if (req.method === "GET") {
-      const auth = await requireUserFromReq(req, res);
+      const auth = await requireUser(req, res);
       if (!auth) return;
 
-      const url = new URL(req.url, "http://localhost");
-      const productId = n(url.searchParams.get("productId"));
-      if (!productId) return send(res, 400, { ok: false, error: "productId is required" });
+      const sql = getSql();
+      const productId = n(req.query?.productId);
+
+      if (!productId) {
+        res.status(400).json({ ok: false, error: "productId is required" });
+        return;
+      }
 
       const rows = await sql`
         SELECT
@@ -58,7 +75,7 @@ export default async function handler(req, res) {
         ORDER BY purchase_date DESC, id DESC
       `;
 
-      const batches = (rows || []).map((r) => ({
+      const batches = rows.map((r) => ({
         id: r.id,
         productId: r.product_id,
         lotNumber: r.lot_number,
@@ -72,26 +89,19 @@ export default async function handler(req, res) {
         createdAt: r.created_at,
       }));
 
-      return send(res, 200, { ok: true, batches });
+      res.status(200).json({ ok: true, batches });
+      return;
     }
 
-    // -------- POST /api/batches --------
+    // ---------- POST (Main only) ----------
     if (req.method === "POST") {
-      const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
+      const auth = await requireUser(req, res, { rolesAny: ["main"] });
       if (!auth) return;
 
-      // Parse body (Vercel gives req.body sometimes, but not always)
-      let body = req.body;
-      if (typeof body === "string") {
-        try { body = JSON.parse(body); } catch { body = null; }
-      }
-      if (!body) {
-        const chunks = [];
-        for await (const chunk of req) chunks.push(chunk);
-        const raw = Buffer.concat(chunks).toString("utf8");
-        try { body = raw ? JSON.parse(raw) : {}; } catch { body = null; }
-      }
-      if (!body) return send(res, 400, { ok: false, error: "Invalid JSON body" });
+      const body = await readJson(req, res);
+      if (!body) return;
+
+      const sql = getSql();
 
       const productId = n(body?.productId);
       const lotNumber = String(body?.lotNumber || "").trim();
@@ -100,15 +110,15 @@ export default async function handler(req, res) {
       const purchasePriceJod = n(body?.purchasePriceJod);
       const qtyReceived = n(body?.qtyReceived);
 
-      const supplierId = n(body?.supplierId) || null;
+      const supplierId = body?.supplierId ? n(body.supplierId) : null;
       const supplierName = String(body?.supplierName || "").trim() || null;
       const supplierInvoiceNo = String(body?.supplierInvoiceNo || "").trim() || null;
 
-      if (!productId) return send(res, 400, { ok: false, error: "productId is required" });
-      if (!lotNumber) return send(res, 400, { ok: false, error: "lotNumber is required" });
-      if (!purchaseDate) return send(res, 400, { ok: false, error: "purchaseDate must be YYYY-MM-DD" });
-      if (qtyReceived <= 0) return send(res, 400, { ok: false, error: "qtyReceived must be > 0" });
-      if (purchasePriceJod <= 0) return send(res, 400, { ok: false, error: "purchasePriceJod must be > 0" });
+      if (!productId) return res.status(400).json({ ok: false, error: "productId is required" });
+      if (!lotNumber) return res.status(400).json({ ok: false, error: "lotNumber is required" });
+      if (!purchaseDate) return res.status(400).json({ ok: false, error: "purchaseDate must be YYYY-MM-DD" });
+      if (qtyReceived <= 0) return res.status(400).json({ ok: false, error: "qtyReceived must be > 0" });
+      if (purchasePriceJod <= 0) return res.status(400).json({ ok: false, error: "purchasePriceJod must be > 0" });
 
       const warehouseId = 1;
 
@@ -172,17 +182,18 @@ export default async function handler(req, res) {
         return { batchId };
       });
 
-      return send(res, 201, { ok: true, batchId: result.batchId });
+      res.status(201).json({ ok: true, batchId: result.batchId });
+      return;
     }
 
-    // -------- DELETE /api/batches?id=123 --------
+    // ---------- DELETE (Main only) ----------
     if (req.method === "DELETE") {
-      const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
+      const auth = await requireUser(req, res, { rolesAny: ["main"] });
       if (!auth) return;
 
-      const url = new URL(req.url, "http://localhost");
-      const id = n(url.searchParams.get("id"));
-      if (!id) return send(res, 400, { ok: false, error: "id is required" });
+      const sql = getSql();
+      const id = n(req.query?.id);
+      if (!id) return res.status(400).json({ ok: false, error: "id is required" });
 
       await sql.begin(async (tx) => {
         const rows = await tx`
@@ -191,11 +202,7 @@ export default async function handler(req, res) {
           WHERE id = ${id} AND COALESCE(is_void, false) = false
           LIMIT 1
         `;
-        if (!rows.length) {
-          const err = new Error("BATCH_NOT_FOUND");
-          err.code = "BATCH_NOT_FOUND";
-          throw err;
-        }
+        if (!rows.length) throw new Error("BATCH_NOT_FOUND");
 
         const b = rows[0];
         const qty = n(b.qty_received);
@@ -210,16 +217,18 @@ export default async function handler(req, res) {
         }
       });
 
-      return send(res, 200, { ok: true });
+      res.status(200).json({ ok: true });
+      return;
     }
 
-    return send(res, 405, { ok: false, error: "Method not allowed" });
+    // ---------- Method not allowed ----------
+    res.status(405).json({ ok: false, error: "Method not allowed" });
   } catch (err) {
-    console.error("api/batches error:", err);
-    // handle known not found
-    if (err?.code === "BATCH_NOT_FOUND" || String(err?.message) === "BATCH_NOT_FOUND") {
-      return send(res, 404, { ok: false, error: "Batch not found" });
+    if (String(err?.message) === "BATCH_NOT_FOUND") {
+      res.status(404).json({ ok: false, error: "Batch not found" });
+      return;
     }
-    return send(res, 500, { ok: false, error: "Server error", detail: String(err?.message || err) });
+    console.error("api/batches error:", err);
+    res.status(500).json({ ok: false, error: "Server error", detail: String(err?.message || err) });
   }
 }
