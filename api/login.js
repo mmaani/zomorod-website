@@ -1,64 +1,65 @@
 import { getSql } from "../lib/db.js";
 import { verifyPassword, signJwt } from "../lib/auth.js";
 
+export const config = { runtime: "nodejs" };
+
+function send(res, status, payload) {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify(payload));
+}
+
+async function readJson(req) {
+  let body = req.body;
+
+  if (typeof body === "string") {
+    try {
+      return JSON.parse(body || "{}");
+    } catch {
+      throw new Error("Invalid JSON body");
+    }
+  }
+  if (body && typeof body === "object") return body;
+
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  const raw = Buffer.concat(chunks).toString("utf8");
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error("Invalid JSON body");
+  }
+}
+
 export default async function handler(req, res) {
-  // Allow CORS preflight (some browsers/envs send OPTIONS even on same-origin edge cases)
+  // handle preflight safely (optional but good)
   if (req.method === "OPTIONS") {
     res.statusCode = 204;
     res.end();
     return;
   }
 
-  // Allow only POST
   if (req.method !== "POST") {
-    res.statusCode = 405;
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ ok: false, error: "Method not allowed" }));
-    return;
+    return send(res, 405, { ok: false, error: "Method not allowed" });
   }
 
   try {
-    // Parse JSON body safely
-    let body = req.body;
-
-    if (typeof body === "string") {
-      try {
-        body = JSON.parse(body);
-      } catch {
-        res.statusCode = 400;
-        res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));
-        return;
-      }
-    }
-
-    // If body is still empty, read raw stream
-    if (!body) {
-      const chunks = [];
-      for await (const chunk of req) chunks.push(chunk);
-      const raw = Buffer.concat(chunks).toString("utf8");
-      try {
-        body = raw ? JSON.parse(raw) : {};
-      } catch {
-        res.statusCode = 400;
-        res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));
-        return;
-      }
+    let body;
+    try {
+      body = await readJson(req);
+    } catch {
+      return send(res, 400, { ok: false, error: "Invalid JSON body" });
     }
 
     const email = String(body?.email || "").trim().toLowerCase();
     const password = String(body?.password || "");
 
     if (!email || !password) {
-      res.statusCode = 400;
-      res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify({ ok: false, error: "Email and password are required" }));
-      return;
+      return send(res, 400, { ok: false, error: "Email and password are required" });
     }
 
     const sql = getSql();
-
     const rows = await sql`
       SELECT id, full_name, email, password_hash, is_active
       FROM users
@@ -67,20 +68,13 @@ export default async function handler(req, res) {
     `;
 
     const user = rows?.[0];
-
     if (!user || !user.is_active) {
-      res.statusCode = 401;
-      res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify({ ok: false, error: "Invalid credentials" }));
-      return;
+      return send(res, 401, { ok: false, error: "Invalid credentials" });
     }
 
     const ok = await verifyPassword(password, user.password_hash);
     if (!ok) {
-      res.statusCode = 401;
-      res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify({ ok: false, error: "Invalid credentials" }));
-      return;
+      return send(res, 401, { ok: false, error: "Invalid credentials" });
     }
 
     const roleRows = await sql`
@@ -99,29 +93,12 @@ export default async function handler(req, res) {
       fullName: user.full_name,
     });
 
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "application/json");
-    res.end(
-      JSON.stringify({
-        ok: true,
-        token,
-        user: {
-          id: user.id,
-          fullName: user.full_name,
-          email: user.email,
-          roles,
-        },
-      })
-    );
+    return send(res, 200, {
+      ok: true,
+      token,
+      user: { id: user.id, fullName: user.full_name, email: user.email, roles },
+    });
   } catch (e) {
-    res.statusCode = 500;
-    res.setHeader("Content-Type", "application/json");
-    res.end(
-      JSON.stringify({
-        ok: false,
-        error: "Server error",
-        detail: String(e?.message || e),
-      })
-    );
+    return send(res, 500, { ok: false, error: "Server error", detail: String(e?.message || e) });
   }
 }

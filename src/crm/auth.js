@@ -45,11 +45,14 @@ export function logout() {
   localStorage.removeItem(USER_KEY);
 }
 
-export async function login(email, password) {
-  const res = await apiFetch("/login", {
-    method: "POST",
-    body: { email, password },
+
+  export async function login(email, password) {
+  const res = await fetch("/api/login", {
+    method: "POST", // ✅ THIS IS THE KEY
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
   });
+
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.ok) {
     throw new Error(data.error || `Login failed (${res.status})`);
