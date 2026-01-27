@@ -1,10 +1,43 @@
 import { getSql } from "../lib/db.js";
-import { requireUserFromReq } from "../lib/requireAuth.js";
+import { requireUserFromReq, canSeePurchasePrice } from "../lib/requireAuth.js";
+
+/**
+ * Vercel Node Serverless Function
+ * Supports:
+ *  - GET    /api/batches?productId=123
+ *  - POST   /api/batches
+ *  - DELETE /api/batches?id=456
+ */
+export default async function handler(req, res) {
+  const method = req.method || "GET";
+
+  try {
+    if (method === "GET") return await handleGET(req, res);
+    if (method === "POST") return await handlePOST(req, res);
+    if (method === "DELETE") return await handleDELETE(req, res);
+
+    res.statusCode = 405;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ ok: false, error: "Method not allowed" }));
+  } catch (err) {
+    console.error("api/batches crashed:", err);
+    res.statusCode = 500;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ ok: false, error: "Server error" }));
+  }
+}
+
+/* ---------------- helpers ---------------- */
 
 function send(res, status, payload) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json");
   res.end(JSON.stringify(payload));
+}
+
+function n(v) {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
 }
 
 function toDateOrNull(s) {
@@ -14,238 +47,221 @@ function toDateOrNull(s) {
   return v;
 }
 
-function n(v) {
-  const x = Number(v);
-  return Number.isFinite(x) ? x : 0;
-}
-
-async function readJsonBody(req, res) {
+async function readJson(req) {
+  // Vercel usually gives req.body already parsed for JSON, but not always.
   let body = req.body;
 
   if (typeof body === "string") {
-    try {
-      body = JSON.parse(body);
-    } catch {
-      send(res, 400, { ok: false, error: "Invalid JSON body" });
-      return null;
-    }
+    body = body ? JSON.parse(body) : {};
+    return body;
   }
 
-  if (!body) {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const raw = Buffer.concat(chunks).toString("utf8");
-    try {
-      body = raw ? JSON.parse(raw) : {};
-    } catch {
-      send(res, 400, { ok: false, error: "Invalid JSON body" });
-      return null;
-    }
-  }
+  if (body && typeof body === "object") return body;
 
-  return body || {};
+  // Fallback: read stream
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  const raw = Buffer.concat(chunks).toString("utf8");
+  return raw ? JSON.parse(raw) : {};
 }
 
-// Vercel Serverless Function
-export default async function handler(req, res) {
+/* ---------------- handlers ---------------- */
+
+async function handleGET(req, res) {
+  const auth = await requireUserFromReq(req, res);
+  if (!auth) return; // requireUserFromReq already responded
+
+  const url = new URL(req.url, "http://localhost");
+  const productId = n(url.searchParams.get("productId"));
+  if (!productId) return send(res, 400, { ok: false, error: "productId is required" });
+
   const sql = getSql();
 
-  // Build a proper URL object for query params
-  const url = new URL(req.url, `http://${req.headers.host}`);
+  const rows = await sql`
+    SELECT
+      id,
+      product_id,
+      lot_number,
+      purchase_date,
+      expiry_date,
+      qty_received,
+      purchase_price_jod,
+      supplier_name,
+      supplier_invoice_no,
+      supplier_id,
+      created_at
+    FROM batches
+    WHERE product_id = ${productId}
+      AND COALESCE(is_void, false) = false
+    ORDER BY purchase_date DESC, id DESC
+  `;
+
+  const showPurchase = canSeePurchasePrice(auth.roles);
+
+  const batches = rows.map((r) => ({
+    id: r.id,
+    productId: r.product_id,
+    lotNumber: r.lot_number,
+    purchaseDate: r.purchase_date,
+    expiryDate: r.expiry_date,
+    qtyReceived: n(r.qty_received),
+
+    // Hide purchase price for roles that should not see it
+    purchasePriceJod: showPurchase ? r.purchase_price_jod : null,
+
+    supplierId: r.supplier_id ?? null,
+    supplierName: r.supplier_name ?? null,
+    supplierInvoiceNo: r.supplier_invoice_no ?? null,
+    createdAt: r.created_at,
+  }));
+
+  return send(res, 200, { ok: true, batches });
+}
+
+async function handlePOST(req, res) {
+  const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
+  if (!auth) return;
+
+  const sql = getSql();
+
+  let body;
+  try {
+    body = await readJson(req);
+  } catch {
+    return send(res, 400, { ok: false, error: "Invalid JSON body" });
+  }
+
+  const productId = n(body?.productId);
+  const lotNumber = String(body?.lotNumber || "").trim();
+  const purchaseDate = toDateOrNull(body?.purchaseDate);
+  const expiryDate = toDateOrNull(body?.expiryDate);
+  const purchasePriceJod = n(body?.purchasePriceJod);
+  const qtyReceived = n(body?.qtyReceived);
+
+  const supplierId = body?.supplierId === "" || body?.supplierId == null ? null : n(body?.supplierId);
+  const supplierName = String(body?.supplierName || "").trim() || null;
+  const supplierInvoiceNo = String(body?.supplierInvoiceNo || "").trim() || null;
+
+  if (!productId) return send(res, 400, { ok: false, error: "productId is required" });
+  if (!lotNumber) return send(res, 400, { ok: false, error: "lotNumber is required" });
+  if (!purchaseDate) return send(res, 400, { ok: false, error: "purchaseDate must be YYYY-MM-DD" });
+  if (qtyReceived <= 0) return send(res, 400, { ok: false, error: "qtyReceived must be > 0" });
+  if (purchasePriceJod <= 0) return send(res, 400, { ok: false, error: "purchasePriceJod must be > 0" });
+
+  const warehouseId = 1;
 
   try {
-    // -----------------------
-    // GET /api/batches?productId=123
-    // -----------------------
-    if (req.method === "GET") {
-      const auth = await requireUserFromReq(req, res);
-      if (!auth) return;
-
-      const productId = n(url.searchParams.get("productId"));
-      if (!productId) {
-        send(res, 400, { ok: false, error: "productId is required" });
-        return;
-      }
-
-      const rows = await sql`
-        SELECT
-          id,
-          product_id,
-          lot_number,
-          purchase_date,
-          expiry_date,
-          qty_received,
-          purchase_price_jod,
-          supplier_name,
-          supplier_invoice_no,
-          supplier_id,
-          created_at
+    const result = await sql.begin(async (tx) => {
+      // If lot exists: add qty + recalc avg cost
+      const existing = await tx`
+        SELECT id, qty_received, purchase_price_jod
         FROM batches
         WHERE product_id = ${productId}
+          AND lot_number = ${lotNumber}
           AND COALESCE(is_void, false) = false
-        ORDER BY purchase_date DESC, id DESC
+        LIMIT 1
       `;
 
-      const batches = (rows || []).map((r) => ({
-        id: r.id,
-        productId: r.product_id,
-        lotNumber: r.lot_number,
-        purchaseDate: r.purchase_date,
-        expiryDate: r.expiry_date,
-        qtyReceived: n(r.qty_received),
-        purchasePriceJod: r.purchase_price_jod,
-        supplierName: r.supplier_name,
-        supplierInvoiceNo: r.supplier_invoice_no,
-        supplierId: r.supplier_id || null,
-        createdAt: r.created_at,
-      }));
+      let batchId;
 
-      send(res, 200, { ok: true, batches });
-      return;
-    }
+      if (existing.length) {
+        const b = existing[0];
+        const oldQty = n(b.qty_received);
+        const oldPrice = n(b.purchase_price_jod);
 
-    // -----------------------
-    // POST /api/batches  (main only)
-    // -----------------------
-    if (req.method === "POST") {
-      const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
-      if (!auth) return;
+        const newQty = oldQty + qtyReceived;
+        const newAvg =
+          newQty > 0
+            ? ((oldPrice * oldQty) + (purchasePriceJod * qtyReceived)) / newQty
+            : purchasePriceJod;
 
-      const body = await readJsonBody(req, res);
-      if (!body) return;
-
-      const productId = n(body?.productId);
-      const lotNumber = String(body?.lotNumber || "").trim();
-      const purchaseDate = toDateOrNull(body?.purchaseDate);
-      const expiryDate = toDateOrNull(body?.expiryDate);
-      const purchasePriceJod = n(body?.purchasePriceJod);
-      const qtyReceived = n(body?.qtyReceived);
-
-      // New supplier fields
-      const supplierId = n(body?.supplierId) || null;
-      const supplierName = String(body?.supplierName || "").trim() || null;
-      const supplierInvoiceNo = String(body?.supplierInvoiceNo || "").trim() || null;
-
-      if (!productId) return send(res, 400, { ok: false, error: "productId is required" });
-      if (!lotNumber) return send(res, 400, { ok: false, error: "lotNumber is required" });
-      if (!purchaseDate) return send(res, 400, { ok: false, error: "purchaseDate must be YYYY-MM-DD" });
-      if (qtyReceived <= 0) return send(res, 400, { ok: false, error: "qtyReceived must be > 0" });
-      if (purchasePriceJod <= 0) return send(res, 400, { ok: false, error: "purchasePriceJod must be > 0" });
-
-      const warehouseId = 1;
-
-      const result = await sql.begin(async (tx) => {
-        const existing = await tx`
-          SELECT id, qty_received, purchase_price_jod
-          FROM batches
-          WHERE product_id = ${productId}
-            AND lot_number = ${lotNumber}
-            AND COALESCE(is_void, false) = false
-          LIMIT 1
+        const upd = await tx`
+          UPDATE batches
+          SET
+            qty_received = ${newQty},
+            purchase_price_jod = ${newAvg},
+            purchase_date = ${purchaseDate},
+            expiry_date = ${expiryDate},
+            supplier_id = ${supplierId},
+            supplier_name = COALESCE(${supplierName}, supplier_name),
+            supplier_invoice_no = COALESCE(${supplierInvoiceNo}, supplier_invoice_no)
+          WHERE id = ${b.id}
+          RETURNING id
         `;
+        batchId = upd[0].id;
+      } else {
+        // Insert new lot
+        // NOTE: this assumes your DB has supplier_id column in batches.
+        const ins = await tx`
+          INSERT INTO batches (
+            product_id, warehouse_id, lot_number, purchase_date, expiry_date,
+            purchase_price_jod, qty_received, supplier_name, supplier_invoice_no, supplier_id
+          )
+          VALUES (
+            ${productId}, ${warehouseId}, ${lotNumber}, ${purchaseDate}, ${expiryDate},
+            ${purchasePriceJod}, ${qtyReceived}, ${supplierName}, ${supplierInvoiceNo}, ${supplierId}
+          )
+          RETURNING id
+        `;
+        batchId = ins[0].id;
+      }
 
-        let batchId;
+      await tx`
+        INSERT INTO inventory_movements (warehouse_id, product_id, movement_type, qty, batch_id, movement_date, note)
+        VALUES (${warehouseId}, ${productId}, 'IN', ${qtyReceived}, ${batchId}, ${purchaseDate}, 'Receive batch')
+      `;
 
-        if (existing.length) {
-          const b = existing[0];
-          const oldQty = n(b.qty_received);
-          const oldPrice = n(b.purchase_price_jod);
+      return { batchId };
+    });
 
-          const newQty = oldQty + qtyReceived;
-          const newAvg =
-            newQty > 0
-              ? ((oldPrice * oldQty) + (purchasePriceJod * qtyReceived)) / newQty
-              : purchasePriceJod;
+    return send(res, 201, { ok: true, batchId: result.batchId });
+  } catch (err) {
+    console.error("POST /api/batches failed:", err);
+    return send(res, 500, { ok: false, error: "Server error" });
+  }
+}
 
-          const upd = await tx`
-            UPDATE batches
-            SET
-              qty_received = ${newQty},
-              purchase_price_jod = ${newAvg},
-              purchase_date = ${purchaseDate},
-              expiry_date = ${expiryDate},
-              supplier_id = COALESCE(${supplierId}, supplier_id),
-              supplier_name = COALESCE(${supplierName}, supplier_name),
-              supplier_invoice_no = COALESCE(${supplierInvoiceNo}, supplier_invoice_no)
-            WHERE id = ${b.id}
-            RETURNING id
-          `;
-          batchId = upd[0].id;
-        } else {
-          const ins = await tx`
-            INSERT INTO batches (
-              product_id, warehouse_id, lot_number, purchase_date, expiry_date,
-              purchase_price_jod, qty_received, supplier_name, supplier_invoice_no, supplier_id
-            )
-            VALUES (
-              ${productId}, ${warehouseId}, ${lotNumber}, ${purchaseDate}, ${expiryDate},
-              ${purchasePriceJod}, ${qtyReceived}, ${supplierName}, ${supplierInvoiceNo}, ${supplierId}
-            )
-            RETURNING id
-          `;
-          batchId = ins[0].id;
-        }
+async function handleDELETE(req, res) {
+  const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
+  if (!auth) return;
 
+  const sql = getSql();
+  const url = new URL(req.url, "http://localhost");
+  const id = n(url.searchParams.get("id"));
+  if (!id) return send(res, 400, { ok: false, error: "id is required" });
+
+  try {
+    await sql.begin(async (tx) => {
+      const rows = await tx`
+        SELECT id, product_id, warehouse_id, qty_received, purchase_date
+        FROM batches
+        WHERE id = ${id} AND COALESCE(is_void, false) = false
+        LIMIT 1
+      `;
+      if (!rows.length) {
+        const e = new Error("BATCH_NOT_FOUND");
+        throw e;
+      }
+
+      const b = rows[0];
+      const qty = n(b.qty_received);
+
+      await tx`UPDATE batches SET is_void = true, voided_at = NOW() WHERE id = ${id}`;
+
+      if (qty > 0) {
         await tx`
           INSERT INTO inventory_movements (warehouse_id, product_id, movement_type, qty, batch_id, movement_date, note)
-          VALUES (${warehouseId}, ${productId}, 'IN', ${qtyReceived}, ${batchId}, ${purchaseDate}, 'Receive batch')
+          VALUES (${b.warehouse_id || 1}, ${b.product_id}, 'ADJ', ${-qty}, ${id}, ${b.purchase_date}, 'Void batch (reverse)')
         `;
+      }
+    });
 
-        return { batchId };
-      });
-
-      send(res, 201, { ok: true, batchId: result.batchId });
-      return;
-    }
-
-    // -----------------------
-    // DELETE /api/batches?id=123  (main only)
-    // -----------------------
-    if (req.method === "DELETE") {
-      const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
-      if (!auth) return;
-
-      const id = n(url.searchParams.get("id"));
-      if (!id) return send(res, 400, { ok: false, error: "id is required" });
-
-      await sql.begin(async (tx) => {
-        const rows = await tx`
-          SELECT id, product_id, warehouse_id, qty_received, purchase_date
-          FROM batches
-          WHERE id = ${id} AND COALESCE(is_void, false) = false
-          LIMIT 1
-        `;
-        if (!rows.length) {
-          const err = new Error("BATCH_NOT_FOUND");
-          err.code = "BATCH_NOT_FOUND";
-          throw err;
-        }
-
-        const b = rows[0];
-        const qty = n(b.qty_received);
-
-        await tx`UPDATE batches SET is_void = true, voided_at = NOW() WHERE id = ${id}`;
-
-        if (qty > 0) {
-          await tx`
-            INSERT INTO inventory_movements (warehouse_id, product_id, movement_type, qty, batch_id, movement_date, note)
-            VALUES (${b.warehouse_id || 1}, ${b.product_id}, 'ADJ', ${-qty}, ${id}, ${b.purchase_date}, 'Void batch (reverse)')
-          `;
-        }
-      });
-
-      send(res, 200, { ok: true });
-      return;
-    }
-
-    // Method not allowed
-    send(res, 405, { ok: false, error: "Method not allowed" });
+    return send(res, 200, { ok: true });
   } catch (err) {
-    if (String(err?.code || err?.message) === "BATCH_NOT_FOUND") {
-      send(res, 404, { ok: false, error: "Batch not found" });
-      return;
+    if (String(err?.message) === "BATCH_NOT_FOUND") {
+      return send(res, 404, { ok: false, error: "Batch not found" });
     }
-    console.error("batches function failed:", err);
-    send(res, 500, { ok: false, error: "Server error", detail: String(err?.message || err) });
+    console.error("DELETE /api/batches failed:", err);
+    return send(res, 500, { ok: false, error: "Server error" });
   }
 }
