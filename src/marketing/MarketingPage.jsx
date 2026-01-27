@@ -14,7 +14,7 @@ const COPY = {
         title: "Who We Are",
         p1: `Zomorod Medical Supplies is an Amman-based provider of medical consumables and supplies.
              We work with trusted manufacturers to deliver compliant, documented, and reliable products
-             to clinics, hospitals, and distributors across Jordan.`,
+             to clinics, hospitals, and distributors across Jordan and Syria.`,
         p2: `We focus on a compliance-first approach: clear documentation, traceable sourcing,
              and consistent quality — so healthcare providers can purchase with confidence.`,
       },
