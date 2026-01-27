@@ -1,152 +1,202 @@
-/* ===========================
-   Zomorod CRM (SCOPED)
-   Everything is scoped under:
-   - .crm (CRM layout pages)
-   - .crm-container (login page)
-   =========================== */
+/* ================================
+   CRM Layout & Components
+   ================================ */
 
-/* ---------- Shared tokens (use website variables if present) ---------- */
-:root {
-  --crm-bg: var(--bg, #f6f8fb);
-  --crm-surface: var(--surface, rgba(255, 255, 255, 0.86));
-  --crm-surface-strong: var(--surface-strong, rgba(255, 255, 255, 0.92));
-  --crm-text: var(--text, #0f172a);
-  --crm-muted: var(--muted, rgba(15, 23, 42, 0.70));
-  --crm-border: var(--border, rgba(15, 23, 42, 0.10));
-  --crm-shadow: var(--shadow-soft, 0 10px 28px rgba(15, 23, 42, 0.08));
-  --crm-radius: 16px;
-}
-
-/* ---------- Login page shell ---------- */
-.crm-container {
+.crm-shell{
   min-height: 100vh;
   display: grid;
-  place-items: center;
-  padding: 24px 16px;
-  background:
-    radial-gradient(1200px 600px at 20% -10%, rgba(14,166,122,0.14), transparent 60%),
-    radial-gradient(900px 450px at 85% 0%, rgba(21,194,138,0.12), transparent 55%),
-    linear-gradient(180deg, var(--crm-bg) 0%, #ffffff 45%);
+  grid-template-columns: 260px 1fr;
+  gap: 0;
 }
 
-.crm-card {
-  width: min(440px, 100%);
-  padding: 18px;
-  border-radius: 20px;
-  border: 1px solid rgba(15, 23, 42, 0.10);
-  background: var(--crm-surface-strong);
-  box-shadow: var(--crm-shadow);
-  backdrop-filter: blur(12px);
+.crm-sidebar{
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 14px;
+  border-right: 1px solid var(--border);
+  background: rgba(15,27,51,.82);
+  backdrop-filter: blur(10px);
 }
 
-.crm-title {
-  margin: 0 0 12px;
-  font-size: 20px;
-  font-weight: 950;
-  color: var(--crm-text);
-  letter-spacing: 0.2px;
-}
-
-/* ---------- CRM forms (scoped) ---------- */
-.crm .crm-form,
-.crm-container .crm-form {
+.crm-brand{
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(232,238,252,.06);
+}
+.crm-brand .title{
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+.crm-brand .sub{
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.crm-nav{
+  margin-top: 12px;
+  display: grid;
+  gap: 6px;
+}
+.crm-nav a{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  color: var(--text);
+  text-decoration: none;
+}
+.crm-nav a:hover{
+  background: rgba(232,238,252,.06);
+  border-color: var(--border);
+}
+.crm-nav a.active{
+  background: rgba(56,189,248,.16);
+  border-color: rgba(56,189,248,.30);
+}
+
+.crm-main{
+  padding: 18px;
+}
+
+.crm-topbar{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: rgba(15,27,51,.55);
+  backdrop-filter: blur(10px);
+  margin-bottom: 14px;
+}
+
+.crm-page{
+  display: grid;
+  gap: 14px;
+}
+
+.crm-header{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.crm-header h1{
+  font-size: 22px;
+  margin: 0;
+}
+.crm-actions{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.crm-panel{
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(15,27,51,.55);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+
+.crm-form{
+  display: grid;
   gap: 10px;
 }
 
-.crm .crm-label,
-.crm-container .crm-label {
-  display: block;
+.crm-form .row{
+  gap: 12px;
+}
+
+.crm-kpi{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 1100px){
+  .crm-kpi{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px){
+  .crm-kpi{ grid-template-columns: 1fr; }
+}
+
+.kpi-card{
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  background: rgba(232,238,252,.06);
+}
+.kpi-card .label{ color: var(--muted); font-size: 12px; }
+.kpi-card .value{ font-size: 22px; font-weight: 800; margin-top: 4px; }
+
+.crm-table-actions{
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tag{
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 999px;
   font-size: 12px;
-  color: var(--crm-muted);
-  font-weight: 900;
+  border: 1px solid var(--border);
+  background: rgba(232,238,252,.06);
+  color: var(--text);
 }
+.tag.warn{ border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.14); }
+.tag.good{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.14); }
+.tag.bad{ border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.14); }
 
-.crm :where(input, select, textarea),
-.crm-container :where(input, select, textarea) {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: rgba(255,255,255,0.95);
-  font-size: 14px;
-  color: var(--crm-text);
+/* Modals (simple) */
+.modal-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  z-index: 50;
 }
-
-.crm :where(input, select, textarea):focus-visible,
-.crm-container :where(input, select, textarea):focus-visible {
-  outline: 3px solid rgba(14,166,122,0.35);
-  outline-offset: 2px;
+.modal{
+  width: min(760px, 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(15,27,51,.92);
+  box-shadow: var(--shadow);
+  padding: 14px;
 }
-
-/* ---------- Buttons (reuse website .button if you already have it) ---------- */
-.crm .crm-btn,
-.crm-container .crm-btn {
-  margin-top: 6px;
-  padding: 11px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(15,23,42,0.10);
-  background: linear-gradient(135deg, var(--brand, #0ea67a) 0%, var(--brand-2, #15c28a) 100%);
-  color: #fff;
-  font-weight: 950;
-  cursor: pointer;
-  box-shadow: 0 12px 26px rgba(14,166,122,0.22);
-}
-
-.crm .crm-btn:disabled,
-.crm-container .crm-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.crm .crm-error,
-.crm-container .crm-error {
-  margin-top: 6px;
-  color: #b42318;
-  background: rgba(180, 35, 24, 0.08);
-  border: 1px solid rgba(180, 35, 24, 0.18);
-  padding: 10px 12px;
-  border-radius: 12px;
-  font-size: 13px;
+.modal .modal-title{
+  font-size: 16px;
   font-weight: 800;
+  margin: 0 0 10px;
+}
+.modal .modal-actions{
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 12px;
 }
 
-/* ---------- CRM topbar tweaks ---------- */
-.crm .crm-topbar.header {
-  border-bottom: 1px solid rgba(15,23,42,0.06);
-}
-
-.crm .nav__link.is-active {
-  background: rgba(14,166,122,0.10);
-}
-
-/* ---------- Utility: tables (for Products page) ---------- */
-.crm .table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--crm-surface);
-  border: 1px solid rgba(15,23,42,0.10);
-  border-radius: var(--crm-radius);
-  overflow: hidden;
-  box-shadow: var(--crm-shadow);
-}
-
-.crm .table th,
-.crm .table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(15,23,42,0.08);
-  font-size: 13px;
-  text-align: left;
-  vertical-align: top;
-}
-
-.crm .table th {
-  font-size: 12px;
-  color: var(--crm-muted);
-  font-weight: 950;
-}
-
-.crm .table tr:last-child td {
-  border-bottom: none;
+/* Responsive sidebar */
+@media (max-width: 980px){
+  .crm-shell{
+    grid-template-columns: 1fr;
+  }
+  .crm-sidebar{
+    height: auto;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
 }

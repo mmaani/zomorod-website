@@ -1,6 +1,8 @@
 import React from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { logout as doLogout, getUser } from "./auth.js";
+import "./crm.css";
+
 
 export default function CRMLayout() {
   const nav = useNavigate();
