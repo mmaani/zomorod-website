@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import apiFetch from "../api";
+import { apiFetch } from "../api.js";
 import { hasRole } from "../auth";
 
 export default function ClientsPage() {

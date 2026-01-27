@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "../api";
+import { apiFetch } from "../api.js";
 import { getUser, hasRole } from "../auth";
 
 export default function ProductsPage() {
