@@ -238,3 +238,143 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   border-radius: 12px;
   padding: 10px 12px;
 }
+/* ================================
+   Marketing Page (Bilingual)
+   ================================ */
+
+.mkt-page{
+  width: min(920px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 26px 0 46px;
+}
+
+.mkt-hero{
+  padding: 20px;
+}
+
+.mkt-hero-top{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mkt-logo{
+  width: 86px;
+  height: 86px;
+  object-fit: contain;
+  border-radius: 18px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--border);
+  padding: 10px;
+}
+
+.mkt-lang{
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 800;
+}
+
+.mkt-title{
+  margin: 14px 0 6px;
+  font-size: clamp(24px, 3.2vw, 36px);
+  line-height: 1.12;
+}
+
+.mkt-tagline{
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.mkt-cta-row{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+@media (max-width: 520px){
+  .mkt-cta-row{ grid-template-columns: 1fr; }
+}
+
+.mkt-cta{
+  text-align: center;
+}
+
+.mkt-section{
+  padding: 18px;
+  margin-top: 12px;
+}
+
+.mkt-h2{
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
+.mkt-p{
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
+.mkt-grid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px){
+  .mkt-grid{ grid-template-columns: 1fr; }
+}
+
+.mkt-card{
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.05);
+  padding: 14px;
+}
+
+.mkt-card-title{
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.mkt-card-body{
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.mkt-list{
+  margin: 0;
+  padding-inline-start: 18px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.mkt-contact{
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.mkt-contact-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.04);
+}
+
+.mkt-contact-label{
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
