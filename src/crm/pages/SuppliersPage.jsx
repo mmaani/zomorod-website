@@ -418,9 +418,7 @@ export default function SuppliersPage() {
             </table>
           </div>
 
-          <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-            Note: Country is stored as ISO2 code (e.g. JO, CN). If you want to store country name too, tell me and I’ll adjust schema + API.
-          </div>
+
         </div>
       </div>
     </div>
