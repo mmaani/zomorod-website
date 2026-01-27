@@ -1,11 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import logoImg from '../assets/logo.png'; // adjust the path based on the file’s location
 
 export default function MarketingPage() {
   return (
     <main className="marketing-page" style={{ padding: "2rem", maxWidth: 720, margin: "0 auto" }}>
-      {/* Header / Hero */}
       <header style={{ textAlign: "center", marginBottom: "2rem" }}>
         <img
           src="/logo.png"
@@ -25,22 +23,21 @@ export default function MarketingPage() {
         <h2>Who We Are</h2>
         <p>
           Zomorod Medical Supplies is an Amman‑based provider of high‑quality medical
-          consumables and equipment. We partner with respected manufacturers
-          worldwide to bring innovative products to clinics, hospitals and
-          distributors across Jordan. Our mission is to ensure healthcare
-          providers have access to safe, reliable and competitively priced
-          products supported by thorough documentation and local expertise.
+          consumables and equipment. We partner with respected manufacturers worldwide
+          to bring innovative products to clinics, hospitals and distributors across Jordan.
+          Our mission is to ensure healthcare providers have access to safe, reliable and
+          competitively priced products supported by thorough documentation and local expertise.
         </p>
         <p>
-          As a trusted distributor, we act as agents for well‑known global
-          companies and work hard to deliver integrated medical solutions that
-          meet the stringent demands of modern healthcare.
+          As a trusted distributor, we act as agents for well‑known global companies and
+          work hard to deliver integrated medical solutions that meet the stringent demands
+          of modern healthcare:contentReference[oaicite:0]{index=0}.
         </p>
       </section>
 
-      {/* What We Offer */}
+      {/* Our Products */}
       <section style={{ marginBottom: "2rem" }}>
-        <h2>What We Offer</h2>
+        <h2>Our Products</h2>
         <div className="grid">
           <div className="card">
             <div className="card__label">Personal Protective Equipment</div>
@@ -66,29 +63,45 @@ export default function MarketingPage() {
         </div>
       </section>
 
+      {/* Where We Operate */}
+      <section style={{ marginBottom: "2rem" }}>
+        <h2>Where We Operate</h2>
+        <p>
+          Headquartered in Amman, we distribute medical supplies throughout Jordan’s
+          hospitals, clinics and laboratories and support partners across the wider Middle East.
+          Jordan devotes nine percent of its GDP to healthcare and operates more than one hundred
+          hospitals:contentReference[oaicite:1]{index=1}. This strong infrastructure—along with the country’s
+          reputation as a regional healthcare leader and medical tourism destination:contentReference[oaicite:2]{index=2}—
+          allows us to efficiently deliver our products wherever they are needed.
+        </p>
+        <p>
+          By leveraging our logistics network and partnerships with global manufacturers,
+          we ensure timely delivery and ongoing support for healthcare providers not only
+          in Jordan but also in neighbouring markets across the Middle East. Whether you’re
+          a hospital in Amman or a clinic elsewhere in the region, Zomorod stands ready
+          to supply high‑quality consumables, personal protective equipment and specialised devices.
+        </p>
+      </section>
+
       {/* Why Choose Us */}
       <section style={{ marginBottom: "2rem" }}>
         <h2>Why Choose Zomorod?</h2>
         <ul style={{ listStyle: "disc", paddingLeft: "20px", lineHeight: 1.8 }}>
           <li>
-            <strong>Quality assurance:</strong> We source from reputable
-            manufacturers and inspect every shipment to ensure products meet
-            international standards.
+            <strong>Quality assurance:</strong> We source from reputable manufacturers and
+            inspect every shipment to ensure products meet international standards:contentReference[oaicite:3]{index=3}.
           </li>
           <li>
-            <strong>Complete documentation:</strong> All consumables and
-            equipment include certificates of compliance and are supported by
-            detailed documentation for regulatory purposes.
+            <strong>Complete documentation:</strong> All consumables and equipment include certificates
+            of compliance and are supported by detailed documentation for regulatory purposes.
           </li>
           <li>
-            <strong>Competitive pricing:</strong> Our local presence and
-            relationships with suppliers allow us to offer fair prices and
-            volume discounts.
+            <strong>Competitive pricing:</strong> Our local presence and relationships with suppliers allow
+            us to offer fair prices and volume discounts.
           </li>
           <li>
-            <strong>Reliable distribution:</strong> We provide timely delivery to
-            hospitals, clinics and distributors across Jordan, backed by local
-            after‑sales support.
+            <strong>Reliable distribution:</strong> We provide timely delivery to hospitals, clinics and
+            distributors across Jordan, backed by local after‑sales support:contentReference[oaicite:4]{index=4}.
           </li>
         </ul>
       </section>
@@ -97,22 +110,20 @@ export default function MarketingPage() {
       <section style={{ marginBottom: "2rem" }}>
         <h2>Get in Touch</h2>
         <p>
-          To request a quote, place an order or learn more about our product
-          range, please reach out via email, phone or WhatsApp.
+          To request a quote, place an order or learn more about our product range,
+          please reach out via email, phone or WhatsApp.
         </p>
         <ul style={{ listStyle: "none", padding: 0 }}>
           <li>
-            <strong>Email:</strong>{" "}
+            <strong>Email:</strong>{' '}
             <a href="mailto:info@zomorodmedical.com">info@zomorodmedical.com</a>
           </li>
           <li>
-            <strong>Phone:</strong>{" "}
+            <strong>Phone:</strong>{' '}
             <a href="tel:+962791752686">+962 79 175 2686</a>
           </li>
         </ul>
-        <div
-          style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "1rem" }}
-        >
+        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "1rem" }}>
           <Link to="/login" className="button button--primary" style={{ flex: 1, textAlign: "center" }}>
             Staff Login
           </Link>
