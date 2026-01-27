@@ -1,29 +1,29 @@
 /* =========================
-   ZOMOROD CRM — Brand UI (Dark + Green Identity)
-   - High readability like styles.css
-   - Dark green background (no blue tint)
-   - Supports existing page classes: container/card/table/button/form/field/list
-   - Fixes dropdown popup option visibility
+   ZOMOROD CRM — Dark + Green Identity (FIXED)
+   - Works with BOTH class systems:
+     (crm-*) + old shared classes (container/card/table/button/form)
+   - High readability (like styles.css)
+   - Dropdown options readable
    ========================= */
 
 :root{
   /* Brand */
-  --z-primary: #0e8e32;        /* emerald */
-  --z-primary-2: #03521e;      /* deep green */
-  --z-accent: #d6b25e;         /* gold accent (optional) */
+  --z-primary: #0e8e32;
+  --z-primary-2: #03521e;
+  --z-accent: #d6b25e;
 
-  /* Dark system */
-  --z-bg: #07130c;             /* deep green-black */
-  --z-surface: rgba(11, 31, 20, 0.78);
-  --z-surface-2: rgba(11, 31, 20, 0.92);
+  /* Dark UI */
+  --z-bg: #07130c;
+  --z-surface: rgba(15, 27, 51, .55);     /* fallback if you still want a "night" card feel */
+  --z-surface-g: rgba(10, 24, 16, 0.78);  /* green-tinted surface */
+  --z-surface-2: rgba(10, 24, 16, 0.92);
 
   --z-text: rgba(255,255,255,.92);
-  --z-muted: rgba(255,255,255,.70);
+  --z-muted: rgba(255,255,255,.72);
   --z-muted-2: rgba(255,255,255,.55);
 
   --z-border: rgba(255,255,255,.12);
   --z-shadow: 0 10px 30px rgba(0,0,0,.35);
-
   --z-radius: 16px;
   --z-radius-sm: 12px;
 
@@ -38,9 +38,8 @@ body{
   margin: 0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
   color: var(--z-text);
-  line-height: 1.5;
 
-  /* Green identity background glow (no blue) */
+  /* GREEN identity glow (no blue) */
   background:
     radial-gradient(1100px 760px at 18% 10%, rgba(14,142,50,.22), transparent 58%),
     radial-gradient(900px 620px at 88% 12%, rgba(3,82,30,.18), transparent 60%),
@@ -52,8 +51,9 @@ a{ color: inherit; text-decoration: none; }
 a:hover{ text-decoration: underline; }
 
 /* =========================
-   Shared layout helpers (your pages already use these)
+   COMPAT LAYER (old classes used in pages)
    ========================= */
+
 .container{
   width: min(1160px, calc(100% - 32px));
   margin: 0 auto;
@@ -61,13 +61,108 @@ a:hover{ text-decoration: underline; }
 }
 
 .card{
-  background: var(--z-surface);
+  background: var(--z-surface-g);
   border: 1px solid var(--z-border);
   border-radius: var(--z-radius);
   box-shadow: var(--z-shadow);
   padding: 16px;
+  backdrop-filter: blur(10px);
 }
 
+.table{
+  width: 100%;
+  overflow: auto;
+  border-radius: var(--z-radius);
+  border: 1px solid var(--z-border);
+  background: rgba(255,255,255,.03);
+}
+
+.table table{
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.table th,
+.table td{
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--z-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th{
+  position: sticky;
+  top: 0;
+  background: rgba(10, 24, 16, 0.90);
+  color: var(--z-muted);
+  font-size: 12px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.table tr:hover td{
+  background: rgba(255,255,255,.04);
+}
+
+/* Buttons used by ProductsPage (button/button--primary/button--ghost) */
+.button, button{
+  appearance: none;
+  border: 1px solid var(--z-border);
+  background: rgba(255,255,255,.06);
+  color: var(--z-text);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform .05s ease, background .15s ease, border-color .15s ease, filter .15s ease;
+}
+
+.button:hover, button:hover{ background: rgba(255,255,255,.10); }
+.button:active, button:active{ transform: translateY(1px); }
+.button:focus, button:focus{ outline: none; box-shadow: var(--z-focus); }
+
+.button--primary{
+  border-color: rgba(14,142,50,0.45);
+  background: linear-gradient(180deg, rgba(14,142,50,.35), rgba(3,82,30,.18));
+  color: var(--z-text); /* IMPORTANT: keep text WHITE (your previous version made it dark) */
+}
+.button--primary:hover{ filter: brightness(1.04); }
+
+.button--ghost{
+  background: transparent;
+  border-color: rgba(255,255,255,.16);
+}
+.button--ghost:hover{
+  border-color: rgba(14,142,50,0.40);
+  background: rgba(14,142,50,0.10);
+}
+
+/* Forms used by Products/Suppliers/Sales pages */
+.form{
+  display: grid;
+  gap: 12px;
+}
+
+.field{
+  display: grid;
+  gap: 6px;
+}
+
+label{
+  display:block;
+  font-size: 13px;
+  color: var(--z-muted);
+  margin: 0 0 6px;
+}
+
+.list{
+  margin: 0;
+  padding-left: 18px;
+  color: var(--z-muted);
+}
+
+/* Helpers */
 .muted{ color: var(--z-muted); }
 .small{ font-size: 12px; color: var(--z-muted); }
 
@@ -80,16 +175,8 @@ a:hover{ text-decoration: underline; }
   margin-top: 10px;
 }
 
-/* Lists used in Products page tiers */
-.list{
-  margin: 0;
-  padding-left: 18px;
-  color: var(--z-text);
-}
-.list li{ margin: 4px 0; }
-
 /* =========================
-   CRM Shell + Topbar
+   CRM SHELL / TOPBAR (crm-*)
    ========================= */
 .crm-shell{
   min-height: 100vh;
@@ -108,10 +195,8 @@ a:hover{ text-decoration: underline; }
   position: sticky;
   top: 0;
   z-index: 20;
-
-  background: rgba(11, 31, 20, 0.72);
+  background: rgba(10, 24, 16, 0.72);
   backdrop-filter: blur(10px);
-
   border-bottom: 1px solid var(--z-border);
 }
 
@@ -119,7 +204,6 @@ a:hover{ text-decoration: underline; }
   max-width: 1160px;
   margin: 0 auto;
   padding: 12px 16px;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -147,17 +231,18 @@ a:hover{ text-decoration: underline; }
   display: grid;
   line-height: 1.05;
 }
+
 .crm-brand-text strong{
   font-weight: 900;
   letter-spacing: .02em;
   color: var(--z-text);
 }
+
 .crm-brand-text span{
   font-size: 12px;
   color: var(--z-muted);
 }
 
-/* Nav */
 .crm-nav{
   display: flex;
   gap: 8px;
@@ -171,26 +256,23 @@ a:hover{ text-decoration: underline; }
   padding: 8px 10px;
   border-radius: 12px;
   border: 1px solid transparent;
-
-  color: var(--z-text);          /* ✅ make always readable */
-  opacity: .86;                   /* subtle muted effect */
-  font-weight: 900;
+  color: var(--z-muted);
+  font-weight: 800;
   font-size: 14px;
 }
 
 .crm-nav-link:hover{
-  opacity: 1;
-  background: rgba(14,142,50,0.12);
-  border-color: rgba(14,142,50,0.24);
+  background: rgba(14,142,50,0.10);
+  border-color: rgba(14,142,50,0.22);
+  color: var(--z-text);
 }
 
 .crm-nav-link.active{
-  opacity: 1;
-  background: rgba(14,142,50,0.18);
-  border-color: rgba(14,142,50,0.32);
+  background: rgba(14,142,50,0.16);
+  border-color: rgba(14,142,50,0.30);
+  color: var(--z-text);
 }
 
-/* User box */
 .crm-user{
   display: flex;
   align-items: center;
@@ -198,8 +280,7 @@ a:hover{ text-decoration: underline; }
 }
 
 .crm-user-email{
-  color: var(--z-text);          /* ✅ readable */
-  opacity: .78;
+  color: var(--z-muted);
   font-weight: 800;
   font-size: 13px;
   max-width: 260px;
@@ -209,63 +290,89 @@ a:hover{ text-decoration: underline; }
 }
 
 /* =========================
-   Buttons (supports both crm-btn and existing .button styles)
+   Dashboard blocks (dash-*)
    ========================= */
-.crm-btn,
-button{
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-weight: 900;
-  cursor: pointer;
-  border: 1px solid transparent;
+.dash-hero{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
 }
 
-/* Primary buttons */
-.crm-btn-primary,
-.button--primary,
-button[type="submit"]{
-  background: linear-gradient(180deg, rgba(14,142,50,1), rgba(3,82,30,1));
-  color: #ffffff;                /* ✅ WAS dark before — that caused unreadable text */
-  box-shadow: var(--z-shadow);
-  border-color: rgba(14,142,50,0.40);
-}
-.crm-btn-primary:hover,
-.button--primary:hover,
-button[type="submit"]:hover{
-  filter: brightness(1.05);
-}
-
-/* Ghost/outline */
-.crm-btn-outline,
-.button--ghost,
-button:not([type="submit"]){
-  background: rgba(255,255,255,0.06);
-  border-color: var(--z-border);
+.dash-title{
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: .01em;
   color: var(--z-text);
 }
-.crm-btn-outline:hover,
-.button--ghost:hover{
-  border-color: rgba(14,142,50,0.32);
-  background: rgba(14,142,50,0.10);
-}
 
-button:disabled{
-  opacity: .55;
-  cursor: not-allowed;
-}
-
-/* =========================
-   Forms / Inputs / Dropdowns
-   ========================= */
-.form{ display: grid; gap: 12px; }
-.field{ display: grid; gap: 6px; }
-
-label{
+.dash-sub{
+  margin-top: 6px;
+  color: var(--z-muted);
   font-size: 13px;
-  font-weight: 800;
+  line-height: 1.4;
+}
+
+.badges{
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.badge{
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid var(--z-border);
+  font-weight: 900;
+  color: var(--z-text);
+  background: rgba(255,255,255,.06);
+}
+
+.badge-strong{
+  background: rgba(14,142,50,0.18);
+  border-color: rgba(14,142,50,0.30);
+}
+
+.badge-soft{
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.14);
   color: var(--z-muted);
 }
 
+.dash-grid{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+@media (max-width: 900px){
+  .dash-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px){
+  .dash-grid{ grid-template-columns: 1fr; }
+}
+
+.stat-label{
+  color: var(--z-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+.stat-value{
+  font-size: 28px;
+  font-weight: 950;
+  margin-top: 6px;
+  color: var(--z-text);
+}
+.stat-hint{
+  color: var(--z-muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* =========================
+   Inputs / Dropdowns (visibility fix)
+   ========================= */
 input, select, textarea{
   font: inherit;
   color: var(--z-text);
@@ -277,7 +384,7 @@ input, select, textarea{
 }
 
 input::placeholder, textarea::placeholder{
-  color: rgba(255,255,255,0.52);
+  color: rgba(255,255,255,0.50);
 }
 
 input:focus, select:focus, textarea:focus{
@@ -285,92 +392,13 @@ input:focus, select:focus, textarea:focus{
   border-color: rgba(14,142,50,0.35);
 }
 
-/* ✅ IMPORTANT: dropdown popup options (fix gray/white unreadable issue) */
+/* IMPORTANT: dropdown popup options */
 select option{
   color: #0b1220 !important;
   background: #ffffff !important;
 }
 
-/* =========================
-   Tables (your pages use .table wrapper)
-   ========================= */
-.table{
-  width: 100%;
-  overflow: auto;
-  border-radius: var(--z-radius);
-  border: 1px solid var(--z-border);
-  background: rgba(11, 31, 20, 0.55);
-}
-
-table{
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 760px;
-}
-
-th, td{
-  padding: 12px 12px;
-  border-bottom: 1px solid var(--z-border);
-  text-align: left;
-  vertical-align: top;
-  color: var(--z-text);
-}
-
-th{
-  position: sticky;
-  top: 0;
-  background: var(--z-surface-2);
-  color: var(--z-muted);
-  font-size: 12px;
-  letter-spacing: .02em;
-  text-transform: uppercase;
-}
-
-tr:hover td{
-  background: rgba(255,255,255,.04);
-}
-
-/* =========================
-   Login page helpers (your LoginPage.jsx uses these)
-   ========================= */
-.crm-container{
-  min-height: calc(100vh - 40px);
-  display: grid;
-  place-items: center;
-  padding: 24px 16px;
-}
-
-.crm-title{
-  margin: 0 0 12px;
-  font-size: 22px;
-  letter-spacing: .01em;
-}
-
-.crm-form{
-  display: grid;
-  gap: 10px;
-}
-
-.crm-label{
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--z-muted);
-  margin-top: 6px;
-}
-
-.crm-input{
-  width: 100%;
-}
-
-.crm-error{
-  border: 1px solid rgba(239, 68, 68, 0.28);
-  background: rgba(239, 68, 68, 0.10);
-  color: var(--z-text);
-  border-radius: 12px;
-  padding: 10px 12px;
-}
-
-/* Remember me row (for your next login change) */
+/* Remember-me row (used in login) */
 .crm-remember{
   margin-top: 6px;
   display: flex;
@@ -382,7 +410,7 @@ tr:hover td{
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--z-muted);
   user-select: none;
 }
