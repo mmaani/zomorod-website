@@ -42,17 +42,13 @@ export async function login(email, password) {
     body: JSON.stringify({ email, password }),
   });
 
-  let data = null;
-  try {
-    data = await res.json();
-  } catch {}
-
-  if (!res.ok || !data?.ok) {
-    throw new Error(data?.error || `Login failed (${res.status})`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || `Login failed (${res.status})`);
   }
 
-  setToken(data.token);
-  setUser(data.user);
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("user", JSON.stringify(data.user));
   return data;
 }
 
