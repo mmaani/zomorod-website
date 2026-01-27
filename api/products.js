@@ -1,3 +1,4 @@
+// api/products.js
 import { getSql } from "../lib/db.js";
 import { requireUserFromReq, canSeePurchasePrice } from "../lib/requireAuth.js";
 
@@ -238,7 +239,7 @@ export default async function handler(req, res) {
       return send(res, 200, { ok: true });
     }
 
-    // ---------- DELETE /api/products ----------
+    // ---------- DELETE /api/products?id=123 ----------
     if (req.method === "DELETE") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
