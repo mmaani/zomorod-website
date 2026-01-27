@@ -13,31 +13,31 @@ function n(v) {
   return Number.isFinite(x) ? x : 0;
 }
 
+function isNonNegNumber(v) {
+  const x = Number(v);
+  return Number.isFinite(x) && x >= 0;
+}
+
 async function readJson(req, res) {
-  let body = req.body;
+  try {
+    let body = req.body;
 
-  if (typeof body === "string") {
-    try {
-      body = JSON.parse(body);
-    } catch {
-      send(res, 400, { ok: false, error: "Invalid JSON body" });
-      return null;
+    if (typeof body === "string") {
+      body = body ? JSON.parse(body) : {};
+      return body;
     }
-  }
 
-  if (!body) {
-    try {
-      const chunks = [];
-      for await (const chunk of req) chunks.push(chunk);
-      const raw = Buffer.concat(chunks).toString("utf8");
-      body = raw ? JSON.parse(raw) : {};
-    } catch {
-      send(res, 400, { ok: false, error: "Invalid JSON body" });
-      return null;
-    }
-  }
+    if (body && typeof body === "object") return body;
 
-  return body;
+    // Fallback: read stream
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    const raw = Buffer.concat(chunks).toString("utf8");
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    send(res, 400, { ok: false, error: "Invalid JSON body" });
+    return null;
+  }
 }
 
 export default async function handler(req, res) {
@@ -129,7 +129,7 @@ export default async function handler(req, res) {
           category: r.category || "",
           officialName: r.official_name,
           marketName: r.market_name || "",
-          defaultSellPriceJod: n(r.default_sell_price_jod),
+          defaultSellPriceJod: r.default_sell_price_jod,
           onHandQty: n(r.on_hand_qty),
           priceTiers: tiersByProduct.get(r.id) || [],
           archivedAt: r.archived_at || null,
@@ -143,6 +143,7 @@ export default async function handler(req, res) {
           item.lastPurchasePriceJod = null;
           item.avgPurchasePriceJod = null;
         }
+
         return item;
       });
 
@@ -162,9 +163,13 @@ export default async function handler(req, res) {
       const categoryName = String(body?.category || "").trim();
       const officialName = String(body?.officialName || "").trim();
       const marketName = String(body?.marketName || "").trim();
+      const defaultSellPriceJodRaw = body?.defaultSellPriceJod;
 
-      // ✅ selling price MUST NOT be negative
-      const defaultSellPriceJod = n(body?.defaultSellPriceJod);
+      // ✅ No negative selling price
+      if (!isNonNegNumber(defaultSellPriceJodRaw)) {
+        return send(res, 400, { ok: false, error: "defaultSellPriceJod must be a non-negative number" });
+      }
+      const defaultSellPriceJod = Number(defaultSellPriceJodRaw);
 
       const priceTiers = Array.isArray(body?.priceTiers) ? body.priceTiers : [];
 
@@ -172,8 +177,17 @@ export default async function handler(req, res) {
         return send(res, 400, { ok: false, error: "productCode and officialName are required" });
       }
 
-      if (defaultSellPriceJod < 0) {
-        return send(res, 400, { ok: false, error: "defaultSellPriceJod cannot be negative" });
+      // ✅ Validate tiers: no negative values
+      for (const t of priceTiers) {
+        const minQty = Number(t?.minQty);
+        const unitPriceJod = Number(t?.unitPriceJod);
+
+        if (!Number.isFinite(minQty) || minQty <= 0) {
+          return send(res, 400, { ok: false, error: "Each price tier minQty must be > 0" });
+        }
+        if (!Number.isFinite(unitPriceJod) || unitPriceJod < 0) {
+          return send(res, 400, { ok: false, error: "Each price tier unitPriceJod must be non-negative" });
+        }
       }
 
       let categoryId = null;
@@ -194,16 +208,9 @@ export default async function handler(req, res) {
       `;
       const productId = pRows?.[0]?.id;
 
-      // price tiers (skip invalid rows)
       for (const t of priceTiers) {
-        const minQty = n(t?.minQty);
-        const unitPriceJod = n(t?.unitPriceJod);
-
-        // min qty must be > 0
-        if (!Number.isFinite(minQty) || minQty <= 0) continue;
-
-        // ✅ selling tier price must be > 0 (and not negative)
-        if (!Number.isFinite(unitPriceJod) || unitPriceJod <= 0) continue;
+        const minQty = Number(t?.minQty);
+        const unitPriceJod = Number(t?.unitPriceJod);
 
         await sql`
           INSERT INTO product_price_tiers (product_id, min_qty, unit_price_jod)
@@ -217,7 +224,7 @@ export default async function handler(req, res) {
     }
 
     // ---------- PATCH /api/products ----------
-    // (Currently used only for archive/unarchive)
+    // Current use: archive/unarchive only (keep same behavior)
     if (req.method === "PATCH") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
@@ -226,30 +233,18 @@ export default async function handler(req, res) {
       const body = await readJson(req, res);
       if (!body) return;
 
-      const id = n(body?.id);
+      const id = Number(body?.id);
       const archived = typeof body?.archived === "boolean" ? body.archived : null;
 
       if (!id || archived === null) {
         return send(res, 400, { ok: false, error: "id and archived fields are required" });
       }
 
-      if (archived) {
-        const result = await sql`
-          UPDATE products
-          SET archived_at = NOW()
-          WHERE id = ${id}
-          RETURNING id
-        `;
-        if (!result.length) return send(res, 404, { ok: false, error: "Product not found" });
-      } else {
-        const result = await sql`
-          UPDATE products
-          SET archived_at = NULL
-          WHERE id = ${id}
-          RETURNING id
-        `;
-        if (!result.length) return send(res, 404, { ok: false, error: "Product not found" });
-      }
+      const result = archived
+        ? await sql`UPDATE products SET archived_at = NOW() WHERE id = ${id} RETURNING id`
+        : await sql`UPDATE products SET archived_at = NULL WHERE id = ${id} RETURNING id`;
+
+      if (!result.length) return send(res, 404, { ok: false, error: "Product not found" });
 
       return send(res, 200, { ok: true });
     }
@@ -261,7 +256,7 @@ export default async function handler(req, res) {
 
       const sql = getSql();
       const url = new URL(req.url, "http://localhost");
-      const id = n(url.searchParams.get("id"));
+      const id = Number(url.searchParams.get("id"));
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
       const rows = await sql`
