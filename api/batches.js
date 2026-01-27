@@ -1,3 +1,4 @@
+
 import { getSql } from "../lib/db.js";
 import { requireUserFromReq, canSeePurchasePrice } from "../lib/requireAuth.js";
 
@@ -7,6 +8,9 @@ import { requireUserFromReq, canSeePurchasePrice } from "../lib/requireAuth.js";
  *  - GET    /api/batches?productId=123
  *  - POST   /api/batches
  *  - DELETE /api/batches?id=456
+ *
+ * NOTE:
+ * - Sales doesn't use batch_id, so we also do NOT use batch_id in inventory_movements inserts.
  */
 export default async function handler(req, res) {
   const method = req.method || "GET";
@@ -16,14 +20,10 @@ export default async function handler(req, res) {
     if (method === "POST") return await handlePOST(req, res);
     if (method === "DELETE") return await handleDELETE(req, res);
 
-    res.statusCode = 405;
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ ok: false, error: "Method not allowed" }));
+    return send(res, 405, { ok: false, error: "Method not allowed" });
   } catch (err) {
     console.error("api/batches crashed:", err);
-    res.statusCode = 500;
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ ok: false, error: "Server error" }));
+    return send(res, 500, { ok: false, error: "Server error" });
   }
 }
 
@@ -48,12 +48,15 @@ function toDateOrNull(s) {
 }
 
 async function readJson(req) {
-  // Vercel usually gives req.body already parsed for JSON, but not always.
+  // Vercel sometimes provides req.body already parsed
   let body = req.body;
 
   if (typeof body === "string") {
-    body = body ? JSON.parse(body) : {};
-    return body;
+    try {
+      return body ? JSON.parse(body) : {};
+    } catch {
+      throw new Error("Invalid JSON body");
+    }
   }
 
   if (body && typeof body === "object") return body;
@@ -62,14 +65,19 @@ async function readJson(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
   const raw = Buffer.concat(chunks).toString("utf8");
-  return raw ? JSON.parse(raw) : {};
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error("Invalid JSON body");
+  }
 }
 
 /* ---------------- handlers ---------------- */
 
 async function handleGET(req, res) {
   const auth = await requireUserFromReq(req, res);
-  if (!auth) return; // requireUserFromReq already responded
+  if (!auth) return;
 
   const url = new URL(req.url, "http://localhost");
   const productId = n(url.searchParams.get("productId"));
@@ -98,7 +106,7 @@ async function handleGET(req, res) {
 
   const showPurchase = canSeePurchasePrice(auth.roles);
 
-  const batches = rows.map((r) => ({
+  const batches = (rows || []).map((r) => ({
     id: r.id,
     productId: r.product_id,
     lotNumber: r.lot_number,
@@ -127,8 +135,8 @@ async function handlePOST(req, res) {
   let body;
   try {
     body = await readJson(req);
-  } catch {
-    return send(res, 400, { ok: false, error: "Invalid JSON body" });
+  } catch (e) {
+    return send(res, 400, { ok: false, error: e?.message || "Invalid JSON body" });
   }
 
   const productId = n(body?.productId);
@@ -152,7 +160,7 @@ async function handlePOST(req, res) {
 
   try {
     const result = await sql.begin(async (tx) => {
-      // If lot exists: add qty + recalc avg cost
+      // Look for an existing (same product + lot) non-void batch
       const existing = await tx`
         SELECT id, qty_received, purchase_price_jod
         FROM batches
@@ -169,6 +177,7 @@ async function handlePOST(req, res) {
         const oldQty = n(b.qty_received);
         const oldPrice = n(b.purchase_price_jod);
 
+        // ✅ Weighted average across quantities (old + new)
         const newQty = oldQty + qtyReceived;
         const newAvg =
           newQty > 0
@@ -188,10 +197,9 @@ async function handlePOST(req, res) {
           WHERE id = ${b.id}
           RETURNING id
         `;
-        batchId = upd[0].id;
+
+        batchId = upd?.[0]?.id;
       } else {
-        // Insert new lot
-        // NOTE: this assumes your DB has supplier_id column in batches.
         const ins = await tx`
           INSERT INTO batches (
             product_id, warehouse_id, lot_number, purchase_date, expiry_date,
@@ -203,12 +211,14 @@ async function handlePOST(req, res) {
           )
           RETURNING id
         `;
-        batchId = ins[0].id;
+
+        batchId = ins?.[0]?.id;
       }
 
+      // ✅ Insert movement WITHOUT batch_id (since your system doesn't use it)
       await tx`
-        INSERT INTO inventory_movements (warehouse_id, product_id, movement_type, qty, batch_id, movement_date, note)
-        VALUES (${warehouseId}, ${productId}, 'IN', ${qtyReceived}, ${batchId}, ${purchaseDate}, 'Receive batch')
+        INSERT INTO inventory_movements (warehouse_id, product_id, movement_type, qty, movement_date, note)
+        VALUES (${warehouseId}, ${productId}, 'IN', ${qtyReceived}, ${purchaseDate}, 'Receive batch')
       `;
 
       return { batchId };
@@ -238,20 +248,19 @@ async function handleDELETE(req, res) {
         WHERE id = ${id} AND COALESCE(is_void, false) = false
         LIMIT 1
       `;
-      if (!rows.length) {
-        const e = new Error("BATCH_NOT_FOUND");
-        throw e;
-      }
+      if (!rows.length) throw new Error("BATCH_NOT_FOUND");
 
       const b = rows[0];
       const qty = n(b.qty_received);
 
+      // Soft void
       await tx`UPDATE batches SET is_void = true, voided_at = NOW() WHERE id = ${id}`;
 
+      // Reverse inventory using ADJ movement (negative qty), WITHOUT batch_id
       if (qty > 0) {
         await tx`
-          INSERT INTO inventory_movements (warehouse_id, product_id, movement_type, qty, batch_id, movement_date, note)
-          VALUES (${b.warehouse_id || 1}, ${b.product_id}, 'ADJ', ${-qty}, ${id}, ${b.purchase_date}, 'Void batch (reverse)')
+          INSERT INTO inventory_movements (warehouse_id, product_id, movement_type, qty, movement_date, note)
+          VALUES (${b.warehouse_id || 1}, ${b.product_id}, 'ADJ', ${-qty}, ${b.purchase_date}, 'Void batch (reverse)')
         `;
       }
     });
@@ -265,3 +274,4 @@ async function handleDELETE(req, res) {
     return send(res, 500, { ok: false, error: "Server error" });
   }
 }
+
