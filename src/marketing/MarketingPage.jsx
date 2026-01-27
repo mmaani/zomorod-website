@@ -6,7 +6,7 @@ const COPY = {
     dir: "ltr",
     langLabel: "عربي",
     brandName: "Zomorod Medical Supplies LLC",
-    tagline: "Your trusted partner for high-quality medical consumables and supplies in Jordan.",
+    tagline: "Your trusted partner for high-quality medical consumables and supplies in Jordan and Syria.",
     ctaStaff: "Staff Login",
     ctaWhatsapp: "Message us on WhatsApp",
     sections: {
@@ -37,7 +37,7 @@ const COPY = {
       },
       operate: {
         title: "Where We Operate",
-        p1: `Headquartered in Amman, we serve hospitals, clinics, labs, and medical distributors across Jordan.
+        p1: `Headquartered in Amman, we serve hospitals, clinics, labs, and medical distributors across Jordan and Syria.
              We also support cross-border opportunities when compliant and approved.`,
         p2: `Our operations prioritize documentation, traceability, and timely delivery — with local follow-up and support.`,
       },
@@ -63,7 +63,7 @@ const COPY = {
     dir: "rtl",
     langLabel: "EN",
     brandName: "شركة زمرد للمستلزمات الطبية ذ.م.م",
-    tagline: "شريكك الموثوق لتوريد المستلزمات الطبية عالية الجودة في الأردن.",
+    tagline: "شريكك الموثوق لتوريد المستلزمات الطبية عالية الجودة في الأردن وسوريا.",
     ctaStaff: "دخول الموظفين",
     ctaWhatsapp: "راسلنا على واتساب",
     sections: {
@@ -71,7 +71,7 @@ const COPY = {
         title: "من نحن",
         p1: `زمرد للمستلزمات الطبية شركة مقرّها عمّان، متخصصة في توريد المستهلكات والمستلزمات الطبية.
              نتعاون مع مُصنّعين موثوقين لتقديم منتجات مطابقة للمواصفات ومدعومة بالوثائق إلى العيادات
-             والمستشفيات والموزعين في الأردن.`,
+             والمستشفيات والموزعين في الأردن وسوريا.`,
         p2: `نعتمد نهجًا يضع الامتثال أولاً: توثيق واضح، وتتبع للمصدر، وجودة ثابتة —
              لتتمكن الجهات الصحية من الشراء بثقة.`,
       },
@@ -94,7 +94,7 @@ const COPY = {
       },
       operate: {
         title: "أين نعمل",
-        p1: `يقع مقرنا في عمّان، ونخدم المستشفيات والعيادات والمختبرات والموزعين في مختلف محافظات الأردن.
+        p1: `يقع مقرنا في عمّان، ونخدم المستشفيات والعيادات والمختبرات والموزعين في مختلف محافظات الأردن وسوريا.
              كما ندعم فرص التوسع الإقليمي عند توفر الاعتمادات والامتثال المطلوب.`,
         p2: `تركيزنا على التوثيق والتتبع وسرعة التوريد — مع متابعة محلية ودعم مهني.`,
       },
