@@ -1,5 +1,11 @@
 import { getSql } from "../lib/db.js";
-import { requireUser } from "../lib/requireAuth.js";
+import { requireUserFromReq } from "../lib/requireAuth.js";
+
+function send(res, status, payload) {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify(payload));
+}
 
 function toDateOrNull(s) {
   const v = String(s || "").trim();
@@ -13,26 +19,26 @@ function n(v) {
   return Number.isFinite(x) ? x : 0;
 }
 
-async function readJson(req, res) {
+async function readJsonBody(req, res) {
   let body = req.body;
 
   if (typeof body === "string") {
     try {
       body = JSON.parse(body);
     } catch {
-      res.status(400).json({ ok: false, error: "Invalid JSON body" });
+      send(res, 400, { ok: false, error: "Invalid JSON body" });
       return null;
     }
   }
 
   if (!body) {
     const chunks = [];
-    for await (const ch of req) chunks.push(ch);
+    for await (const chunk of req) chunks.push(chunk);
     const raw = Buffer.concat(chunks).toString("utf8");
     try {
       body = raw ? JSON.parse(raw) : {};
     } catch {
-      res.status(400).json({ ok: false, error: "Invalid JSON body" });
+      send(res, 400, { ok: false, error: "Invalid JSON body" });
       return null;
     }
   }
@@ -40,19 +46,24 @@ async function readJson(req, res) {
   return body || {};
 }
 
-// ✅ Vercel Node Serverless Function
+// Vercel Serverless Function
 export default async function handler(req, res) {
+  const sql = getSql();
+
+  // Build a proper URL object for query params
+  const url = new URL(req.url, `http://${req.headers.host}`);
+
   try {
-    // ---------- GET ----------
+    // -----------------------
+    // GET /api/batches?productId=123
+    // -----------------------
     if (req.method === "GET") {
-      const auth = await requireUser(req, res);
+      const auth = await requireUserFromReq(req, res);
       if (!auth) return;
 
-      const sql = getSql();
-      const productId = n(req.query?.productId);
-
+      const productId = n(url.searchParams.get("productId"));
       if (!productId) {
-        res.status(400).json({ ok: false, error: "productId is required" });
+        send(res, 400, { ok: false, error: "productId is required" });
         return;
       }
 
@@ -75,7 +86,7 @@ export default async function handler(req, res) {
         ORDER BY purchase_date DESC, id DESC
       `;
 
-      const batches = rows.map((r) => ({
+      const batches = (rows || []).map((r) => ({
         id: r.id,
         productId: r.product_id,
         lotNumber: r.lot_number,
@@ -85,23 +96,23 @@ export default async function handler(req, res) {
         purchasePriceJod: r.purchase_price_jod,
         supplierName: r.supplier_name,
         supplierInvoiceNo: r.supplier_invoice_no,
-        supplierId: r.supplier_id,
+        supplierId: r.supplier_id || null,
         createdAt: r.created_at,
       }));
 
-      res.status(200).json({ ok: true, batches });
+      send(res, 200, { ok: true, batches });
       return;
     }
 
-    // ---------- POST (Main only) ----------
+    // -----------------------
+    // POST /api/batches  (main only)
+    // -----------------------
     if (req.method === "POST") {
-      const auth = await requireUser(req, res, { rolesAny: ["main"] });
+      const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
 
-      const body = await readJson(req, res);
+      const body = await readJsonBody(req, res);
       if (!body) return;
-
-      const sql = getSql();
 
       const productId = n(body?.productId);
       const lotNumber = String(body?.lotNumber || "").trim();
@@ -110,15 +121,16 @@ export default async function handler(req, res) {
       const purchasePriceJod = n(body?.purchasePriceJod);
       const qtyReceived = n(body?.qtyReceived);
 
-      const supplierId = body?.supplierId ? n(body.supplierId) : null;
+      // New supplier fields
+      const supplierId = n(body?.supplierId) || null;
       const supplierName = String(body?.supplierName || "").trim() || null;
       const supplierInvoiceNo = String(body?.supplierInvoiceNo || "").trim() || null;
 
-      if (!productId) return res.status(400).json({ ok: false, error: "productId is required" });
-      if (!lotNumber) return res.status(400).json({ ok: false, error: "lotNumber is required" });
-      if (!purchaseDate) return res.status(400).json({ ok: false, error: "purchaseDate must be YYYY-MM-DD" });
-      if (qtyReceived <= 0) return res.status(400).json({ ok: false, error: "qtyReceived must be > 0" });
-      if (purchasePriceJod <= 0) return res.status(400).json({ ok: false, error: "purchasePriceJod must be > 0" });
+      if (!productId) return send(res, 400, { ok: false, error: "productId is required" });
+      if (!lotNumber) return send(res, 400, { ok: false, error: "lotNumber is required" });
+      if (!purchaseDate) return send(res, 400, { ok: false, error: "purchaseDate must be YYYY-MM-DD" });
+      if (qtyReceived <= 0) return send(res, 400, { ok: false, error: "qtyReceived must be > 0" });
+      if (purchasePriceJod <= 0) return send(res, 400, { ok: false, error: "purchasePriceJod must be > 0" });
 
       const warehouseId = 1;
 
@@ -152,9 +164,9 @@ export default async function handler(req, res) {
               purchase_price_jod = ${newAvg},
               purchase_date = ${purchaseDate},
               expiry_date = ${expiryDate},
+              supplier_id = COALESCE(${supplierId}, supplier_id),
               supplier_name = COALESCE(${supplierName}, supplier_name),
-              supplier_invoice_no = COALESCE(${supplierInvoiceNo}, supplier_invoice_no),
-              supplier_id = COALESCE(${supplierId}, supplier_id)
+              supplier_invoice_no = COALESCE(${supplierInvoiceNo}, supplier_invoice_no)
             WHERE id = ${b.id}
             RETURNING id
           `;
@@ -182,18 +194,19 @@ export default async function handler(req, res) {
         return { batchId };
       });
 
-      res.status(201).json({ ok: true, batchId: result.batchId });
+      send(res, 201, { ok: true, batchId: result.batchId });
       return;
     }
 
-    // ---------- DELETE (Main only) ----------
+    // -----------------------
+    // DELETE /api/batches?id=123  (main only)
+    // -----------------------
     if (req.method === "DELETE") {
-      const auth = await requireUser(req, res, { rolesAny: ["main"] });
+      const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
 
-      const sql = getSql();
-      const id = n(req.query?.id);
-      if (!id) return res.status(400).json({ ok: false, error: "id is required" });
+      const id = n(url.searchParams.get("id"));
+      if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
       await sql.begin(async (tx) => {
         const rows = await tx`
@@ -202,7 +215,11 @@ export default async function handler(req, res) {
           WHERE id = ${id} AND COALESCE(is_void, false) = false
           LIMIT 1
         `;
-        if (!rows.length) throw new Error("BATCH_NOT_FOUND");
+        if (!rows.length) {
+          const err = new Error("BATCH_NOT_FOUND");
+          err.code = "BATCH_NOT_FOUND";
+          throw err;
+        }
 
         const b = rows[0];
         const qty = n(b.qty_received);
@@ -217,18 +234,18 @@ export default async function handler(req, res) {
         }
       });
 
-      res.status(200).json({ ok: true });
+      send(res, 200, { ok: true });
       return;
     }
 
-    // ---------- Method not allowed ----------
-    res.status(405).json({ ok: false, error: "Method not allowed" });
+    // Method not allowed
+    send(res, 405, { ok: false, error: "Method not allowed" });
   } catch (err) {
-    if (String(err?.message) === "BATCH_NOT_FOUND") {
-      res.status(404).json({ ok: false, error: "Batch not found" });
+    if (String(err?.code || err?.message) === "BATCH_NOT_FOUND") {
+      send(res, 404, { ok: false, error: "Batch not found" });
       return;
     }
-    console.error("api/batches error:", err);
-    res.status(500).json({ ok: false, error: "Server error", detail: String(err?.message || err) });
+    console.error("batches function failed:", err);
+    send(res, 500, { ok: false, error: "Server error", detail: String(err?.message || err) });
   }
 }
