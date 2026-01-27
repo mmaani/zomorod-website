@@ -7,6 +7,10 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // ✅ new
+  const [rememberMe, setRememberMe] = useState(true);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -19,10 +23,10 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      await login(email.trim(), password, rememberMe);
       navigate("/crm", { replace: true });
     } catch (err) {
-      setError(err.message || "Login failed");
+      setError(err?.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -54,9 +58,21 @@ export default function LoginPage() {
             required
           />
 
+          {/* ✅ Remember me row */}
+          <div className="crm-remember">
+            <label className="crm-check">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              <span>Remember me</span>
+            </label>
+          </div>
+
           {error ? <div className="crm-error">{error}</div> : null}
 
-          <button className="crm-btn" type="submit" disabled={loading}>
+          <button className="crm-btn crm-btn-primary" type="submit" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>

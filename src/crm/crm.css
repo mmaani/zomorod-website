@@ -325,6 +325,27 @@ input:focus, select:focus, textarea:focus{
   box-shadow: var(--z-focus);
   border-color: rgba(14,142,50,0.35);
 }
+.crm-remember{
+  margin-top: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.crm-check{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: var(--z-muted);
+  user-select: none;
+}
+
+.crm-check input{
+  width: 18px;
+  height: 18px;
+  accent-color: var(--z-primary);
+}
 
 /* IMPORTANT: dropdown popup options (fix gray/white unreadable issue) */
 select option{
