@@ -1,11 +1,7 @@
+// SalesPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../api.js";
 import { hasRole } from "../auth";
-
-function n(v) {
-  const x = Number(v);
-  return Number.isFinite(x) ? x : 0;
-}
 
 function emptyLine() {
   return { productId: "", qty: "", unitPriceJod: "" };
@@ -15,74 +11,59 @@ export default function SalesPage() {
   const [sales, setSales] = useState([]);
   const [clients, setClients] = useState([]);
   const [products, setProducts] = useState([]);
-  const [salespersons, setSalespersons] = useState([]); // needs /api/salespersons
-  const [loading, setLoading] = useState(true);
+  const [salespersons, setSalespersons] = useState([]);
 
   const [form, setForm] = useState({
     clientId: "",
+    salespersonId: "", // optional -> API will default
     saleDate: "",
-    salespersonId: "", // optional (server uses default if empty)
-    notes: "",
     items: [emptyLine()],
   });
 
-  const productsById = useMemo(() => {
+  const itemsNormalized = useMemo(() => {
+    return form.items.map((it) => ({
+      productId: it.productId,
+      qty: Number(it.qty || 0),
+      unitPriceJod: Number(it.unitPriceJod || 0),
+    }));
+  }, [form.items]);
+
+  const totalJod = useMemo(() => {
+    const t = itemsNormalized.reduce((sum, it) => {
+      if (!it.productId || !it.qty || !it.unitPriceJod) return sum;
+      return sum + it.qty * it.unitPriceJod;
+    }, 0);
+    return Number(t.toFixed(3));
+  }, [itemsNormalized]);
+
+  // Build on-hand map
+  const onHandByProductId = useMemo(() => {
     const m = new Map();
-    for (const p of products) m.set(String(p.id), p);
+    for (const p of products) m.set(String(p.id), Number(p.onHandQty || 0));
     return m;
   }, [products]);
 
-  const enrichedItems = useMemo(() => {
-    return form.items.map((it) => {
-      const p = productsById.get(String(it.productId));
-      const onHand = n(p?.onHandQty);
-      const qty = n(it.qty);
-      const price = Number(it.unitPriceJod);
-      const priceOk = Number.isFinite(price) && price > 0;
-      const qtyOk = qty > 0;
-      const stockOk = !it.productId || !qtyOk || qty <= onHand;
-      const lineTotal = qtyOk && priceOk ? qty * price : 0;
-
-      return {
-        ...it,
-        product: p || null,
-        onHand,
-        qty,
-        price,
-        qtyOk,
-        priceOk,
-        stockOk,
-        lineTotal,
-      };
-    });
-  }, [form.items, productsById]);
-
-  const grandTotal = useMemo(
-    () => enrichedItems.reduce((sum, it) => sum + (Number(it.lineTotal) || 0), 0),
-    [enrichedItems]
-  );
-
-  const formOk = useMemo(() => {
-    if (!form.clientId || !form.saleDate) return false;
-    if (!enrichedItems.length) return false;
-
-    // all lines must be valid and have product
-    for (const it of enrichedItems) {
-      if (!it.productId) return false;
-      if (!it.qtyOk) return false;
-      if (!it.priceOk) return false;
-      if (!it.stockOk) return false;
+  // Merge qty per product to validate stock correctly if user repeats same product in multiple lines
+  const stockCheck = useMemo(() => {
+    const merged = new Map(); // productId -> qty
+    for (const it of itemsNormalized) {
+      if (!it.productId) continue;
+      const key = String(it.productId);
+      merged.set(key, (merged.get(key) || 0) + (it.qty || 0));
     }
-    return true;
-  }, [form.clientId, form.saleDate, enrichedItems]);
+    for (const [pid, reqQty] of merged.entries()) {
+      const onHand = onHandByProductId.get(pid) ?? 0;
+      if (reqQty > onHand) return { ok: false, productId: pid, onHand, requested: reqQty };
+    }
+    return { ok: true };
+  }, [itemsNormalized, onHandByProductId]);
 
   async function load() {
-    setLoading(true);
-
-    const [saleRes, clientRes, prodRes] = await Promise.all([
+    const [saleRes, clientRes, prodRes, spRes] = await Promise.all([
       apiFetch("/api/sales"),
       apiFetch("/api/clients"),
       apiFetch("/api/products?includeArchived=1"),
+      apiFetch("/api/salespersons"),
     ]);
 
     if (saleRes) {
@@ -97,28 +78,21 @@ export default function SalesPage() {
       const prodData = await prodRes.json().catch(() => ({}));
       if (prodRes.ok && prodData.ok) setProducts(prodData.products || []);
     }
-
-    // Optional: load salespersons if API exists
-    try {
-      const spRes = await apiFetch("/api/salespersons");
-      const spData = await spRes?.json().catch(() => ({}));
-      if (spRes?.ok && spData?.ok) setSalespersons(spData.salespersons || []);
-    } catch {
-      // ignore if endpoint not ready
+    if (spRes) {
+      const spData = await spRes.json().catch(() => ({}));
+      if (spRes.ok && spData.ok) setSalespersons(spData.salespersons || []);
     }
-
-    setLoading(false);
   }
 
   useEffect(() => {
     load();
   }, []);
 
-  function updateItem(idx, patch) {
+  function updateLine(idx, patch) {
     setForm((s) => {
-      const items = s.items.slice();
-      items[idx] = { ...items[idx], ...patch };
-      return { ...s, items };
+      const next = [...s.items];
+      next[idx] = { ...next[idx], ...patch };
+      return { ...s, items: next };
     });
   }
 
@@ -128,53 +102,70 @@ export default function SalesPage() {
 
   function removeLine(idx) {
     setForm((s) => {
-      const items = s.items.slice();
-      items.splice(idx, 1);
-      return { ...s, items: items.length ? items : [emptyLine()] };
+      const next = s.items.filter((_, i) => i !== idx);
+      return { ...s, items: next.length ? next : [emptyLine()] };
     });
   }
 
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formOk) {
-      alert("Please fix the sale form (missing fields / invalid qty/price / insufficient stock).");
+
+    if (!form.clientId || !form.saleDate) {
+      alert("Please select client and date");
       return;
     }
 
-    const payload = {
-      clientId: Number(form.clientId),
-      saleDate: form.saleDate,
-      salespersonId: form.salespersonId ? Number(form.salespersonId) : null,
-      notes: form.notes?.trim() || null,
-      items: enrichedItems.map((it) => ({
+    // Validate lines
+    const cleaned = form.items
+      .map((it) => ({
         productId: Number(it.productId),
         qty: Number(it.qty),
-        unitPriceJod: Number(it.price),
-      })),
-    };
+        unitPriceJod: Number(it.unitPriceJod),
+      }))
+      .filter((it) => it.productId && it.qty && it.unitPriceJod);
 
-    const res = await apiFetch("/api/sales", { method: "POST", body: payload });
+    if (!cleaned.length) {
+      alert("Add at least one product line (product, qty, price).");
+      return;
+    }
+
+    for (const it of cleaned) {
+      if (!Number.isFinite(it.qty) || it.qty <= 0) return alert("Quantity must be > 0");
+      if (!Number.isFinite(it.unitPriceJod) || it.unitPriceJod <= 0) return alert("Unit price must be > 0");
+    }
+
+    if (!stockCheck.ok) {
+      alert(`Not enough stock for productId=${stockCheck.productId}. Requested=${stockCheck.requested}, Available=${stockCheck.onHand}`);
+      return;
+    }
+
+    const res = await apiFetch("/api/sales", {
+      method: "POST",
+      body: {
+        clientId: Number(form.clientId),
+        salespersonId: form.salespersonId ? Number(form.salespersonId) : null,
+        saleDate: form.saleDate,
+        items: cleaned,
+      },
+    });
+
     const data = await res?.json().catch(() => ({}));
-
     if (!res?.ok || !data?.ok) {
       alert(data?.error || "Failed to record sale");
       return;
     }
 
-    setForm({ clientId: "", saleDate: "", salespersonId: "", notes: "", items: [emptyLine()] });
+    setForm({ clientId: "", salespersonId: "", saleDate: "", items: [emptyLine()] });
     load();
-  }
+  };
 
-  async function handleDelete(orderId) {
-    if (!window.confirm("Void this sale transaction? (This will restore stock)")) return;
-    const res = await apiFetch(`/api/sales?id=${orderId}`, { method: "DELETE" });
+  const handleVoid = async (id) => {
+    if (!window.confirm("Void this sale transaction? Stock will be restored.")) return;
+    const res = await apiFetch(`/api/sales?id=${id}`, { method: "DELETE" });
     const data = await res?.json().catch(() => ({}));
-    if (!res?.ok || !data?.ok) {
-      alert(data?.error || "Failed to void sale");
-      return;
-    }
+    if (!res?.ok || !data?.ok) alert(data?.error || "Failed to void sale");
     load();
-  }
+  };
 
   return (
     <div className="container">
@@ -182,117 +173,115 @@ export default function SalesPage() {
 
       {hasRole("main") && (
         <form onSubmit={handleSubmit} className="card">
-          <h3>Record Sale (Transaction)</h3>
+          <h3>Record Sale (multi-product)</h3>
 
-          <select value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })}>
-            <option value="">Select client...</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+          <div style={{ display: "grid", gap: 10 }}>
+            <select value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })}>
+              <option value="">Select client...</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
 
-          <input
-            type="date"
-            value={form.saleDate}
-            onChange={(e) => setForm({ ...form, saleDate: e.target.value })}
-          />
+            <select value={form.salespersonId} onChange={(e) => setForm({ ...form, salespersonId: e.target.value })}>
+              <option value="">Salesperson (default if empty)</option>
+              {salespersons.map((sp) => (
+                <option key={sp.id} value={sp.id}>
+                  {sp.displayName}
+                </option>
+              ))}
+            </select>
 
-          <select
-            value={form.salespersonId}
-            onChange={(e) => setForm({ ...form, salespersonId: e.target.value })}
-          >
-            <option value="">Default salesperson</option>
-            {salespersons.map((sp) => (
-              <option key={sp.id} value={sp.id}>
-                {sp.firstName} {sp.lastName}{sp.employeeId ? ` (${sp.employeeId})` : ""}
-              </option>
-            ))}
-          </select>
+            <input type="date" value={form.saleDate} onChange={(e) => setForm({ ...form, saleDate: e.target.value })} />
+          </div>
 
-          <textarea
-            placeholder="Notes (optional)"
-            value={form.notes}
-            onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          />
-
-          <div style={{ marginTop: 12 }}>
-            <div style={{ fontWeight: 800, marginBottom: 8 }}>Items</div>
-
-            {enrichedItems.map((it, idx) => (
-              <div key={idx} className="crm-card" style={{ marginBottom: 10 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 10, alignItems: "center" }}>
-                  <select
-                    value={form.items[idx].productId}
-                    onChange={(e) => updateItem(idx, { productId: e.target.value })}
-                  >
-                    <option value="">Select product...</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.officialName}
-                      </option>
-                    ))}
-                  </select>
-
-                  <input
-                    type="number"
-                    placeholder="Qty"
-                    min="1"
-                    value={form.items[idx].qty}
-                    onChange={(e) => updateItem(idx, { qty: e.target.value })}
-                  />
-
-                  <input
-                    type="number"
-                    placeholder="Unit Price (JOD)"
-                    min="0"
-                    step="0.001"
-                    value={form.items[idx].unitPriceJod}
-                    onChange={(e) => updateItem(idx, { unitPriceJod: e.target.value })}
-                  />
-
-                  <button type="button" onClick={() => removeLine(idx)}>
-                    Remove
-                  </button>
-                </div>
-
-                {it.productId ? (
-                  <div className="muted" style={{ marginTop: 8 }}>
-                    Available: <b>{it.onHand}</b>{" "}
-                    {!it.stockOk ? (
-                      <span style={{ marginLeft: 10, color: "#b91c1c", fontWeight: 800 }}>
-                        Not enough stock
-                      </span>
-                    ) : null}
-                    <span style={{ marginLeft: 12 }}>
-                      Line Total: <b>{it.lineTotal.toFixed(3)}</b> JOD
-                    </span>
-                  </div>
-                ) : null}
-              </div>
-            ))}
-
-            <button type="button" onClick={addLine}>
-              + Add another product
-            </button>
-
-            <div style={{ marginTop: 12, fontSize: 16, fontWeight: 900 }}>
-              Total: {grandTotal.toFixed(3)} JOD
+          <div style={{ marginTop: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              <h4 style={{ margin: 0 }}>Items</h4>
+              <button type="button" onClick={addLine}>
+                + Add product
+              </button>
             </div>
 
-            <button type="submit" disabled={!formOk} style={{ marginTop: 12 }}>
-              Save Transaction
-            </button>
+            <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+              {form.items.map((it, idx) => {
+                const onHand = it.productId ? (onHandByProductId.get(String(it.productId)) ?? 0) : null;
 
-            {!formOk ? (
-              <div className="muted" style={{ marginTop: 6 }}>
-                Complete all fields, ensure qty/price are positive, and stock is sufficient.
-              </div>
-            ) : null}
+                return (
+                  <div key={idx} className="card" style={{ padding: 12 }}>
+                    <div style={{ display: "grid", gap: 10 }}>
+                      <select value={it.productId} onChange={(e) => updateLine(idx, { productId: e.target.value })}>
+                        <option value="">Select product...</option>
+                        {products.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.officialName}
+                          </option>
+                        ))}
+                      </select>
+
+                      {it.productId ? (
+                        <div className="muted" style={{ marginTop: -4 }}>
+                          Available: <b>{onHand}</b>
+                        </div>
+                      ) : null}
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <input
+                          type="number"
+                          placeholder="Qty"
+                          min="1"
+                          value={it.qty}
+                          onChange={(e) => updateLine(idx, { qty: e.target.value })}
+                        />
+                        <input
+                          type="number"
+                          placeholder="Unit Price (JOD)"
+                          min="0"
+                          step="0.001"
+                          value={it.unitPriceJod}
+                          onChange={(e) => updateLine(idx, { unitPriceJod: e.target.value })}
+                        />
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                        <div className="muted">
+                          Line total:{" "}
+                          <b>
+                            {it.productId && it.qty && it.unitPriceJod
+                              ? (Number(it.qty) * Number(it.unitPriceJod)).toFixed(3)
+                              : "0.000"}
+                          </b>
+                        </div>
+
+                        <button type="button" onClick={() => removeLine(idx)} disabled={form.items.length === 1}>
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ marginTop: 12, fontWeight: 800 }}>
+              Total: {totalJod.toFixed(3)} JOD{" "}
+              {!stockCheck.ok ? (
+                <span style={{ marginLeft: 10, color: "#b91c1c" }}>
+                  Not enough stock (productId={stockCheck.productId})
+                </span>
+              ) : null}
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <button type="submit" disabled={!stockCheck.ok}>
+                Save Sale
+              </button>
+            </div>
           </div>
         </form>
       )}
-
-      {loading ? <div className="muted">Loading…</div> : null}
 
       <table className="table">
         <thead>
@@ -300,31 +289,30 @@ export default function SalesPage() {
             <th>Date</th>
             <th>Client</th>
             <th>Salesperson</th>
-            <th>Items</th>
             <th>Total (JOD)</th>
+            <th>Items</th>
+            <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
+
         <tbody>
-          {sales.map((o) => (
-            <tr key={o.id}>
-              <td>{o.saleDate}</td>
-              <td>{o.clientName}</td>
+          {sales.map((s) => (
+            <tr key={s.id} style={s.isVoid ? { opacity: 0.6 } : undefined}>
+              <td>{s.saleDate}</td>
+              <td>{s.clientName}</td>
+              <td>{s.salespersonName}</td>
+              <td>{Number(s.totalJod || 0).toFixed(3)}</td>
               <td>
-                {o.salesperson?.firstName} {o.salesperson?.lastName}
-                {o.salesperson?.employeeId ? ` (${o.salesperson.employeeId})` : ""}
-              </td>
-              <td>
-                {(o.items || []).map((it) => (
+                {(s.items || []).map((it) => (
                   <div key={it.id}>
-                    {it.officialName} — {it.qty} × {Number(it.unitPriceJod).toFixed(3)}
+                    {it.productName} — {it.qty} × {Number(it.unitPriceJod).toFixed(3)} ={" "}
+                    {Number(it.lineTotalJod).toFixed(3)}
                   </div>
                 ))}
               </td>
-              <td>{Number(o.totalJod || 0).toFixed(3)}</td>
-              <td>
-                {hasRole("main") && <button onClick={() => handleDelete(o.id)}>Void</button>}
-              </td>
+              <td>{s.isVoid ? "VOID" : "OK"}</td>
+              <td>{hasRole("main") && !s.isVoid ? <button onClick={() => handleVoid(s.id)}>Void</button> : null}</td>
             </tr>
           ))}
         </tbody>
