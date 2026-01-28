@@ -1,4 +1,3 @@
-// api/sales.js
 import { getSql } from "../lib/db.js";
 import { requireUserFromReq } from "../lib/requireAuth.js";
 
@@ -13,10 +12,22 @@ function n(v) {
   return Number.isFinite(x) ? x : 0;
 }
 
+function asDateOrNull(v) {
+  const s = String(v || "").trim();
+  if (!s) return null;
+  // expecting YYYY-MM-DD
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  return s;
+}
+
 async function readJson(req) {
   let body = req.body;
   if (typeof body === "string") {
-    try { return JSON.parse(body); } catch { throw new Error("Invalid JSON body"); }
+    try {
+      return JSON.parse(body);
+    } catch {
+      throw new Error("Invalid JSON body");
+    }
   }
   if (body && typeof body === "object") return body;
 
@@ -24,24 +35,40 @@ async function readJson(req) {
   for await (const chunk of req) chunks.push(chunk);
   const raw = Buffer.concat(chunks).toString("utf8");
   if (!raw) return {};
-  try { return JSON.parse(raw); } catch { throw new Error("Invalid JSON body"); }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error("Invalid JSON body");
+  }
 }
 
-function toISODateOrThrow(s) {
-  const v = String(s || "").trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new Error("BAD_DATE");
-  return v;
+async function getDefaultSalespersonId(tx) {
+  const rows = await tx`
+    SELECT id FROM salespersons
+    WHERE is_default = true
+    ORDER BY id ASC
+    LIMIT 1
+  `;
+  if (rows?.length) return rows[0].id;
+
+  const ins = await tx`
+    INSERT INTO salespersons (type, first_name, last_name, is_default)
+    VALUES ('EXTERNAL', 'Default', 'Salesperson', true)
+    RETURNING id
+  `;
+  return ins[0].id;
 }
 
 export default async function handler(req, res) {
-  const sql = getSql();
-  const method = req.method || "GET";
-  const warehouseId = 1;
-
   try {
-    // =========================
+    const method = req.method || "GET";
+    const sql = getSql();
+    const warehouseId = 1;
+
+    // ---------------------------
     // GET /api/sales?clientId=...
-    // =========================
+    // returns orders with items + totals + salesperson
+    // ---------------------------
     if (method === "GET") {
       const auth = await requireUserFromReq(req, res);
       if (!auth) return;
@@ -49,113 +76,135 @@ export default async function handler(req, res) {
       const url = new URL(req.url, "http://localhost");
       const clientId = n(url.searchParams.get("clientId")) || null;
 
-      const rows = await sql`
+      const orders = await sql`
         SELECT
-          st.id,
-          st.client_id,
+          o.id,
+          o.client_id,
           c.name AS client_name,
-          st.sale_date,
-          st.total_jod,
-          st.salesperson_user_id,
-          st.salesperson_employee_id,
-          st.salesperson_first_name,
-          st.salesperson_last_name,
-          st.is_void,
-          st.created_at,
+          o.sale_date,
+          o.created_at,
+          o.notes,
+          sp.id AS salesperson_id,
+          sp.first_name AS salesperson_first_name,
+          sp.last_name AS salesperson_last_name,
+          sp.employee_id AS salesperson_employee_id,
+          sp.type AS salesperson_type,
 
-          COALESCE((
-            SELECT json_agg(json_build_object(
-              'id', si.id,
-              'productId', si.product_id,
-              'productName', p.official_name,
-              'qty', si.qty,
-              'unitPriceJod', si.unit_price_jod,
-              'lineTotalJod', (si.qty * si.unit_price_jod)
-            ) ORDER BY si.id ASC)
-            FROM sales_items si
-            JOIN products p ON p.id = si.product_id
-            WHERE si.sale_id = st.id
-          ), '[]'::json) AS items
+          COALESCE(SUM(i.qty * i.unit_price_jod), 0) AS total_jod
 
-        FROM sales_transactions st
-        JOIN clients c ON c.id = st.client_id
-        WHERE COALESCE(st.is_void, false) = false
-          AND ${clientId ? sql`st.client_id = ${clientId}` : sql`TRUE`}
-        ORDER BY st.sale_date DESC, st.id DESC
+        FROM sales_orders o
+        JOIN clients c ON c.id = o.client_id
+        JOIN salespersons sp ON sp.id = o.salesperson_id
+        LEFT JOIN sales_items i ON i.order_id = o.id
+
+        WHERE ${clientId ? sql`o.client_id = ${clientId}` : sql`TRUE`}
+        GROUP BY o.id, c.name, sp.id
+        ORDER BY o.sale_date DESC, o.id DESC
       `;
 
-      return send(res, 200, { ok: true, sales: rows });
+      const items = await sql`
+        SELECT
+          i.order_id,
+          i.id,
+          i.product_id,
+          p.official_name,
+          i.qty,
+          i.unit_price_jod,
+          (i.qty * i.unit_price_jod) AS line_total_jod
+        FROM sales_items i
+        JOIN products p ON p.id = i.product_id
+        WHERE i.order_id = ANY(${orders.map((o) => o.id)})
+        ORDER BY i.order_id DESC, i.id ASC
+      `;
+
+      const itemsByOrder = new Map();
+      for (const it of items) {
+        const arr = itemsByOrder.get(it.order_id) || [];
+        arr.push({
+          id: it.id,
+          productId: it.product_id,
+          officialName: it.official_name,
+          qty: Number(it.qty),
+          unitPriceJod: Number(it.unit_price_jod),
+          lineTotalJod: Number(it.line_total_jod),
+        });
+        itemsByOrder.set(it.order_id, arr);
+      }
+
+      const sales = (orders || []).map((o) => ({
+        id: o.id,
+        clientId: o.client_id,
+        clientName: o.client_name,
+        saleDate: o.sale_date,
+        notes: o.notes || "",
+        totalJod: Number(o.total_jod || 0),
+        salesperson: {
+          id: o.salesperson_id,
+          firstName: o.salesperson_first_name,
+          lastName: o.salesperson_last_name,
+          employeeId: o.salesperson_employee_id || null,
+          type: o.salesperson_type,
+        },
+        items: itemsByOrder.get(o.id) || [],
+      }));
+
+      return send(res, 200, { ok: true, sales });
     }
 
-    // =========================
+    // ---------------------------
     // POST /api/sales
-    // body: { clientId, saleDate, items:[{productId, qty, unitPriceJod}] }
-    // =========================
+    // body:
+    // {
+    //   clientId, saleDate,
+    //   salespersonId? (optional),
+    //   items: [{ productId, qty, unitPriceJod }],
+    //   notes?
+    // }
+    // ---------------------------
     if (method === "POST") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
 
       let body;
-      try { body = await readJson(req); }
-      catch { return send(res, 400, { ok: false, error: "Invalid JSON body" }); }
-
-      const clientId = n(body?.clientId);
-      let saleDate;
-      try { saleDate = toISODateOrThrow(body?.saleDate); }
-      catch (e) {
-        if (String(e?.message) === "BAD_DATE") {
-          return send(res, 400, { ok: false, error: "saleDate must be YYYY-MM-DD" });
-        }
-        return send(res, 400, { ok: false, error: "Invalid saleDate" });
+      try {
+        body = await readJson(req);
+      } catch {
+        return send(res, 400, { ok: false, error: "Invalid JSON body" });
       }
 
-      const items = Array.isArray(body?.items) ? body.items : [];
-      if (!clientId) return send(res, 400, { ok: false, error: "clientId is required" });
-      if (!items.length) return send(res, 400, { ok: false, error: "items are required" });
+      const clientId = n(body?.clientId);
+      const saleDate = asDateOrNull(body?.saleDate);
+      const notes = String(body?.notes || "").trim() || null;
 
-      // Normalize + validate items
-      const normItems = items
+      const salespersonIdRaw = body?.salespersonId;
+      const salespersonId = salespersonIdRaw == null || salespersonIdRaw === "" ? null : n(salespersonIdRaw);
+
+      const itemsRaw = Array.isArray(body?.items) ? body.items : [];
+      const items = itemsRaw
         .map((it) => ({
           productId: n(it?.productId),
           qty: n(it?.qty),
           unitPriceJod: Number(it?.unitPriceJod),
         }))
-        .filter((it) => it.productId && it.qty > 0);
+        .filter((it) => it.productId && it.qty > 0 && Number.isFinite(it.unitPriceJod));
 
-      if (!normItems.length) {
-        return send(res, 400, { ok: false, error: "No valid sale items" });
+      if (!clientId) return send(res, 400, { ok: false, error: "clientId is required" });
+      if (!saleDate) return send(res, 400, { ok: false, error: "saleDate must be YYYY-MM-DD" });
+      if (!items.length) return send(res, 400, { ok: false, error: "items[] is required" });
+
+      // Validate no negative/zero prices
+      for (const it of items) {
+        if (!(it.qty > 0)) return send(res, 400, { ok: false, error: "Item qty must be > 0" });
+        if (!(it.unitPriceJod > 0)) return send(res, 400, { ok: false, error: "Item unitPriceJod must be > 0" });
       }
-      for (const it of normItems) {
-        if (!Number.isFinite(it.unitPriceJod) || it.unitPriceJod <= 0) {
-          return send(res, 400, { ok: false, error: "unitPriceJod must be > 0" });
-        }
-      }
-
-      // If same product appears multiple times, combine it
-      const merged = new Map();
-      for (const it of normItems) {
-        const key = String(it.productId);
-        const prev = merged.get(key);
-        if (!prev) merged.set(key, { ...it });
-        else merged.set(key, { ...prev, qty: prev.qty + it.qty }); // keep price from first line (UI should keep consistent)
-      }
-      const mergedItems = Array.from(merged.values());
-
-      // Salesperson snapshot fields
-      const salespersonUserId = auth.sub || null;
-      const fullName = String(auth.fullName || "").trim(); // if your requireAuth provides it
-      const email = String(auth.email || "").trim();
-      const display = fullName || email || null;
-
-      // Split first/last if possible (optional)
-      const parts = display ? display.split(/\s+/).filter(Boolean) : [];
-      const firstName = parts.length ? parts[0] : null;
-      const lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
 
       try {
         const result = await sql.begin(async (tx) => {
-          // Stock check for each product (transaction-safe)
-          for (const it of mergedItems) {
+          // Choose salesperson
+          const spId = salespersonId || (await getDefaultSalespersonId(tx));
+
+          // For each item: check stock
+          for (const it of items) {
             const inv = await tx`
               SELECT COALESCE(SUM(
                 CASE
@@ -169,61 +218,47 @@ export default async function handler(req, res) {
               WHERE warehouse_id = ${warehouseId}
                 AND product_id = ${it.productId}
             `;
-
             const onHand = n(inv?.[0]?.on_hand);
             if (it.qty > onHand) {
               const e = new Error("INSUFFICIENT_STOCK");
               e.productId = it.productId;
               e.onHand = onHand;
-              e.requested = it.qty;
               throw e;
             }
           }
 
-          // Compute total
-          const totalJod = mergedItems.reduce((sum, it) => sum + (it.qty * it.unitPriceJod), 0);
-
-          // Insert sale header
-          const saleHeader = await tx`
-            INSERT INTO sales_transactions (
-              client_id, sale_date, total_jod,
-              salesperson_user_id, salesperson_first_name, salesperson_last_name
-            )
-            VALUES (
-              ${clientId}, ${saleDate}, ${totalJod},
-              ${salespersonUserId}, ${firstName}, ${lastName}
-            )
+          // Create order
+          const ord = await tx`
+            INSERT INTO sales_orders (client_id, sale_date, salesperson_id, created_by, notes)
+            VALUES (${clientId}, ${saleDate}, ${spId}, ${auth.sub || null}, ${notes})
             RETURNING id
           `;
-          const saleId = saleHeader[0].id;
+          const orderId = ord[0].id;
 
           // Insert items + inventory movements
-          for (const it of normItems) {
+          for (const it of items) {
             await tx`
-              INSERT INTO sales_items (sale_id, product_id, qty, unit_price_jod)
-              VALUES (${saleId}, ${it.productId}, ${it.qty}, ${it.unitPriceJod})
+              INSERT INTO sales_items (order_id, product_id, qty, unit_price_jod)
+              VALUES (${orderId}, ${it.productId}, ${it.qty}, ${it.unitPriceJod})
             `;
 
             await tx`
-              INSERT INTO inventory_movements (
-                warehouse_id, product_id, batch_id, movement_type, qty, movement_date, note, created_by
-              )
-              VALUES (
-                ${warehouseId}, ${it.productId}, NULL, 'OUT', ${it.qty}, ${saleDate},
-                ${"Sale #" + saleId}, ${salespersonUserId}
-              )
+              INSERT INTO inventory_movements
+                (warehouse_id, product_id, batch_id, movement_type, qty, movement_date, note, created_by)
+              VALUES
+                (${warehouseId}, ${it.productId}, NULL, 'OUT', ${it.qty}, ${saleDate}, 'Sale', ${auth.sub || null})
             `;
           }
 
-          return { saleId };
+          return { orderId };
         });
 
-        return send(res, 201, { ok: true, saleId: result.saleId });
+        return send(res, 201, { ok: true, orderId: result.orderId });
       } catch (err) {
         if (String(err?.message) === "INSUFFICIENT_STOCK") {
           return send(res, 400, {
             ok: false,
-            error: `Not enough stock for product ${err.productId}. Available = ${err.onHand ?? 0}, requested = ${err.requested ?? 0}`,
+            error: `Not enough stock for product ${err.productId}. Available = ${err.onHand ?? 0}`,
           });
         }
         console.error("POST /api/sales failed:", err);
@@ -231,10 +266,10 @@ export default async function handler(req, res) {
       }
     }
 
-    // =========================
+    // ---------------------------
     // DELETE /api/sales?id=...
-    // Soft-void + reverse inventory
-    // =========================
+    // deletes an order and reverses inventory
+    // ---------------------------
     if (method === "DELETE") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
@@ -243,44 +278,39 @@ export default async function handler(req, res) {
       const id = n(url.searchParams.get("id"));
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
-      const userId = auth.sub || null;
-
       try {
         await sql.begin(async (tx) => {
-          const txRows = await tx`
-            SELECT id, sale_date, is_void
-            FROM sales_transactions
+          const ord = await tx`
+            SELECT id, sale_date
+            FROM sales_orders
             WHERE id = ${id}
             LIMIT 1
           `;
-          if (!txRows.length) throw new Error("NOT_FOUND");
-          if (txRows[0].is_void) return;
+          if (!ord.length) throw new Error("NOT_FOUND");
 
-          const items = await tx`
+          const order = ord[0];
+
+          const lines = await tx`
             SELECT product_id, qty
             FROM sales_items
-            WHERE sale_id = ${id}
+            WHERE order_id = ${id}
             ORDER BY id ASC
           `;
 
-          // Mark void
-          await tx`
-            UPDATE sales_transactions
-            SET is_void = true, voided_at = now()
-            WHERE id = ${id}
-          `;
+          // delete order (cascades items)
+          await tx`DELETE FROM sales_orders WHERE id = ${id}`;
 
-          // Reverse inventory per item
-          for (const it of items) {
-            await tx`
-              INSERT INTO inventory_movements (
-                warehouse_id, product_id, batch_id, movement_type, qty, movement_date, note, created_by
-              )
-              VALUES (
-                ${warehouseId}, ${it.product_id}, NULL, 'ADJ', ${it.qty}, ${txRows[0].sale_date},
-                ${"Void sale #" + id}, ${userId}
-              )
-            `;
+          // reverse inventory
+          for (const l of lines) {
+            const qty = n(l.qty);
+            if (qty > 0) {
+              await tx`
+                INSERT INTO inventory_movements
+                  (warehouse_id, product_id, batch_id, movement_type, qty, movement_date, note, created_by)
+                VALUES
+                  (${warehouseId}, ${l.product_id}, NULL, 'ADJ', ${qty}, ${order.sale_date}, 'Void sale', ${auth.sub || null})
+              `;
+            }
           }
         });
 
