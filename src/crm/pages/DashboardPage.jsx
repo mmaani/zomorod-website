@@ -49,42 +49,36 @@ export default function DashboardPage() {
       setErr("");
 
       try {
-        // ✅ apiFetch already prefixes /api, so DO NOT use /api/...
+        // Products
         const pr = await apiFetch("/products");
         const pj = await pr.json().catch(() => ({}));
         if (!pr.ok || !pj.ok) throw new Error(pj.error || `Products HTTP ${pr.status}`);
         const products = Array.isArray(pj.products) ? pj.products : [];
 
+        // Suppliers
         const sr = await apiFetch("/suppliers");
         const sj = await sr.json().catch(() => ({}));
-        const suppliers = sr.ok && sj.ok ? sj.suppliers || [] : [];
+        const suppliers = sr.ok && sj.ok ? (sj.suppliers || []) : [];
 
+        // Clients
         const cr = await apiFetch("/clients");
         const cj = await cr.json().catch(() => ({}));
-        const clients = cr.ok && cj.ok ? cj.clients || [] : [];
+        const clients = cr.ok && cj.ok ? (cj.clients || []) : [];
 
+        // Salespersons (new)
         let salespersons = [];
         try {
           const spr = await apiFetch("/salespersons");
           const spj = await spr.json().catch(() => ({}));
           if (spr.ok && spj.ok) salespersons = spj.salespersons || [];
         } catch {
+          // If endpoint not ready yet, ignore and show 0
           salespersons = [];
         }
 
-        const onHandTotal = products.reduce((sum, p) => {
-          const v =
-            p?.onHandQty ??
-            p?.on_hand_qty ??
-            p?.onHand ??
-            p?.qty_on_hand ??
-            p?.qtyOnHand ??
-            0;
-          return sum + (Number(v) || 0);
-        }, 0);
+        const onHandTotal = products.reduce((sum, p) => sum + (Number(p.onHandQty) || 0), 0);
 
         if (!alive) return;
-
         setStats({
           products: products.length,
           suppliers: suppliers.length,
@@ -136,13 +130,10 @@ export default function DashboardPage() {
         </div>
 
         {err ? <div className="banner">{err}</div> : null}
-        {loading ? (
-          <div className="muted" style={{ marginTop: 8 }}>
-            Loading dashboard…
-          </div>
-        ) : null}
+        {loading ? <div className="muted" style={{ marginTop: 8 }}>Loading dashboard…</div> : null}
       </div>
 
+      {/* IMPORTANT: inline grid so CSS changes won't ruin layout */}
       <div
         style={{
           display: "grid",
@@ -183,13 +174,14 @@ export default function DashboardPage() {
           onClick={() => nav("/crm/sales")}
         />
 
+        {/* Optional: only show for main */}
         {isMain ? (
-          <QuickCard
-            title="Manage Salespersons"
-            desc="Add and manage sales staff / external salespersons."
-            cta="Go to Salespersons"
-            onClick={() => nav("/crm/salespersons")}
-          />
+            <QuickCard
+              title="Manage Salespersons"
+              desc="Add and manage sales staff / external salespersons."
+              cta="Go to Salespersons"
+              onClick={() => nav("/crm/salespersons")}
+            />
         ) : null}
       </div>
     </div>
