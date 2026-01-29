@@ -378,3 +378,37 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   letter-spacing: .02em;
   text-transform: uppercase;
 }
+/* ===== Mobile / Dark-theme visibility fixes (ADD AT END OF FILE) ===== */
+
+/* If your nav/text styles use dark colors, force them to use the theme vars */
+.nav__link { color: var(--text); }
+.nav__link:hover { color: var(--text); }
+
+.hero__body { color: var(--muted); }
+.panel__list { color: var(--muted); }
+.card__value { color: var(--text); }
+.list { color: var(--muted); }
+.footer { color: var(--muted-2); }
+
+/* Prevent nav from forcing a wider-than-screen layout on phones */
+@media (max-width: 860px) {
+  .nav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .nav__link { flex: 0 0 auto; }
+  .page { overflow-x: hidden; }
+}
+@media (max-width: 860px) {
+  body { overflow-x: hidden; }
+
+  .nav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .nav__link { flex: 0 0 auto; }
+}
