@@ -32,11 +32,12 @@ export default function SalesPage() {
 
   async function load() {
     const [saleRes, clientRes, prodRes, spRes] = await Promise.all([
-      apiFetch("/api/sales"),
-      apiFetch("/api/clients"),
-      apiFetch("/api/products?includeArchived=1"),
-      apiFetch("/api/salespersons"),
+      apiFetch("/sales"),
+      apiFetch("/clients"),
+      apiFetch("/products?includeArchived=1"),
+      apiFetch("/salespersons"),
     ]);
+
 
     if (saleRes) {
       const d = await saleRes.json().catch(() => ({}));
@@ -58,7 +59,7 @@ export default function SalesPage() {
 
         // auto-select default salesperson if none selected
         if (!form.salespersonId) {
-          const def = list.find((x) => x.isDefault);
+          const def = list.find((x) => x.is_default || x.isDefault);
           if (def) setForm((s) => ({ ...s, salespersonId: String(def.id) }));
         }
       }
@@ -134,7 +135,7 @@ export default function SalesPage() {
       return;
     }
 
-    const res = await apiFetch("/api/sales", {
+    const res = await apiFetch("/sales", {
       method: "POST",
       body: {
         clientId: Number(form.clientId),
@@ -164,7 +165,7 @@ export default function SalesPage() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Void this transaction?")) return;
-    const res = await apiFetch(`/api/sales?id=${id}`, { method: "DELETE" });
+    const res = await apiFetch(`/sales?id=${id}`, { method: "DELETE" });
     const data = await res?.json().catch(() => ({}));
     if (!res?.ok || !data?.ok) {
       alert(data?.error || "Failed to void sale");
@@ -194,7 +195,9 @@ export default function SalesPage() {
             <option value="">Select salesperson...</option>
             {salespersons.map((sp) => (
               <option key={sp.id} value={sp.id}>
-                {sp.displayName}{sp.isDefault ? " (default)" : ""}
+                {sp.display_name || sp.displayName || `${sp.first_name || sp.firstName || ""} ${sp.last_name || sp.lastName || ""}`.trim() || `Salesperson #${sp.id}`}
+{(sp.is_default ?? sp.isDefault) ? " (default)" : ""}
+
               </option>
             ))}
           </select>
@@ -220,7 +223,25 @@ export default function SalesPage() {
               <div key={idx} className="crm-card" style={{ marginTop: 10 }}>
                 <select
                   value={it.productId}
-                  onChange={(e) => setItem(idx, { productId: e.target.value })}
+                  onChange={(e) => {
+                      const productId = e.target.value;
+                      const p = productsById.get(String(productId));
+
+                      // pick the correct field name from your products API
+                      const defaultPrice =
+                        p?.default_sell_price_jod ??
+                        p?.defaultSellPriceJod ??
+                        p?.default_sell_price ??
+                        p?.defaultSellPrice ??
+                        p?.sell_price_jod ??
+                        "";
+
+                      setItem(idx, {
+                        productId,
+                        unitPriceJod: defaultPrice !== "" ? String(defaultPrice) : "",
+                      });
+                    }}
+
                 >
                   <option value="">Select product...</option>
                   {products.map((p) => (
