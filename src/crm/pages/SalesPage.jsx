@@ -30,6 +30,49 @@ export default function SalesPage() {
     }, 0);
   }, [form.items]);
 
+  function getOnHandQty(p) {
+    return Number(
+      p?.on_hand_qty ??
+        p?.onHandQty ??
+        p?.onHand ??
+        p?.qty_on_hand ??
+        p?.qtyOnHand ??
+        0
+    );
+  }
+
+  function getProductName(p) {
+    return (
+      p?.officialName ||
+      p?.official_name ||
+      p?.name ||
+      p?.product_name ||
+      `Product #${p?.id ?? ""}`
+    );
+  }
+
+  function getDefaultSellPrice(p) {
+    const v =
+      p?.default_sell_price_jod ??
+      p?.defaultSellPriceJod ??
+      p?.default_sell_price ??
+      p?.defaultSellPrice ??
+      p?.sell_price_jod ??
+      p?.sellPriceJod ??
+      p?.price_jod ??
+      p?.priceJod ??
+      "";
+    return v;
+  }
+
+  function getSalespersonName(sp) {
+    const n =
+      sp?.display_name ||
+      sp?.displayName ||
+      `${sp?.first_name || sp?.firstName || ""} ${sp?.last_name || sp?.lastName || ""}`.trim();
+    return n || `Salesperson #${sp?.id}`;
+  }
+
   async function load() {
     const [saleRes, clientRes, prodRes, spRes] = await Promise.all([
       apiFetch("/sales"),
@@ -38,30 +81,33 @@ export default function SalesPage() {
       apiFetch("/salespersons"),
     ]);
 
-
     if (saleRes) {
       const d = await saleRes.json().catch(() => ({}));
       if (saleRes.ok && d.ok) setSales(d.sales || []);
     }
+
     if (clientRes) {
       const d = await clientRes.json().catch(() => ({}));
       if (clientRes.ok && d.ok) setClients(d.clients || []);
     }
+
     if (prodRes) {
       const d = await prodRes.json().catch(() => ({}));
       if (prodRes.ok && d.ok) setProducts(d.products || []);
     }
+
     if (spRes) {
       const d = await spRes.json().catch(() => ({}));
       if (spRes.ok && d.ok) {
         const list = d.salespersons || [];
         setSalespersons(list);
 
-        // auto-select default salesperson if none selected
-        if (!form.salespersonId) {
+        // ✅ Avoid stale closure: choose default salesperson only if not already selected
+        setForm((s) => {
+          if (s.salespersonId) return s;
           const def = list.find((x) => x.is_default || x.isDefault);
-          if (def) setForm((s) => ({ ...s, salespersonId: String(def.id) }));
-        }
+          return def ? { ...s, salespersonId: String(def.id) } : s;
+        });
       }
     }
   }
@@ -90,7 +136,10 @@ export default function SalesPage() {
     setForm((s) => {
       const items = [...(s.items || [])];
       items.splice(idx, 1);
-      return { ...s, items: items.length ? items : [{ productId: "", qty: 1, unitPriceJod: "" }] };
+      return {
+        ...s,
+        items: items.length ? items : [{ productId: "", qty: 1, unitPriceJod: "" }],
+      };
     });
   }
 
@@ -99,10 +148,12 @@ export default function SalesPage() {
     for (const it of form.items) {
       const p = productsById.get(String(it.productId));
       if (!p) continue;
-      const onHand = Number(p.onHandQty || 0);
+
+      const onHand = getOnHandQty(p);
       const qty = Number(it.qty || 0);
+
       if (qty > onHand) {
-        return `Not enough stock for ${p.officialName}. Requested=${qty}, Available=${onHand}`;
+        return `Not enough stock for ${getProductName(p)}. Requested=${qty}, Available=${onHand}`;
       }
     }
     return null;
@@ -116,16 +167,17 @@ export default function SalesPage() {
       return;
     }
 
+    // ✅ Allow backend to default unitPriceJod if missing (0)
     const cleanItems = (form.items || [])
       .map((it) => ({
         productId: Number(it.productId),
         qty: Math.floor(Number(it.qty)),
-        unitPriceJod: Number(it.unitPriceJod),
+        unitPriceJod: Number(it.unitPriceJod || 0),
       }))
-      .filter((it) => it.productId && it.qty > 0 && it.unitPriceJod > 0);
+      .filter((it) => it.productId && it.qty > 0);
 
     if (!cleanItems.length) {
-      alert("Add at least one valid item (product, qty, price)");
+      alert("Add at least one valid item (product + qty)");
       return;
     }
 
@@ -153,24 +205,28 @@ export default function SalesPage() {
     }
 
     setNotes("");
-    setForm({
+    setForm((s) => ({
       clientId: "",
       saleDate: "",
-      salespersonId: form.salespersonId || "",
+      // keep salesperson if already selected/default
+      salespersonId: s.salespersonId || "",
       items: [{ productId: "", qty: 1, unitPriceJod: "" }],
-    });
+    }));
 
     await load();
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Void this transaction?")) return;
+
     const res = await apiFetch(`/sales?id=${id}`, { method: "DELETE" });
     const data = await res?.json().catch(() => ({}));
+
     if (!res?.ok || !data?.ok) {
       alert(data?.error || "Failed to void sale");
       return;
     }
+
     load();
   };
 
@@ -182,24 +238,39 @@ export default function SalesPage() {
         <form onSubmit={handleSubmit} className="card">
           <h3>Record Sale (Transaction)</h3>
 
-          <select value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })}>
+          <select
+            value={form.clientId}
+            onChange={(e) => setForm((s) => ({ ...s, clientId: e.target.value }))}
+          >
             <option value="">Select client...</option>
             {clients.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
           </select>
 
-          <input type="date" value={form.saleDate} onChange={(e) => setForm({ ...form, saleDate: e.target.value })} />
+          <input
+            type="date"
+            value={form.saleDate}
+            onChange={(e) => setForm((s) => ({ ...s, saleDate: e.target.value }))}
+          />
 
-          <select value={form.salespersonId} onChange={(e) => setForm({ ...form, salespersonId: e.target.value })}>
+          <select
+            value={form.salespersonId}
+            onChange={(e) => setForm((s) => ({ ...s, salespersonId: e.target.value }))}
+          >
             <option value="">Select salesperson...</option>
-            {salespersons.map((sp) => (
-              <option key={sp.id} value={sp.id}>
-                {sp.display_name || sp.displayName || `${sp.first_name || sp.firstName || ""} ${sp.last_name || sp.lastName || ""}`.trim() || `Salesperson #${sp.id}`}
-{(sp.is_default ?? sp.isDefault) ? " (default)" : ""}
-
-              </option>
-            ))}
+            {salespersons.map((sp) => {
+              const name = getSalespersonName(sp);
+              const isDef = !!(sp.is_default ?? sp.isDefault);
+              return (
+                <option key={sp.id} value={sp.id}>
+                  {name}
+                  {isDef ? " (default)" : ""}
+                </option>
+              );
+            })}
           </select>
 
           <textarea
@@ -213,7 +284,7 @@ export default function SalesPage() {
 
           {(form.items || []).map((it, idx) => {
             const p = productsById.get(String(it.productId));
-            const onHand = Number(p?.onHandQty || 0);
+            const onHand = getOnHandQty(p);
             const qty = Number(it.qty || 0);
             const up = Number(it.unitPriceJod || 0);
             const lineTotal = qty > 0 && up > 0 ? qty * up : 0;
@@ -224,28 +295,23 @@ export default function SalesPage() {
                 <select
                   value={it.productId}
                   onChange={(e) => {
-                      const productId = e.target.value;
-                      const p = productsById.get(String(productId));
+                    const productId = e.target.value;
+                    const p2 = productsById.get(String(productId));
 
-                      // pick the correct field name from your products API
-                      const defaultPrice =
-                        p?.default_sell_price_jod ??
-                        p?.defaultSellPriceJod ??
-                        p?.default_sell_price ??
-                        p?.defaultSellPrice ??
-                        p?.sell_price_jod ??
-                        "";
+                    // ✅ Auto-fill default sell price (but user can edit)
+                    const defaultPrice = getDefaultSellPrice(p2);
 
-                      setItem(idx, {
-                        productId,
-                        unitPriceJod: defaultPrice !== "" ? String(defaultPrice) : "",
-                      });
-                    }}
-
+                    setItem(idx, {
+                      productId,
+                      unitPriceJod: defaultPrice !== "" ? String(defaultPrice) : "",
+                    });
+                  }}
                 >
                   <option value="">Select product...</option>
                   {products.map((p) => (
-                    <option key={p.id} value={p.id}>{p.officialName}</option>
+                    <option key={p.id} value={p.id}>
+                      {getProductName(p)}
+                    </option>
                   ))}
                 </select>
 
@@ -268,12 +334,18 @@ export default function SalesPage() {
 
                 <div className="muted" style={{ marginTop: 6 }}>
                   Available: <b>{onHand}</b>{" "}
-                  {tooMuch ? <span style={{ color: "#b91c1c", fontWeight: 800 }}>Not enough stock</span> : null}
+                  {tooMuch ? (
+                    <span style={{ color: "#b91c1c", fontWeight: 800 }}>
+                      Not enough stock
+                    </span>
+                  ) : null}
                   {" "}• Line Total: <b>{lineTotal.toFixed(3)} JOD</b>
                 </div>
 
                 <div style={{ marginTop: 8 }}>
-                  <button type="button" onClick={() => removeItem(idx)}>Remove</button>
+                  <button type="button" onClick={() => removeItem(idx)}>
+                    Remove
+                  </button>
                 </div>
               </div>
             );
@@ -312,12 +384,21 @@ export default function SalesPage() {
               <td>{s.salesperson_name || "-"}</td>
               <td>{s.items_count}</td>
               <td>{Number(s.total_jod || 0).toFixed(3)}</td>
-              <td>{hasRole("main") && <button onClick={() => handleDelete(s.id)}>Void</button>}</td>
+              <td>
+                {hasRole("main") ? (
+                  <button onClick={() => handleDelete(s.id)}>Void</button>
+                ) : (
+                  "-"
+                )}
+              </td>
             </tr>
           ))}
+
           {!sales.length ? (
             <tr>
-              <td colSpan={6} className="muted">No transactions yet.</td>
+              <td colSpan={6} className="muted">
+                No transactions yet.
+              </td>
             </tr>
           ) : null}
         </tbody>
