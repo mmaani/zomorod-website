@@ -409,7 +409,7 @@ export default function SalesPage() {
               style={{
                 position: "sticky",
                 top: 0,
-                background: "white",
+                background: "black",
                 zIndex: 1,
               }}
             >
