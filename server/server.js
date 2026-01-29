@@ -3,6 +3,9 @@ import dotenv from "dotenv";
 
 import sheetsRoutes from "./routesSheets.js";
 import driveRoutes from "./routesDrive.js";
+import { applyHandler } from "./recruitment.js";
+
+app.post("/api/recruitment/apply", applyHandler);
 
 dotenv.config();
 

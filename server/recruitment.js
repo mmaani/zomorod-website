@@ -1,3 +1,120 @@
+import { google } from "googleapis";
+import Busboy from "busboy";
+import { getSql } from "../lib/db.js";
+
+function getGoogleClient() {
+  const b64 = process.env.GOOGLE_SA_B64;
+  if (!b64) throw new Error("Missing GOOGLE_SA_B64");
+
+  const sa = JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
+
+  return new google.auth.JWT({
+    email: sa.client_email,
+    key: sa.private_key,
+    scopes: [
+      "https://www.googleapis.com/auth/drive",
+      "https://www.googleapis.com/auth/spreadsheets"
+    ]
+  });
+}
+
+export async function applyHandler(req, res) {
+  try {
+    const auth = getGoogleClient();
+    const drive = google.drive({ version: "v3", auth });
+    const sheets = google.sheets({ version: "v4", auth });
+    const sql = getSql();
+
+    const busboy = Busboy({ headers: req.headers });
+
+    const fields = {};
+    const files = {};
+
+    busboy.on("field", (name, value) => {
+      fields[name] = value;
+    });
+
+    busboy.on("file", (name, file, info) => {
+      const chunks = [];
+      file.on("data", d => chunks.push(d));
+      file.on("end", () => {
+        files[name] = {
+          buffer: Buffer.concat(chunks),
+          filename: info.filename,
+          mimeType: info.mimeType
+        };
+      });
+    });
+
+    busboy.on("finish", async () => {
+      if (!files.cv) {
+        return res.status(400).json({ ok: false, error: "CV is required" });
+      }
+
+      const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+
+      async function upload(file) {
+        const r = await drive.files.create({
+          requestBody: {
+            name: file.filename,
+            parents: [folderId]
+          },
+          media: {
+            mimeType: file.mimeType,
+            body: Buffer.from(file.buffer)
+          }
+        });
+
+        await drive.permissions.create({
+          fileId: r.data.id,
+          requestBody: { role: "reader", type: "anyone" }
+        });
+
+        return `https://drive.google.com/file/d/${r.data.id}/view`;
+      }
+
+      const cvUrl = await upload(files.cv);
+      const coverUrl = files.cover_letter ? await upload(files.cover_letter) : null;
+
+      await sql`
+        INSERT INTO job_applications
+          (first_name, last_name, email, education, country, city, cv_drive_url, cover_letter_drive_url)
+        VALUES
+          (${fields.first_name}, ${fields.last_name}, ${fields.email},
+           ${fields.education}, ${fields.country}, ${fields.city},
+           ${cvUrl}, ${coverUrl})
+      `;
+
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "Sheet1!A:I",
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [[
+            fields.first_name,
+            fields.last_name,
+            fields.email,
+            fields.education,
+            fields.country,
+            fields.city,
+            cvUrl,
+            coverUrl,
+            new Date().toISOString()
+          ]]
+        }
+      });
+
+      res.json({ ok: true });
+    });
+
+    req.pipe(busboy);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+}
+/** 
 // api/recruitment.js
 import Busboy from "busboy";
 import { google } from "googleapis";
@@ -421,3 +538,4 @@ export default async function handler(req, res) {
     return send(res, 500, { ok: false, error: "Server error", detail: String(err?.message || err) });
   }
 }
+  **/
