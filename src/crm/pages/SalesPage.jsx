@@ -8,6 +8,9 @@ export default function SalesPage() {
   const [products, setProducts] = useState([]);
   const [salespersons, setSalespersons] = useState([]);
 
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+
   const [notes, setNotes] = useState("");
   const [form, setForm] = useState({
     clientId: "",
@@ -29,24 +32,6 @@ export default function SalesPage() {
       return sum + (q > 0 && up > 0 ? q * up : 0);
     }, 0);
   }, [form.items]);
-
-  function formatSaleItems(sale) {
-    const arr = Array.isArray(sale?.items) ? sale.items : [];
-    if (!arr.length) return "—";
-
-    return arr
-      .map((it) => {
-        const name =
-          it.product_name ||
-          it.official_name ||
-          it.officialName ||
-          `#${it.product_id || it.productId}`;
-        const qty = Number(it.qty || 0);
-        const up = Number(it.unit_price_jod ?? it.unitPriceJod ?? 0);
-        return `${name} ×${qty} @ ${up.toFixed(3)}`;
-      })
-      .join(" | ");
-  }
 
   function getOnHandQty(p) {
     return Number(
@@ -70,7 +55,7 @@ export default function SalesPage() {
   }
 
   function getDefaultSellPrice(p) {
-    const v =
+    return (
       p?.default_sell_price_jod ??
       p?.defaultSellPriceJod ??
       p?.default_sell_price ??
@@ -79,57 +64,115 @@ export default function SalesPage() {
       p?.sellPriceJod ??
       p?.price_jod ??
       p?.priceJod ??
-      "";
-    return v;
+      ""
+    );
   }
 
   function getSalespersonName(sp) {
     const n =
       sp?.display_name ||
       sp?.displayName ||
-      `${sp?.first_name || sp?.firstName || ""} ${
-        sp?.last_name || sp?.lastName || ""
-      }`.trim();
+      `${sp?.first_name || sp?.firstName || ""} ${sp?.last_name || sp?.lastName || ""}`.trim();
     return n || `Salesperson #${sp?.id}`;
   }
 
+  function formatDate(d) {
+    if (!d) return "-";
+    // handles "2026-01-31T00:00:00.000Z" or "2026-01-31"
+    return String(d).slice(0, 10);
+  }
+
+  // If backend returns items later, this will auto-work.
+  function formatPurchasedItems(sale) {
+    const arr = Array.isArray(sale?.items) ? sale.items : [];
+    if (!arr.length) return "—";
+
+    return arr
+      .map((it) => {
+        const name =
+          it.product_name ||
+          it.official_name ||
+          it.officialName ||
+          `#${it.product_id || it.productId}`;
+        const qty = Number(it.qty || 0);
+        const up = Number(it.unit_price_jod ?? it.unitPriceJod ?? 0);
+        return `${name} ×${qty} @ ${up.toFixed(3)}`;
+      })
+      .join(" | ");
+  }
+
+  async function safeRead(res) {
+    try {
+      return await res.json();
+    } catch {
+      return {};
+    }
+  }
+
   async function load() {
-    const [saleRes, clientRes, prodRes, spRes] = await Promise.all([
+    setLoading(true);
+    setErr("");
+
+    // IMPORTANT: use allSettled so one failing endpoint won't break the others
+    const results = await Promise.allSettled([
       apiFetch("/sales"),
       apiFetch("/clients"),
       apiFetch("/products?includeArchived=1"),
       apiFetch("/salespersons"),
     ]);
 
-    if (saleRes) {
-      const d = await saleRes.json().catch(() => ({}));
-      if (saleRes.ok && d.ok) setSales(d.sales || []);
+    // 0) sales
+    if (results[0].status === "fulfilled") {
+      const r = results[0].value;
+      const d = await safeRead(r);
+      if (r.ok && d.ok) setSales(d.sales || []);
+      else setErr(d?.error || d?.detail || "Failed to load sales");
+    } else {
+      setErr(results[0].reason?.message || "Failed to load sales");
     }
 
-    if (clientRes) {
-      const d = await clientRes.json().catch(() => ({}));
-      if (clientRes.ok && d.ok) setClients(d.clients || []);
+    // 1) clients
+    if (results[1].status === "fulfilled") {
+      const r = results[1].value;
+      const d = await safeRead(r);
+      if (r.ok && d.ok) setClients(d.clients || []);
+      else setErr((prev) => prev || d?.error || d?.detail || "Failed to load clients");
+    } else {
+      setErr((prev) => prev || results[1].reason?.message || "Failed to load clients");
     }
 
-    if (prodRes) {
-      const d = await prodRes.json().catch(() => ({}));
-      if (prodRes.ok && d.ok) setProducts(d.products || []);
+    // 2) products
+    if (results[2].status === "fulfilled") {
+      const r = results[2].value;
+      const d = await safeRead(r);
+      if (r.ok && d.ok) setProducts(d.products || []);
+      else setErr((prev) => prev || d?.error || d?.detail || "Failed to load products");
+    } else {
+      setErr((prev) => prev || results[2].reason?.message || "Failed to load products");
     }
 
-    if (spRes) {
-      const d = await spRes.json().catch(() => ({}));
-      if (spRes.ok && d.ok) {
+    // 3) salespersons
+    if (results[3].status === "fulfilled") {
+      const r = results[3].value;
+      const d = await safeRead(r);
+      if (r.ok && d.ok) {
         const list = d.salespersons || [];
         setSalespersons(list);
 
-        // ✅ Avoid stale closure: choose default salesperson only if not already selected
+        // set default only if not chosen
         setForm((s) => {
           if (s.salespersonId) return s;
           const def = list.find((x) => x.is_default || x.isDefault);
           return def ? { ...s, salespersonId: String(def.id) } : s;
         });
+      } else {
+        setErr((prev) => prev || d?.error || d?.detail || "Failed to load salespersons");
       }
+    } else {
+      setErr((prev) => prev || results[3].reason?.message || "Failed to load salespersons");
     }
+
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -158,26 +201,19 @@ export default function SalesPage() {
       items.splice(idx, 1);
       return {
         ...s,
-        items: items.length
-          ? items
-          : [{ productId: "", qty: 1, unitPriceJod: "" }],
+        items: items.length ? items : [{ productId: "", qty: 1, unitPriceJod: "" }],
       };
     });
   }
 
   function validateStockClientSide() {
-    // basic client-side guard; real enforcement is server-side
     for (const it of form.items) {
       const p = productsById.get(String(it.productId));
       if (!p) continue;
-
       const onHand = getOnHandQty(p);
       const qty = Number(it.qty || 0);
-
-      if (qty > onHand) {
-        return `Not enough stock for ${getProductName(
-          p
-        )}. Requested=${qty}, Available=${onHand}`;
+      if (it.productId && qty > onHand) {
+        return `Not enough stock for ${getProductName(p)}. Requested=${qty}, Available=${onHand}`;
       }
     }
     return null;
@@ -191,7 +227,6 @@ export default function SalesPage() {
       return;
     }
 
-    // ✅ Allow backend to default unitPriceJod if missing (0)
     const cleanItems = (form.items || [])
       .map((it) => ({
         productId: Number(it.productId),
@@ -232,7 +267,6 @@ export default function SalesPage() {
     setForm((s) => ({
       clientId: "",
       saleDate: "",
-      // keep salesperson if already selected/default
       salespersonId: s.salespersonId || "",
       items: [{ productId: "", qty: 1, unitPriceJod: "" }],
     }));
@@ -254,12 +288,16 @@ export default function SalesPage() {
     load();
   };
 
-  // ✅ Limit to 5 visible without losing the scroll list
-  const visibleSales = sales || [];
+  // show latest 5 in a scroll box, but allow older by scrolling
+  const salesSorted = Array.isArray(sales) ? sales : [];
+  const latestFirst = salesSorted; // API already ORDER BY date desc, id desc
 
   return (
     <div className="container">
       <h2>Sales</h2>
+
+      {err ? <div className="banner">{err}</div> : null}
+      {loading ? <div className="muted" style={{ marginTop: 6 }}>Loading…</div> : null}
 
       {hasRole("main") && (
         <form onSubmit={handleSubmit} className="card">
@@ -285,9 +323,7 @@ export default function SalesPage() {
 
           <select
             value={form.salespersonId}
-            onChange={(e) =>
-              setForm((s) => ({ ...s, salespersonId: e.target.value }))
-            }
+            onChange={(e) => setForm((s) => ({ ...s, salespersonId: e.target.value }))}
           >
             <option value="">Select salesperson...</option>
             {salespersons.map((sp) => {
@@ -326,8 +362,6 @@ export default function SalesPage() {
                   onChange={(e) => {
                     const productId = e.target.value;
                     const p2 = productsById.get(String(productId));
-
-                    // ✅ Auto-fill default sell price (but user can edit)
                     const defaultPrice = getDefaultSellPrice(p2);
 
                     setItem(idx, {
@@ -394,90 +428,62 @@ export default function SalesPage() {
         </form>
       )}
 
-      {/* ✅ Table with sticky header + scroll + shows purchased items */}
-      <div style={{ marginTop: 16 }}>
-        <div
-          style={{
-            maxHeight: 420, // “slider” / scrollbar area
-            overflowY: "auto",
-            border: "1px solid #e5e7eb",
-            borderRadius: 10,
-          }}
-        >
-          <table className="table" style={{ margin: 0 }}>
-            <thead
-              style={{
-                position: "sticky",
-                top: 0,
-                background: "black",
-                zIndex: 1,
-              }}
-            >
-              <tr>
-                <th style={{ width: 120 }}>Date</th>
-                <th style={{ width: 220 }}>Client</th>
-                <th style={{ width: 180 }}>Salesperson</th>
-                <th style={{ width: 90 }}>Items</th>
-                <th style={{ minWidth: 360 }}>Purchased Items</th>
-                <th style={{ width: 120 }}>Total (JOD)</th>
-                <th style={{ width: 110 }}>Actions</th>
+      {/* Scroll box for transactions (shows latest 5 at top, scroll for older) */}
+      <div
+        style={{
+          marginTop: 14,
+          maxHeight: 320,
+          overflowY: "auto",
+          borderRadius: 12,
+        }}
+      >
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Client</th>
+              <th>Salesperson</th>
+              <th>Items</th>
+              <th>Purchased Items</th>
+              <th>Total (JOD)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {latestFirst.map((s) => (
+              <tr key={s.id}>
+                <td>{formatDate(s.sale_date)}</td>
+                <td>{s.client_name}</td>
+                <td>{s.salesperson_name || "-"}</td>
+                <td>{s.items_count ?? "-"}</td>
+                <td>{formatPurchasedItems(s)}</td>
+                <td>{Number(s.total_jod || 0).toFixed(3)}</td>
+                <td>
+                  {hasRole("main") ? (
+                    <button onClick={() => handleDelete(s.id)}>Void</button>
+                  ) : (
+                    "-"
+                  )}
+                </td>
               </tr>
-            </thead>
+            ))}
 
-            <tbody>
-              {visibleSales.map((s, idx) => {
-                const inTop5 = idx < 5;
-                const purchased = formatSaleItems(s);
-
-                return (
-                  <tr key={s.id} style={!inTop5 ? { opacity: 0.95 } : undefined}>
-                    <td>{s.sale_date}</td>
-                    <td>{s.client_name}</td>
-                    <td>{s.salesperson_name || "-"}</td>
-                    <td>{s.items_count}</td>
-
-                    <td
-                      title={purchased}
-                      style={{
-                        whiteSpace: "nowrap",
-                        maxWidth: 520,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {purchased}
-                    </td>
-
-                    <td>{Number(s.total_jod || 0).toFixed(3)}</td>
-
-                    <td>
-                      {hasRole("main") ? (
-                        <button onClick={() => handleDelete(s.id)}>Void</button>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-
-              {!sales.length ? (
-                <tr>
-                  <td colSpan={7} className="muted">
-                    No transactions yet.
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-
-        {sales.length > 5 ? (
-          <div className="muted" style={{ marginTop: 8 }}>
-            Latest 5 transactions are at the top — scroll down for older ones.
-          </div>
-        ) : null}
+            {!latestFirst.length ? (
+              <tr>
+                <td colSpan={7} className="muted">
+                  No transactions yet.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
       </div>
+
+      {latestFirst.length > 5 ? (
+        <div className="muted" style={{ marginTop: 6 }}>
+          Latest transactions are at the top — scroll down for older ones.
+        </div>
+      ) : null}
     </div>
   );
 }
