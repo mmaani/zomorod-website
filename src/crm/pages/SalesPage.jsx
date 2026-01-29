@@ -2,16 +2,18 @@ import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../api.js";
 import { hasRole } from "../auth";
 
+const MAX_VISIBLE = 5; // show latest 5, scroll for older
+
 export default function SalesPage() {
   const [sales, setSales] = useState([]);
   const [clients, setClients] = useState([]);
   const [products, setProducts] = useState([]);
   const [salespersons, setSalespersons] = useState([]);
 
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
-
   const [notes, setNotes] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const [form, setForm] = useState({
     clientId: "",
     saleDate: "",
@@ -24,14 +26,6 @@ export default function SalesPage() {
     for (const p of products) m.set(String(p.id), p);
     return m;
   }, [products]);
-
-  const total = useMemo(() => {
-    return (form.items || []).reduce((sum, it) => {
-      const q = Number(it.qty || 0);
-      const up = Number(it.unitPriceJod || 0);
-      return sum + (q > 0 && up > 0 ? q * up : 0);
-    }, 0);
-  }, [form.items]);
 
   function getOnHandQty(p) {
     return Number(
@@ -55,7 +49,7 @@ export default function SalesPage() {
   }
 
   function getDefaultSellPrice(p) {
-    return (
+    const v =
       p?.default_sell_price_jod ??
       p?.defaultSellPriceJod ??
       p?.default_sell_price ??
@@ -64,8 +58,8 @@ export default function SalesPage() {
       p?.sellPriceJod ??
       p?.price_jod ??
       p?.priceJod ??
-      ""
-    );
+      "";
+    return v;
   }
 
   function getSalespersonName(sp) {
@@ -76,23 +70,31 @@ export default function SalesPage() {
     return n || `Salesperson #${sp?.id}`;
   }
 
+  const total = useMemo(() => {
+    return (form.items || []).reduce((sum, it) => {
+      const q = Number(it.qty || 0);
+      const up = Number(it.unitPriceJod || 0);
+      return sum + (q > 0 && up >= 0 ? q * up : 0);
+    }, 0);
+  }, [form.items]);
+
   function formatDate(d) {
     if (!d) return "-";
-    // handles "2026-01-31T00:00:00.000Z" or "2026-01-31"
-    return String(d).slice(0, 10);
+    // handles "2026-01-31T00:00:00.000Z" and "2026-01-31"
+    const s = String(d);
+    return s.includes("T") ? s.split("T")[0] : s;
   }
 
-  // If backend returns items later, this will auto-work.
-  function formatPurchasedItems(sale) {
+  function formatSaleItems(sale) {
     const arr = Array.isArray(sale?.items) ? sale.items : [];
     if (!arr.length) return "—";
-
     return arr
       .map((it) => {
         const name =
           it.product_name ||
           it.official_name ||
           it.officialName ||
+          it.name ||
           `#${it.product_id || it.productId}`;
         const qty = Number(it.qty || 0);
         const up = Number(it.unit_price_jod ?? it.unitPriceJod ?? 0);
@@ -101,19 +103,11 @@ export default function SalesPage() {
       .join(" | ");
   }
 
-  async function safeRead(res) {
-    try {
-      return await res.json();
-    } catch {
-      return {};
-    }
-  }
-
   async function load() {
     setLoading(true);
     setErr("");
 
-    // IMPORTANT: use allSettled so one failing endpoint won't break the others
+    // IMPORTANT: allSettled so one failing endpoint doesn't kill the rest
     const results = await Promise.allSettled([
       apiFetch("/sales"),
       apiFetch("/clients"),
@@ -121,56 +115,40 @@ export default function SalesPage() {
       apiFetch("/salespersons"),
     ]);
 
-    // 0) sales
-    if (results[0].status === "fulfilled") {
-      const r = results[0].value;
-      const d = await safeRead(r);
-      if (r.ok && d.ok) setSales(d.sales || []);
-      else setErr(d?.error || d?.detail || "Failed to load sales");
-    } else {
-      setErr(results[0].reason?.message || "Failed to load sales");
+    const [saleR, clientR, prodR, spR] = results;
+
+    const parseOk = async (r, label) => {
+      if (r.status !== "fulfilled") return { ok: false, error: `${label}: ${r.reason?.message || "failed"}` };
+      const res = r.value;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) return { ok: false, error: `${label}: ${data?.error || data?.detail || `HTTP ${res.status}`}` };
+      return { ok: true, data };
+    };
+
+    const saleP = await parseOk(saleR, "Sales");
+    const clientP = await parseOk(clientR, "Clients");
+    const prodP = await parseOk(prodR, "Products");
+    const spP = await parseOk(spR, "Salespersons");
+
+    // apply what succeeded
+    if (saleP.ok) setSales(Array.isArray(saleP.data.sales) ? saleP.data.sales : []);
+    if (clientP.ok) setClients(Array.isArray(clientP.data.clients) ? clientP.data.clients : []);
+    if (prodP.ok) setProducts(Array.isArray(prodP.data.products) ? prodP.data.products : []);
+    if (spP.ok) {
+      const list = Array.isArray(spP.data.salespersons) ? spP.data.salespersons : [];
+      setSalespersons(list);
+
+      // pick default salesperson if none selected
+      setForm((s) => {
+        if (s.salespersonId) return s;
+        const def = list.find((x) => x.is_default || x.isDefault);
+        return def ? { ...s, salespersonId: String(def.id) } : s;
+      });
     }
 
-    // 1) clients
-    if (results[1].status === "fulfilled") {
-      const r = results[1].value;
-      const d = await safeRead(r);
-      if (r.ok && d.ok) setClients(d.clients || []);
-      else setErr((prev) => prev || d?.error || d?.detail || "Failed to load clients");
-    } else {
-      setErr((prev) => prev || results[1].reason?.message || "Failed to load clients");
-    }
-
-    // 2) products
-    if (results[2].status === "fulfilled") {
-      const r = results[2].value;
-      const d = await safeRead(r);
-      if (r.ok && d.ok) setProducts(d.products || []);
-      else setErr((prev) => prev || d?.error || d?.detail || "Failed to load products");
-    } else {
-      setErr((prev) => prev || results[2].reason?.message || "Failed to load products");
-    }
-
-    // 3) salespersons
-    if (results[3].status === "fulfilled") {
-      const r = results[3].value;
-      const d = await safeRead(r);
-      if (r.ok && d.ok) {
-        const list = d.salespersons || [];
-        setSalespersons(list);
-
-        // set default only if not chosen
-        setForm((s) => {
-          if (s.salespersonId) return s;
-          const def = list.find((x) => x.is_default || x.isDefault);
-          return def ? { ...s, salespersonId: String(def.id) } : s;
-        });
-      } else {
-        setErr((prev) => prev || d?.error || d?.detail || "Failed to load salespersons");
-      }
-    } else {
-      setErr((prev) => prev || results[3].reason?.message || "Failed to load salespersons");
-    }
+    // show combined error if any failed
+    const errors = [saleP, clientP, prodP, spP].filter((x) => !x.ok).map((x) => x.error);
+    if (errors.length) setErr(errors.join(" • "));
 
     setLoading(false);
   }
@@ -212,7 +190,7 @@ export default function SalesPage() {
       if (!p) continue;
       const onHand = getOnHandQty(p);
       const qty = Number(it.qty || 0);
-      if (it.productId && qty > onHand) {
+      if (qty > onHand) {
         return `Not enough stock for ${getProductName(p)}. Requested=${qty}, Available=${onHand}`;
       }
     }
@@ -221,6 +199,7 @@ export default function SalesPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErr("");
 
     if (!form.clientId || !form.saleDate) {
       alert("Client and date are required");
@@ -259,7 +238,7 @@ export default function SalesPage() {
 
     const data = await res?.json().catch(() => ({}));
     if (!res?.ok || !data?.ok) {
-      alert(data?.error || data?.detail || "Failed to save transaction");
+      setErr(data?.error || data?.detail || "Failed to save transaction");
       return;
     }
 
@@ -279,25 +258,22 @@ export default function SalesPage() {
 
     const res = await apiFetch(`/sales?id=${id}`, { method: "DELETE" });
     const data = await res?.json().catch(() => ({}));
-
     if (!res?.ok || !data?.ok) {
       alert(data?.error || "Failed to void sale");
       return;
     }
-
     load();
   };
 
-  // show latest 5 in a scroll box, but allow older by scrolling
-  const salesSorted = Array.isArray(sales) ? sales : [];
-  const latestFirst = salesSorted; // API already ORDER BY date desc, id desc
+  const latest = sales.slice(0, MAX_VISIBLE);
+  const older = sales.slice(MAX_VISIBLE);
 
   return (
     <div className="container">
       <h2>Sales</h2>
 
       {err ? <div className="banner">{err}</div> : null}
-      {loading ? <div className="muted" style={{ marginTop: 6 }}>Loading…</div> : null}
+      {loading ? <div className="muted" style={{ marginTop: 8 }}>Loading…</div> : null}
 
       {hasRole("main") && (
         <form onSubmit={handleSubmit} className="card">
@@ -309,9 +285,7 @@ export default function SalesPage() {
           >
             <option value="">Select client...</option>
             {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
 
@@ -331,8 +305,7 @@ export default function SalesPage() {
               const isDef = !!(sp.is_default ?? sp.isDefault);
               return (
                 <option key={sp.id} value={sp.id}>
-                  {name}
-                  {isDef ? " (default)" : ""}
+                  {name}{isDef ? " (default)" : ""}
                 </option>
               );
             })}
@@ -352,7 +325,7 @@ export default function SalesPage() {
             const onHand = getOnHandQty(p);
             const qty = Number(it.qty || 0);
             const up = Number(it.unitPriceJod || 0);
-            const lineTotal = qty > 0 && up > 0 ? qty * up : 0;
+            const lineTotal = qty > 0 && up >= 0 ? qty * up : 0;
             const tooMuch = it.productId && qty > onHand;
 
             return (
@@ -372,9 +345,7 @@ export default function SalesPage() {
                 >
                   <option value="">Select product...</option>
                   {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {getProductName(p)}
-                    </option>
+                    <option key={p.id} value={p.id}>{getProductName(p)}</option>
                   ))}
                 </select>
 
@@ -397,18 +368,12 @@ export default function SalesPage() {
 
                 <div className="muted" style={{ marginTop: 6 }}>
                   Available: <b>{onHand}</b>{" "}
-                  {tooMuch ? (
-                    <span style={{ color: "#b91c1c", fontWeight: 800 }}>
-                      Not enough stock
-                    </span>
-                  ) : null}
+                  {tooMuch ? <span style={{ color: "#b91c1c", fontWeight: 800 }}>Not enough stock</span> : null}
                   {" "}• Line Total: <b>{lineTotal.toFixed(3)} JOD</b>
                 </div>
 
                 <div style={{ marginTop: 8 }}>
-                  <button type="button" onClick={() => removeItem(idx)}>
-                    Remove
-                  </button>
+                  <button type="button" onClick={() => removeItem(idx)}>Remove</button>
                 </div>
               </div>
             );
@@ -428,60 +393,75 @@ export default function SalesPage() {
         </form>
       )}
 
-      {/* Scroll box for transactions (shows latest 5 at top, scroll for older) */}
-      <div
-        style={{
-          marginTop: 14,
-          maxHeight: 320,
-          overflowY: "auto",
-          borderRadius: 12,
-        }}
-      >
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Client</th>
-              <th>Salesperson</th>
-              <th>Items</th>
-              <th>Purchased Items</th>
-              <th>Total (JOD)</th>
-              <th>Actions</th>
+      {/* Latest 5 */}
+      <table className="table" style={{ marginTop: 12 }}>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Client</th>
+            <th>Salesperson</th>
+            <th>Items</th>
+            <th>Purchased Items</th>
+            <th>Total (JOD)</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {latest.map((s) => (
+            <tr key={s.id}>
+              <td>{formatDate(s.sale_date)}</td>
+              <td>{s.client_name}</td>
+              <td>{s.salesperson_name || "-"}</td>
+              <td>{Number(s.items_count || 0)}</td>
+              <td>{formatSaleItems(s)}</td>
+              <td>{Number(s.total_jod || 0).toFixed(3)}</td>
+              <td>{hasRole("main") ? <button onClick={() => handleDelete(s.id)}>Void</button> : "-"}</td>
             </tr>
-          </thead>
-          <tbody>
-            {latestFirst.map((s) => (
-              <tr key={s.id}>
-                <td>{formatDate(s.sale_date)}</td>
-                <td>{s.client_name}</td>
-                <td>{s.salesperson_name || "-"}</td>
-                <td>{s.items_count ?? "-"}</td>
-                <td>{formatPurchasedItems(s)}</td>
-                <td>{Number(s.total_jod || 0).toFixed(3)}</td>
-                <td>
-                  {hasRole("main") ? (
-                    <button onClick={() => handleDelete(s.id)}>Void</button>
-                  ) : (
-                    "-"
-                  )}
-                </td>
-              </tr>
-            ))}
+          ))}
 
-            {!latestFirst.length ? (
-              <tr>
-                <td colSpan={7} className="muted">
-                  No transactions yet.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+          {!latest.length ? (
+            <tr>
+              <td colSpan={7} className="muted">No transactions yet.</td>
+            </tr>
+          ) : null}
+        </tbody>
+      </table>
 
-      {latestFirst.length > 5 ? (
-        <div className="muted" style={{ marginTop: 6 }}>
-          Latest transactions are at the top — scroll down for older ones.
+      {/* Older ones in a scroll area */}
+      {older.length ? (
+        <div style={{ marginTop: 10 }}>
+          <div className="muted" style={{ marginBottom: 6 }}>
+            Latest {MAX_VISIBLE} transactions are at the top — scroll down for older ones.
+          </div>
+
+          <div style={{ maxHeight: 260, overflowY: "auto", borderRadius: 10 }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Client</th>
+                  <th>Salesperson</th>
+                  <th>Items</th>
+                  <th>Purchased Items</th>
+                  <th>Total (JOD)</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {older.map((s) => (
+                  <tr key={s.id}>
+                    <td>{formatDate(s.sale_date)}</td>
+                    <td>{s.client_name}</td>
+                    <td>{s.salesperson_name || "-"}</td>
+                    <td>{Number(s.items_count || 0)}</td>
+                    <td>{formatSaleItems(s)}</td>
+                    <td>{Number(s.total_jod || 0).toFixed(3)}</td>
+                    <td>{hasRole("main") ? <button onClick={() => handleDelete(s.id)}>Void</button> : "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : null}
     </div>
