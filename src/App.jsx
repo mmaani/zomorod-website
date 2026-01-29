@@ -1,12 +1,9 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
 import MarketingPage from "./marketing/MarketingPage.jsx";
-
 import CRMLayout from "./crm/CRMLayout.jsx";
 import LoginPage from "./crm/LoginPage.jsx";
 import ProtectedRoute from "./crm/ProtectedRoute.jsx";
-
 import DashboardPage from "./crm/pages/DashboardPage.jsx";
 import ProductsPage from "./crm/pages/ProductsPage.jsx";
 import ClientsPage from "./crm/pages/ClientsPage.jsx";

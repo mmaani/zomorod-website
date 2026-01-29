@@ -45,40 +45,56 @@ export default async function handler(req, res) {
     const sql = getSql();
     const warehouseId = 1;
 
-    // GET /api/sales  (list transactions)
-    if (method === "GET") {
-      const auth = await requireUserFromReq(req, res);
-      if (!auth) return;
+// GET /api/sales  (list transactions)
+      if (method === "GET") {
+        const auth = await requireUserFromReq(req, res);
+        if (!auth) return;
 
-      const rows = await sql`
-        SELECT
-          o.id,
-          o.client_id,
-          c.name AS client_name,
-          o.salesperson_id,
-          sp.display_name AS salesperson_name,
-          o.sale_date,
-          o.notes,
-          COALESCE(t.total_jod, 0) AS total_jod,
-          COALESCE(t.items_count, 0) AS items_count,
-          o.created_at
-        FROM sales_orders o
-        JOIN clients c ON c.id = o.client_id
-        LEFT JOIN salespersons sp ON sp.id = o.salesperson_id
-        LEFT JOIN (
+        const url = new URL(req.url, "http://localhost");
+        const clientId = n(url.searchParams.get("clientId")) || null;
+
+        const rows = await sql`
           SELECT
-            order_id,
-            SUM(qty * unit_price_jod) AS total_jod,
-            SUM(qty) AS items_count
-          FROM sales_order_items
-          GROUP BY order_id
-        ) t ON t.order_id = o.id
-        WHERE COALESCE(o.is_void, false) = false
-        ORDER BY o.sale_date DESC, o.id DESC
-      `;
+            o.id,
+            o.client_id,
+            c.name AS client_name,
+            o.salesperson_id,
+            sp.display_name AS salesperson_name,
+            o.sale_date,
+            o.notes,
+            COALESCE(t.total_jod, 0) AS total_jod,
+            COALESCE(t.items_count, 0) AS items_count,
+            COALESCE(t.items, '[]'::json) AS items,
+            o.created_at
+          FROM sales_orders o
+          JOIN clients c ON c.id = o.client_id
+          LEFT JOIN salespersons sp ON sp.id = o.salesperson_id
+          LEFT JOIN (
+            SELECT
+              soi.order_id,
+              SUM(soi.qty * soi.unit_price_jod) AS total_jod,
+              SUM(soi.qty) AS items_count,
+              json_agg(
+                json_build_object(
+                  'product_id', soi.product_id,
+                  'product_name', COALESCE(p.official_name, p.name, ('Product #' || soi.product_id::text)),
+                  'qty', soi.qty,
+                  'unit_price_jod', soi.unit_price_jod
+                )
+                ORDER BY soi.id
+              ) AS items
+            FROM sales_order_items soi
+            LEFT JOIN products p ON p.id = soi.product_id
+            GROUP BY soi.order_id
+          ) t ON t.order_id = o.id
+          WHERE COALESCE(o.is_void, false) = false
+            AND (${clientId}::int IS NULL OR o.client_id = ${clientId})
+          ORDER BY o.sale_date DESC, o.id DESC
+        `;
 
-      return send(res, 200, { ok: true, sales: rows });
-    }
+        return send(res, 200, { ok: true, sales: rows });
+      }
+
 
     // POST /api/sales  (create transaction)  main only
     if (method === "POST") {
