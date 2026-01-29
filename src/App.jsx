@@ -49,6 +49,8 @@ export default function App() {
           <Route path="clients" element={<ClientsPage />} />
           <Route path="sales" element={<SalesPage />} />
           <Route path="suppliers" element={<SuppliersPage />} />
+          <Route path="salespersons" element={<SalespersonsPage />} />
+
         </Route>
 
         {/* Fallback */}

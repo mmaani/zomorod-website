@@ -50,25 +50,25 @@ export default function DashboardPage() {
 
       try {
         // Products
-        const pr = await apiFetch("/api/products");
+        const pr = await apiFetch("/products");
         const pj = await pr.json().catch(() => ({}));
         if (!pr.ok || !pj.ok) throw new Error(pj.error || `Products HTTP ${pr.status}`);
         const products = Array.isArray(pj.products) ? pj.products : [];
 
         // Suppliers
-        const sr = await apiFetch("/api/suppliers");
+        const sr = await apiFetch("/suppliers");
         const sj = await sr.json().catch(() => ({}));
         const suppliers = sr.ok && sj.ok ? (sj.suppliers || []) : [];
 
         // Clients
-        const cr = await apiFetch("/api/clients");
+        const cr = await apiFetch("/clients");
         const cj = await cr.json().catch(() => ({}));
         const clients = cr.ok && cj.ok ? (cj.clients || []) : [];
 
         // Salespersons (new)
         let salespersons = [];
         try {
-          const spr = await apiFetch("/api/salespersons");
+          const spr = await apiFetch("/salespersons");
           const spj = await spr.json().catch(() => ({}));
           if (spr.ok && spj.ok) salespersons = spj.salespersons || [];
         } catch {
