@@ -175,12 +175,14 @@ export default function DashboardPage() {
         />
 
         {/* Optional: only show for main */}
+        {isMain ? (
             <QuickCard
               title="Manage Salespersons"
               desc="Add and manage sales staff / external salespersons."
               cta="Go to Salespersons"
               onClick={() => nav("/crm/salespersons")}
             />
+        ) : null}
       </div>
     </div>
   );
