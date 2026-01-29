@@ -21,7 +21,11 @@ function s(v) {
 async function readJson(req) {
   let body = req.body;
   if (typeof body === "string") {
-    try { return JSON.parse(body || "{}"); } catch { throw new Error("Invalid JSON body"); }
+    try {
+      return JSON.parse(body || "{}");
+    } catch {
+      throw new Error("Invalid JSON body");
+    }
   }
   if (body && typeof body === "object") return body;
 
@@ -29,7 +33,11 @@ async function readJson(req) {
   for await (const chunk of req) chunks.push(chunk);
   const raw = Buffer.concat(chunks).toString("utf8");
   if (!raw) return {};
-  try { return JSON.parse(raw); } catch { throw new Error("Invalid JSON body"); }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error("Invalid JSON body");
+  }
 }
 
 export default async function handler(req, res) {
@@ -46,6 +54,8 @@ export default async function handler(req, res) {
       const url = new URL(req.url, "http://localhost");
       const clientId = n(url.searchParams.get("clientId")) || null;
 
+      // Return orders + totals + embedded items array
+      // Uses products.official_name for product_name
       const rows = await sql`
         SELECT
           o.id,
@@ -57,10 +67,13 @@ export default async function handler(req, res) {
           o.notes,
           COALESCE(t.total_jod, 0) AS total_jod,
           COALESCE(t.items_count, 0) AS items_count,
+          COALESCE(it.items, '[]'::json) AS items,
           o.created_at
         FROM sales_orders o
         JOIN clients c ON c.id = o.client_id
         LEFT JOIN salespersons sp ON sp.id = o.salesperson_id
+
+        -- totals (total_jod + items_count as SUM(qty))
         LEFT JOIN (
           SELECT
             order_id,
@@ -69,17 +82,32 @@ export default async function handler(req, res) {
           FROM sales_order_items
           GROUP BY order_id
         ) t ON t.order_id = o.id
+
+        -- embedded items array for "Purchased Items"
+        LEFT JOIN (
+          SELECT
+            soi.order_id,
+            json_agg(
+              json_build_object(
+                'product_id', soi.product_id,
+                'product_name', p.official_name,
+                'qty', soi.qty,
+                'unit_price_jod', soi.unit_price_jod,
+                'line_total_jod', soi.line_total_jod
+              )
+              ORDER BY soi.id ASC
+            ) AS items
+          FROM sales_order_items soi
+          JOIN products p ON p.id = soi.product_id
+          GROUP BY soi.order_id
+        ) it ON it.order_id = o.id
+
         WHERE COALESCE(o.is_void, false) = false
+          AND (${clientId}::int IS NULL OR o.client_id = ${clientId})
         ORDER BY o.sale_date DESC, o.id DESC
       `;
 
-
       return send(res, 200, { ok: true, sales: rows });
-    }
-
-    // GET /api/sales?id=123  (details)
-    if (method === "GET" && false) {
-      // (kept intentionally disabled; use a separate endpoint if you want details)
     }
 
     // POST /api/sales  (create transaction)  main only
@@ -88,15 +116,21 @@ export default async function handler(req, res) {
       if (!auth) return;
 
       let body;
-      try { body = await readJson(req); }
-      catch { return send(res, 400, { ok: false, error: "Invalid JSON body" }); }
+      try {
+        body = await readJson(req);
+      } catch {
+        return send(res, 400, { ok: false, error: "Invalid JSON body" });
+      }
 
       const clientId = n(body?.clientId);
       const saleDate = s(body?.saleDate);
       const notes = s(body?.notes) || null;
 
       // salesperson: allow null; if missing use default salesperson
-      const salespersonIdInput = body?.salespersonId === "" || body?.salespersonId == null ? null : n(body?.salespersonId);
+      const salespersonIdInput =
+        body?.salespersonId === "" || body?.salespersonId == null
+          ? null
+          : n(body?.salespersonId);
 
       const itemsRaw = Array.isArray(body?.items) ? body.items : [];
       const items = itemsRaw
@@ -232,7 +266,11 @@ export default async function handler(req, res) {
         `;
 
         // mark void
-        await tx`UPDATE sales_orders SET is_void = true, voided_at = now(), updated_at = now() WHERE id = ${id}`;
+        await tx`
+          UPDATE sales_orders
+          SET is_void = true, voided_at = now(), updated_at = now()
+          WHERE id = ${id}
+        `;
 
         // reverse inventory
         for (const it of items) {
@@ -254,6 +292,10 @@ export default async function handler(req, res) {
       return send(res, 404, { ok: false, error: "Sale not found" });
     }
     console.error("api/sales error:", err);
-    return send(res, 500, { ok: false, error: "Server error", detail: String(err?.message || err) });
+    return send(res, 500, {
+      ok: false,
+      error: "Server error",
+      detail: String(err?.message || err),
+    });
   }
 }
