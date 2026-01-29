@@ -12,6 +12,7 @@ import ProductsPage from "./crm/pages/ProductsPage.jsx";
 import ClientsPage from "./crm/pages/ClientsPage.jsx";
 import SalesPage from "./crm/pages/SalesPage.jsx";
 import SuppliersPage from "./crm/pages/SuppliersPage.jsx";
+import SalespersonsPage from "./crm/pages/SalespersonsPage.jsx";
 
 /*
  * Top‑level app router.  Defines both the marketing site and the
