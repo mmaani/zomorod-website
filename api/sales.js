@@ -21,7 +21,11 @@ function s(v) {
 async function readJson(req) {
   let body = req.body;
   if (typeof body === "string") {
-    try { return JSON.parse(body || "{}"); } catch { throw new Error("Invalid JSON body"); }
+    try {
+      return JSON.parse(body || "{}");
+    } catch {
+      throw new Error("Invalid JSON body");
+    }
   }
   if (body && typeof body === "object") return body;
 
@@ -29,7 +33,11 @@ async function readJson(req) {
   for await (const chunk of req) chunks.push(chunk);
   const raw = Buffer.concat(chunks).toString("utf8");
   if (!raw) return {};
-  try { return JSON.parse(raw); } catch { throw new Error("Invalid JSON body"); }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error("Invalid JSON body");
+  }
 }
 
 export default async function handler(req, res) {
@@ -38,13 +46,16 @@ export default async function handler(req, res) {
     const sql = getSql();
     const warehouseId = 1;
 
-    // GET /api/sales  (list transactions)
+    // GET /api/sales  (list transactions + items)
     if (method === "GET") {
       const auth = await requireUserFromReq(req, res);
       if (!auth) return;
 
       const url = new URL(req.url, "http://localhost");
       const clientId = n(url.searchParams.get("clientId")) || null;
+
+      // Optional limit (defaults high so you can scroll older ones)
+      const limit = Math.max(1, Math.min(500, n(url.searchParams.get("limit")) || 200));
 
       const rows = await sql`
         SELECT
@@ -57,29 +68,38 @@ export default async function handler(req, res) {
           o.notes,
           COALESCE(t.total_jod, 0) AS total_jod,
           COALESCE(t.items_count, 0) AS items_count,
+          COALESCE(t.items, '[]'::json) AS items,
           o.created_at
         FROM sales_orders o
         JOIN clients c ON c.id = o.client_id
         LEFT JOIN salespersons sp ON sp.id = o.salesperson_id
-        LEFT JOIN (
+
+        -- LATERAL subquery: aggregates items + totals per order
+        LEFT JOIN LATERAL (
           SELECT
-            order_id,
-            SUM(qty * unit_price_jod) AS total_jod,
-            SUM(qty) AS items_count
-          FROM sales_order_items
-          GROUP BY order_id
-        ) t ON t.order_id = o.id
+            SUM(i.qty * i.unit_price_jod) AS total_jod,
+            SUM(i.qty) AS items_count,
+            json_agg(
+              json_build_object(
+                'productId', i.product_id,
+                'product_name', COALESCE(p.official_name, p.name, ('Product #' || i.product_id::text)),
+                'qty', i.qty,
+                'unit_price_jod', i.unit_price_jod
+              )
+              ORDER BY i.id ASC
+            ) AS items
+          FROM sales_order_items i
+          JOIN products p ON p.id = i.product_id
+          WHERE i.order_id = o.id
+        ) t ON true
+
         WHERE COALESCE(o.is_void, false) = false
+          AND (${clientId}::int IS NULL OR o.client_id = ${clientId})
         ORDER BY o.sale_date DESC, o.id DESC
+        LIMIT ${limit}
       `;
 
-
       return send(res, 200, { ok: true, sales: rows });
-    }
-
-    // GET /api/sales?id=123  (details)
-    if (method === "GET" && false) {
-      // (kept intentionally disabled; use a separate endpoint if you want details)
     }
 
     // POST /api/sales  (create transaction)  main only
@@ -88,15 +108,19 @@ export default async function handler(req, res) {
       if (!auth) return;
 
       let body;
-      try { body = await readJson(req); }
-      catch { return send(res, 400, { ok: false, error: "Invalid JSON body" }); }
+      try {
+        body = await readJson(req);
+      } catch {
+        return send(res, 400, { ok: false, error: "Invalid JSON body" });
+      }
 
       const clientId = n(body?.clientId);
       const saleDate = s(body?.saleDate);
       const notes = s(body?.notes) || null;
 
       // salesperson: allow null; if missing use default salesperson
-      const salespersonIdInput = body?.salespersonId === "" || body?.salespersonId == null ? null : n(body?.salespersonId);
+      const salespersonIdInput =
+        body?.salespersonId === "" || body?.salespersonId == null ? null : n(body?.salespersonId);
 
       const itemsRaw = Array.isArray(body?.items) ? body.items : [];
       const items = itemsRaw
@@ -187,7 +211,7 @@ export default async function handler(req, res) {
               INSERT INTO inventory_movements
                 (warehouse_id, product_id, batch_id, movement_type, qty, movement_date, note, created_by)
               VALUES
-                (${warehouseId}, ${it.productId}, NULL, 'OUT', ${it.qty}, ${saleDate}, ${'Sale order #' + orderId}, ${auth.sub || null})
+                (${warehouseId}, ${it.productId}, NULL, 'OUT', ${it.qty}, ${saleDate}, ${"Sale order #" + orderId}, ${auth.sub || null})
             `;
           }
 
@@ -240,7 +264,7 @@ export default async function handler(req, res) {
             INSERT INTO inventory_movements
               (warehouse_id, product_id, batch_id, movement_type, qty, movement_date, note, created_by)
             VALUES
-              (${warehouseId}, ${it.product_id}, NULL, 'ADJ', ${it.qty}, ${order[0].sale_date}, ${'Void sale order #' + id}, ${auth.sub || null})
+              (${warehouseId}, ${it.product_id}, NULL, 'ADJ', ${it.qty}, ${order[0].sale_date}, ${"Void sale order #" + id}, ${auth.sub || null})
           `;
         }
       });
