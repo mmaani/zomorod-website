@@ -55,16 +55,24 @@ export default async function handler(req, res) {
           sp.display_name AS salesperson_name,
           o.sale_date,
           o.notes,
-          o.total_jod,
-          o.items_count,
+          COALESCE(t.total_jod, 0) AS total_jod,
+          COALESCE(t.items_count, 0) AS items_count,
           o.created_at
         FROM sales_orders o
         JOIN clients c ON c.id = o.client_id
         LEFT JOIN salespersons sp ON sp.id = o.salesperson_id
+        LEFT JOIN (
+          SELECT
+            order_id,
+            SUM(qty * unit_price_jod) AS total_jod,
+            SUM(qty) AS items_count
+          FROM sales_order_items
+          GROUP BY order_id
+        ) t ON t.order_id = o.id
         WHERE COALESCE(o.is_void, false) = false
-          AND ${clientId ? sql`o.client_id = ${clientId}` : sql`TRUE`}
         ORDER BY o.sale_date DESC, o.id DESC
       `;
+
 
       return send(res, 200, { ok: true, sales: rows });
     }
