@@ -30,6 +30,24 @@ export default function SalesPage() {
     }, 0);
   }, [form.items]);
 
+  function formatSaleItems(sale) {
+    const arr = Array.isArray(sale?.items) ? sale.items : [];
+    if (!arr.length) return "—";
+
+    return arr
+      .map((it) => {
+        const name =
+          it.product_name ||
+          it.official_name ||
+          it.officialName ||
+          `#${it.product_id || it.productId}`;
+        const qty = Number(it.qty || 0);
+        const up = Number(it.unit_price_jod ?? it.unitPriceJod ?? 0);
+        return `${name} ×${qty} @ ${up.toFixed(3)}`;
+      })
+      .join(" | ");
+  }
+
   function getOnHandQty(p) {
     return Number(
       p?.on_hand_qty ??
@@ -69,7 +87,9 @@ export default function SalesPage() {
     const n =
       sp?.display_name ||
       sp?.displayName ||
-      `${sp?.first_name || sp?.firstName || ""} ${sp?.last_name || sp?.lastName || ""}`.trim();
+      `${sp?.first_name || sp?.firstName || ""} ${
+        sp?.last_name || sp?.lastName || ""
+      }`.trim();
     return n || `Salesperson #${sp?.id}`;
   }
 
@@ -138,7 +158,9 @@ export default function SalesPage() {
       items.splice(idx, 1);
       return {
         ...s,
-        items: items.length ? items : [{ productId: "", qty: 1, unitPriceJod: "" }],
+        items: items.length
+          ? items
+          : [{ productId: "", qty: 1, unitPriceJod: "" }],
       };
     });
   }
@@ -153,7 +175,9 @@ export default function SalesPage() {
       const qty = Number(it.qty || 0);
 
       if (qty > onHand) {
-        return `Not enough stock for ${getProductName(p)}. Requested=${qty}, Available=${onHand}`;
+        return `Not enough stock for ${getProductName(
+          p
+        )}. Requested=${qty}, Available=${onHand}`;
       }
     }
     return null;
@@ -230,6 +254,9 @@ export default function SalesPage() {
     load();
   };
 
+  // ✅ Limit to 5 visible without losing the scroll list
+  const visibleSales = sales || [];
+
   return (
     <div className="container">
       <h2>Sales</h2>
@@ -258,7 +285,9 @@ export default function SalesPage() {
 
           <select
             value={form.salespersonId}
-            onChange={(e) => setForm((s) => ({ ...s, salespersonId: e.target.value }))}
+            onChange={(e) =>
+              setForm((s) => ({ ...s, salespersonId: e.target.value }))
+            }
           >
             <option value="">Select salesperson...</option>
             {salespersons.map((sp) => {
@@ -365,44 +394,90 @@ export default function SalesPage() {
         </form>
       )}
 
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Client</th>
-            <th>Salesperson</th>
-            <th>Items</th>
-            <th>Total (JOD)</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sales.map((s) => (
-            <tr key={s.id}>
-              <td>{s.sale_date}</td>
-              <td>{s.client_name}</td>
-              <td>{s.salesperson_name || "-"}</td>
-              <td>{s.items_count}</td>
-              <td>{Number(s.total_jod || 0).toFixed(3)}</td>
-              <td>
-                {hasRole("main") ? (
-                  <button onClick={() => handleDelete(s.id)}>Void</button>
-                ) : (
-                  "-"
-                )}
-              </td>
-            </tr>
-          ))}
+      {/* ✅ Table with sticky header + scroll + shows purchased items */}
+      <div style={{ marginTop: 16 }}>
+        <div
+          style={{
+            maxHeight: 420, // “slider” / scrollbar area
+            overflowY: "auto",
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+          }}
+        >
+          <table className="table" style={{ margin: 0 }}>
+            <thead
+              style={{
+                position: "sticky",
+                top: 0,
+                background: "white",
+                zIndex: 1,
+              }}
+            >
+              <tr>
+                <th style={{ width: 120 }}>Date</th>
+                <th style={{ width: 220 }}>Client</th>
+                <th style={{ width: 180 }}>Salesperson</th>
+                <th style={{ width: 90 }}>Items</th>
+                <th style={{ minWidth: 360 }}>Purchased Items</th>
+                <th style={{ width: 120 }}>Total (JOD)</th>
+                <th style={{ width: 110 }}>Actions</th>
+              </tr>
+            </thead>
 
-          {!sales.length ? (
-            <tr>
-              <td colSpan={6} className="muted">
-                No transactions yet.
-              </td>
-            </tr>
-          ) : null}
-        </tbody>
-      </table>
+            <tbody>
+              {visibleSales.map((s, idx) => {
+                const inTop5 = idx < 5;
+                const purchased = formatSaleItems(s);
+
+                return (
+                  <tr key={s.id} style={!inTop5 ? { opacity: 0.95 } : undefined}>
+                    <td>{s.sale_date}</td>
+                    <td>{s.client_name}</td>
+                    <td>{s.salesperson_name || "-"}</td>
+                    <td>{s.items_count}</td>
+
+                    <td
+                      title={purchased}
+                      style={{
+                        whiteSpace: "nowrap",
+                        maxWidth: 520,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {purchased}
+                    </td>
+
+                    <td>{Number(s.total_jod || 0).toFixed(3)}</td>
+
+                    <td>
+                      {hasRole("main") ? (
+                        <button onClick={() => handleDelete(s.id)}>Void</button>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+
+              {!sales.length ? (
+                <tr>
+                  <td colSpan={7} className="muted">
+                    No transactions yet.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+
+        {sales.length > 5 ? (
+          <div className="muted" style={{ marginTop: 8 }}>
+            Latest 5 transactions are at the top — scroll down for older ones.
+          </div>
+        ) : null}
+      </div>
     </div>
   );
-} 
+}
