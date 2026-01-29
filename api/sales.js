@@ -14,14 +14,17 @@ function n(v) {
 }
 
 function s(v) {
-  const x = String(v ?? "").trim();
-  return x;
+  return String(v ?? "").trim();
 }
 
 async function readJson(req) {
   let body = req.body;
   if (typeof body === "string") {
-    try { return JSON.parse(body || "{}"); } catch { throw new Error("Invalid JSON body"); }
+    try {
+      return JSON.parse(body || "{}");
+    } catch {
+      throw new Error("Invalid JSON body");
+    }
   }
   if (body && typeof body === "object") return body;
 
@@ -29,7 +32,11 @@ async function readJson(req) {
   for await (const chunk of req) chunks.push(chunk);
   const raw = Buffer.concat(chunks).toString("utf8");
   if (!raw) return {};
-  try { return JSON.parse(raw); } catch { throw new Error("Invalid JSON body"); }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error("Invalid JSON body");
+  }
 }
 
 export default async function handler(req, res) {
@@ -42,9 +49,6 @@ export default async function handler(req, res) {
     if (method === "GET") {
       const auth = await requireUserFromReq(req, res);
       if (!auth) return;
-
-      const url = new URL(req.url, "http://localhost");
-      const clientId = n(url.searchParams.get("clientId")) || null;
 
       const rows = await sql`
         SELECT
@@ -73,13 +77,7 @@ export default async function handler(req, res) {
         ORDER BY o.sale_date DESC, o.id DESC
       `;
 
-
       return send(res, 200, { ok: true, sales: rows });
-    }
-
-    // GET /api/sales?id=123  (details)
-    if (method === "GET" && false) {
-      // (kept intentionally disabled; use a separate endpoint if you want details)
     }
 
     // POST /api/sales  (create transaction)  main only
@@ -88,24 +86,30 @@ export default async function handler(req, res) {
       if (!auth) return;
 
       let body;
-      try { body = await readJson(req); }
-      catch { return send(res, 400, { ok: false, error: "Invalid JSON body" }); }
+      try {
+        body = await readJson(req);
+      } catch {
+        return send(res, 400, { ok: false, error: "Invalid JSON body" });
+      }
 
       const clientId = n(body?.clientId);
       const saleDate = s(body?.saleDate);
       const notes = s(body?.notes) || null;
 
       // salesperson: allow null; if missing use default salesperson
-      const salespersonIdInput = body?.salespersonId === "" || body?.salespersonId == null ? null : n(body?.salespersonId);
+      const salespersonIdInput =
+        body?.salespersonId === "" || body?.salespersonId == null
+          ? null
+          : n(body?.salespersonId);
 
       const itemsRaw = Array.isArray(body?.items) ? body.items : [];
       const items = itemsRaw
         .map((it) => ({
           productId: n(it?.productId),
           qty: Math.floor(n(it?.qty)),
-          unitPriceJod: n(it?.unitPriceJod),
+          unitPriceJod: n(it?.unitPriceJod), // may be 0 -> fallback to product default price
         }))
-        .filter((it) => it.productId && it.qty > 0 && it.unitPriceJod > 0);
+        .filter((it) => it.productId && it.qty > 0);
 
       if (!clientId || !saleDate) {
         return send(res, 400, { ok: false, error: "clientId and saleDate are required" });
@@ -116,11 +120,34 @@ export default async function handler(req, res) {
 
       try {
         const result = await sql.begin(async (tx) => {
+          // created_by in DB is INTEGER -> ensure we store a number or null
+          const createdBy = n(auth.sub) || null;
+
           // find default salesperson if none provided
           let salespersonId = salespersonIdInput;
           if (!salespersonId) {
             const def = await tx`SELECT id FROM salespersons WHERE is_default = true LIMIT 1`;
             salespersonId = def?.[0]?.id || null;
+          }
+
+          // Fill missing unit prices using product default sell price
+          for (const it of items) {
+            if (it.unitPriceJod > 0) continue;
+
+            const p = await tx`
+              SELECT default_sell_price_jod
+              FROM products
+              WHERE id = ${it.productId}
+              LIMIT 1
+            `;
+            const defPrice = n(p?.[0]?.default_sell_price_jod);
+
+            if (!defPrice || defPrice <= 0) {
+              const e = new Error("MISSING_PRICE");
+              e.productId = it.productId;
+              throw e;
+            }
+            it.unitPriceJod = defPrice;
           }
 
           // Stock check per product (aggregate if the same product appears multiple times)
@@ -160,14 +187,16 @@ export default async function handler(req, res) {
           // compute totals
           let total = 0;
           for (const it of items) total += it.qty * it.unitPriceJod;
-          const itemsCount = items.length;
+
+          // ✅ items_count should be total units (SUM qty), not number of lines
+          const itemsCount = items.reduce((sum, it) => sum + n(it.qty), 0);
 
           // create order header
           const orderIns = await tx`
             INSERT INTO sales_orders
               (client_id, salesperson_id, sale_date, notes, total_jod, items_count, created_by)
             VALUES
-              (${clientId}, ${salespersonId}, ${saleDate}, ${notes}, ${total}, ${itemsCount}, ${auth.sub || null})
+              (${clientId}, ${salespersonId}, ${saleDate}, ${notes}, ${total}, ${itemsCount}, ${createdBy})
             RETURNING id
           `;
           const orderId = orderIns[0].id;
@@ -187,7 +216,7 @@ export default async function handler(req, res) {
               INSERT INTO inventory_movements
                 (warehouse_id, product_id, batch_id, movement_type, qty, movement_date, note, created_by)
               VALUES
-                (${warehouseId}, ${it.productId}, NULL, 'OUT', ${it.qty}, ${saleDate}, ${'Sale order #' + orderId}, ${auth.sub || null})
+                (${warehouseId}, ${it.productId}, NULL, 'OUT', ${it.qty}, ${saleDate}, ${'Sale order #' + orderId}, ${createdBy})
             `;
           }
 
@@ -202,6 +231,12 @@ export default async function handler(req, res) {
             error: `Not enough stock for product ${err.productId}. Requested = ${err.requested}, Available = ${err.onHand}`,
           });
         }
+        if (String(err?.message) === "MISSING_PRICE") {
+          return send(res, 400, {
+            ok: false,
+            error: `Missing unit price and no default price found for product ${err.productId}`,
+          });
+        }
         throw err;
       }
     }
@@ -211,11 +246,14 @@ export default async function handler(req, res) {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
 
+      const sql = getSql(); // ensure sql exists in this scope
       const url = new URL(req.url, "http://localhost");
       const id = n(url.searchParams.get("id"));
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
       await sql.begin(async (tx) => {
+        const createdBy = n(auth.sub) || null;
+
         const order = await tx`
           SELECT id, sale_date, is_void
           FROM sales_orders
@@ -232,7 +270,11 @@ export default async function handler(req, res) {
         `;
 
         // mark void
-        await tx`UPDATE sales_orders SET is_void = true, voided_at = now(), updated_at = now() WHERE id = ${id}`;
+        await tx`
+          UPDATE sales_orders
+          SET is_void = true, voided_at = now(), updated_at = now()
+          WHERE id = ${id}
+        `;
 
         // reverse inventory
         for (const it of items) {
@@ -240,7 +282,7 @@ export default async function handler(req, res) {
             INSERT INTO inventory_movements
               (warehouse_id, product_id, batch_id, movement_type, qty, movement_date, note, created_by)
             VALUES
-              (${warehouseId}, ${it.product_id}, NULL, 'ADJ', ${it.qty}, ${order[0].sale_date}, ${'Void sale order #' + id}, ${auth.sub || null})
+              (${warehouseId}, ${it.product_id}, NULL, 'ADJ', ${it.qty}, ${order[0].sale_date}, ${'Void sale order #' + id}, ${createdBy})
           `;
         }
       });
@@ -254,6 +296,10 @@ export default async function handler(req, res) {
       return send(res, 404, { ok: false, error: "Sale not found" });
     }
     console.error("api/sales error:", err);
-    return send(res, 500, { ok: false, error: "Server error", detail: String(err?.message || err) });
+    return send(res, 500, {
+      ok: false,
+      error: "Server error",
+      detail: String(err?.message || err),
+    });
   }
 }
