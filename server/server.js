@@ -256,4 +256,6 @@ app.get("/api/test-oauth", (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`API server running on http://localhost:${PORT}`));
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`API server running on http://localhost:${PORT}`);
+});
