@@ -19,6 +19,13 @@ const PORT = Number(process.env.PORT || 3000);
 const MAX_FILE_BYTES = Number(process.env.MAX_CV_BYTES || 10 * 1024 * 1024); // 10MB default
 const SHEET_RANGE = process.env.GOOGLE_SHEET_RANGE || "Sheet1!A1";
 
+// ✅ Root route so opening the Codespaces URL doesn't 404
+app.get("/", (req, res) => {
+  res
+    .type("text")
+    .send("API is running. Try /auth/google or /auth/status or POST /api/recruitment/apply");
+});
+
 // ---------- OAuth client ----------
 function getOAuthClient() {
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
@@ -73,8 +80,8 @@ app.get("/auth/google", (req, res) => {
   res.cookie("oauth_state", state, { httpOnly: true, sameSite: "lax" });
 
   const url = oauth2Client.generateAuthUrl({
-    access_type: "offline", // for refresh_token
-    prompt: "consent", // ensures refresh_token at least first time
+    access_type: "offline",
+    prompt: "consent",
     scope: [
       "https://www.googleapis.com/auth/drive.file",
       "https://www.googleapis.com/auth/spreadsheets",
@@ -104,12 +111,11 @@ app.get("/auth/google/callback", async (req, res) => {
     res.cookie("google_tokens", JSON.stringify(tokens), {
       httpOnly: true,
       sameSite: "lax",
-      // If you deploy with HTTPS, set secure: true
       secure: process.env.NODE_ENV === "production",
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     });
 
-    return res.send("✅ Google connected successfully. You can now submit /api/recruitment/apply");
+    return res.send("✅ Google connected successfully. You can now POST /api/recruitment/apply");
   } catch (err) {
     return res.status(500).send(err?.message || String(err));
   }
@@ -210,7 +216,9 @@ async function applyHandler(req, res) {
       }
 
       if (totalBytes > MAX_FILE_BYTES) {
-        return res.status(413).json({ ok: false, error: `CV too large. Max is ${MAX_FILE_BYTES} bytes` });
+        return res
+          .status(413)
+          .json({ ok: false, error: `CV too large. Max is ${MAX_FILE_BYTES} bytes` });
       }
 
       // OAuth clients
