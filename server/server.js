@@ -284,8 +284,9 @@ app.get("/api/test-oauth", (req, res) => {
 
 
 app.get("/", (req, res) => {
-  res.type("text").send("API is running ✅");
+  res.type("text").send("API is running. Try /auth/status then /auth/google");
 });
+
 
 
 // ---------- Start ----------

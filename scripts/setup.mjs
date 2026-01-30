@@ -1,5 +1,4 @@
-mkdir -p scripts
-cat > scripts/setup.mjs <<'EOF'
+
 const url = process.env.SETUP_URL || "https://www.zomorodmedical.com/api/setup";
 const token = process.env.SETUP_TOKEN;
 
