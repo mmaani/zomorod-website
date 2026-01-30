@@ -20,6 +20,10 @@ const MAX_FILE_BYTES = Number(process.env.MAX_CV_BYTES || 10 * 1024 * 1024); // 
 const SHEET_RANGE = process.env.GOOGLE_SHEET_RANGE || "Sheet1!A1";
 
 // ✅ Root route so opening the Codespaces URL doesn't 404
+    app.get("/", (req, res) => {
+      res.type("text").send("API is running. Try /auth/status or /auth/google");
+    });
+
 app.get("/", (req, res) => {
   res
     .type("text")
