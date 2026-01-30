@@ -271,6 +271,65 @@ app.get("/api/test-oauth", (req, res) => {
     return res.status(500).json({ ok: false, error: err?.message || String(err) });
   }
 });
+// 1) Start OAuth
+app.get("/auth/google", (req, res) => {
+  const oauth2Client = getOAuthClient();
+
+  // CSRF protection
+  const state = crypto.randomBytes(16).toString("hex");
+  res.cookie("oauth_state", state, { httpOnly: true, sameSite: "lax" });
+
+  const url = oauth2Client.generateAuthUrl({
+    access_type: "offline", // needed for refresh_token
+    prompt: "consent",      // forces refresh_token first time
+    scope: [
+      "https://www.googleapis.com/auth/drive.file",
+      "https://www.googleapis.com/auth/spreadsheets",
+    ],
+    state,
+  });
+
+  res.redirect(url);
+});
+
+// 2) OAuth callback
+app.get("/auth/google/callback", async (req, res) => {
+  try {
+    const oauth2Client = getOAuthClient();
+
+    // validate state
+    const expectedState = req.cookies?.oauth_state;
+    const gotState = req.query?.state;
+    if (!expectedState || !gotState || expectedState !== gotState) {
+      return res.status(400).send("Invalid state. Please retry /auth/google");
+    }
+
+    const code = req.query?.code;
+    if (!code) return res.status(400).send("Missing code");
+
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    // store tokens in cookie (simple dev approach)
+    // NOTE: for production, store in DB or encrypted store
+    res.cookie("google_tokens", JSON.stringify(tokens), {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+    });
+
+    res.send("✅ Google connected successfully. You can now submit /api/recruitment/apply");
+  } catch (e) {
+    res.status(500).send(e?.message || String(e));
+  }
+});
+
+// 3) Status check (so you can test)
+app.get("/auth/status", (req, res) => {
+  const hasTokens = !!req.cookies?.google_tokens;
+  res.json({ ok: true, connected: hasTokens });
+});
+
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`API server running on http://localhost:${PORT}`);
