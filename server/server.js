@@ -284,10 +284,12 @@ app.get("/api/test-oauth", (req, res) => {
 
 
 app.get("/", (req, res) => {
-  res.type("text").send("API is running ✅  Try /auth/google or /api/test-oauth");
+  res.type("text").send("API is running ✅");
 });
 
+
 // ---------- Start ----------
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`API server running on http://localhost:${PORT}`);
 });
