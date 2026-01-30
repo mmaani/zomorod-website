@@ -7,6 +7,22 @@ import fs from "fs";
 import path from "path";
 
 dotenv.config();
+import cookieParser from "cookie-parser";
+import crypto from "crypto";
+
+app.use(cookieParser(process.env.COOKIE_SECRET || "dev_cookie_secret"));
+
+function getOAuthClient() {
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  const redirectUri = process.env.GOOGLE_OAUTH_REDIRECT_URI;
+
+  if (!clientId || !clientSecret || !redirectUri) {
+    throw new Error("Missing GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET / GOOGLE_OAUTH_REDIRECT_URI in .env");
+  }
+
+  return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+}
 
 const app = express();
 app.use(express.json());
