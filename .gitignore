@@ -6,8 +6,4 @@ dist/
 .env*.local
 .secrets/
 *.json
-.secrets/
-.env
-.env.local
-.env.local
-.secrets/
+
