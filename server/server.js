@@ -276,6 +276,10 @@ async function applyHandler(req, res) {
 
 // ---------- Routes ----------
 app.post("/api/recruitment/apply", applyHandler);
+app.use((req, _res, next) => {
+  console.log(new Date().toISOString(), req.method, req.url);
+  next();
+});
 
 app.get("/api/test-oauth", (req, res) => {
   const connected = !!req.cookies?.google_tokens;
