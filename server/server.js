@@ -14,20 +14,22 @@ app.use(express.json());
 // Cookies (for OAuth state + tokens)
 app.use(cookieParser(process.env.COOKIE_SECRET || "dev_cookie_secret"));
 
+// Log all requests (put BEFORE routes)
+app.use((req, _res, next) => {
+  console.log(new Date().toISOString(), req.method, req.url);
+  next();
+});
+
 // ---------- Config ----------
 const PORT = Number(process.env.PORT || 3000);
 const MAX_FILE_BYTES = Number(process.env.MAX_CV_BYTES || 10 * 1024 * 1024); // 10MB default
 const SHEET_RANGE = process.env.GOOGLE_SHEET_RANGE || "Sheet1!A1";
 
-// ✅ Root route so opening the Codespaces URL doesn't 404
-    app.get("/", (req, res) => {
-      res.type("text").send("API is running. Try /auth/status or /auth/google");
-    });
-
+// Root route
 app.get("/", (req, res) => {
   res
     .type("text")
-    .send("API is running. Try /auth/google or /auth/status or POST /api/recruitment/apply");
+    .send("API is running. Try /auth/status then /auth/google");
 });
 
 // ---------- OAuth client ----------
@@ -75,13 +77,25 @@ function sanitizeFilename(name) {
     .slice(0, 180);
 }
 
+// Helper: detect HTTPS behind proxy/tunnel
+function isHttpsRequest(req) {
+  const xfProto = req.headers["x-forwarded-proto"];
+  return xfProto === "https" || req.secure === true;
+}
+
 // ---------- OAuth routes ----------
 app.get("/auth/google", (req, res) => {
   const oauth2Client = getOAuthClient();
 
-  // CSRF protection
   const state = crypto.randomBytes(16).toString("hex");
-  res.cookie("oauth_state", state, { httpOnly: true, sameSite: "lax" });
+
+  const secure = isHttpsRequest(req);
+
+  res.cookie("oauth_state", state, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure,
+  });
 
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
@@ -111,12 +125,13 @@ app.get("/auth/google/callback", async (req, res) => {
     const oauth2Client = getOAuthClient();
     const { tokens } = await oauth2Client.getToken(String(code));
 
-    // Store tokens in cookie (dev/simple approach)
+    const secure = isHttpsRequest(req);
+
     res.cookie("google_tokens", JSON.stringify(tokens), {
       httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+      sameSite: secure ? "none" : "lax",
+      secure,
+      maxAge: 1000 * 60 * 60 * 24 * 30,
     });
 
     return res.send("✅ Google connected successfully. You can now POST /api/recruitment/apply");
@@ -208,7 +223,6 @@ async function applyHandler(req, res) {
     });
 
     bb.on("finish", async () => {
-      // validate fields
       const required = ["first_name", "last_name", "email", "education", "country", "city"];
       const missing = required.filter((k) => !fields[k] || !String(fields[k]).trim());
       if (missing.length) {
@@ -220,12 +234,9 @@ async function applyHandler(req, res) {
       }
 
       if (totalBytes > MAX_FILE_BYTES) {
-        return res
-          .status(413)
-          .json({ ok: false, error: `CV too large. Max is ${MAX_FILE_BYTES} bytes` });
+        return res.status(413).json({ ok: false, error: `CV too large. Max is ${MAX_FILE_BYTES} bytes` });
       }
 
-      // OAuth clients
       let drive, sheets;
       try {
         ({ drive, sheets } = getGoogleClientsFromRequestOrThrow(req));
@@ -233,7 +244,6 @@ async function applyHandler(req, res) {
         return res.status(401).json({ ok: false, error: e?.message || String(e) });
       }
 
-      // Upload to Drive
       const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
       const safeName = sanitizeFilename(
         `${fields.first_name}_${fields.last_name}_${Date.now()}_${fileInfo.filename || "cv"}`
@@ -247,7 +257,6 @@ async function applyHandler(req, res) {
         mimeType: fileInfo.mimeType,
       });
 
-      // Append to Sheet
       const spreadsheetId = process.env.GOOGLE_SHEET_ID;
       const now = new Date().toISOString();
 
@@ -265,11 +274,7 @@ async function applyHandler(req, res) {
 
       await appendToSheet({ sheets, spreadsheetId, row });
 
-      return res.json({
-        ok: true,
-        saved: true,
-        drive: driveUpload,
-      });
+      return res.json({ ok: true, saved: true, drive: driveUpload });
     });
 
     req.pipe(bb);
@@ -280,25 +285,13 @@ async function applyHandler(req, res) {
 
 // ---------- Routes ----------
 app.post("/api/recruitment/apply", applyHandler);
-app.use((req, _res, next) => {
-  console.log(new Date().toISOString(), req.method, req.url);
-  next();
-});
 
 app.get("/api/test-oauth", (req, res) => {
   const connected = !!req.cookies?.google_tokens;
   return res.json({ ok: true, connected });
 });
 
-
-app.get("/", (req, res) => {
-  res.type("text").send("API is running. Try /auth/status then /auth/google");
-});
-
-
-
 // ---------- Start ----------
-
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`API server running on http://localhost:${PORT}`);
 });
