@@ -3,53 +3,115 @@ import dotenv from "dotenv";
 import busboy from "busboy";
 import { google } from "googleapis";
 import { Readable } from "stream";
+import fs from "fs";
+import path from "path";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 
-// -------------------- Config --------------------
 const PORT = process.env.PORT || 3000;
-const MAX_FILE_BYTES = Number(process.env.MAX_CV_BYTES || 10 * 1024 * 1024); // 10MB default
+const MAX_FILE_BYTES = Number(process.env.MAX_CV_BYTES || 10 * 1024 * 1024); // 10MB
 const SHEET_RANGE = process.env.GOOGLE_SHEET_RANGE || "Sheet1!A1";
 
-// -------------------- Google Auth (Service Account via base64 env) --------------------
-function getServiceAccountFromEnv() {
-  const b64 = process.env.GOOGLE_SA_B64;
-  if (!b64) throw new Error("Missing GOOGLE_SA_B64 env var");
+const TOKEN_PATH = path.resolve(".secrets/google-oauth-token.json");
 
-  const jsonStr = Buffer.from(b64, "base64").toString("utf8");
-  return JSON.parse(jsonStr);
+// -------------------- OAuth helpers --------------------
+function getOAuthClient() {
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  const redirectUri = process.env.GOOGLE_OAUTH_REDIRECT_URI;
+
+  if (!clientId || !clientSecret || !redirectUri) {
+    throw new Error("Missing GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET / GOOGLE_OAUTH_REDIRECT_URI in .env");
+  }
+
+  return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 }
 
-function getGoogleClients() {
-  const sa = getServiceAccountFromEnv();
+function loadToken() {
+  if (!fs.existsSync(TOKEN_PATH)) return null;
+  const raw = fs.readFileSync(TOKEN_PATH, "utf8");
+  return JSON.parse(raw);
+}
 
-  const auth = new google.auth.JWT({
-    email: sa.client_email,
-    key: sa.private_key,
-    scopes: [
-      // Least privilege:
-      "https://www.googleapis.com/auth/drive.file",
-      "https://www.googleapis.com/auth/spreadsheets",
-    ],
-  });
+function saveToken(token) {
+  fs.mkdirSync(path.dirname(TOKEN_PATH), { recursive: true });
+  fs.writeFileSync(TOKEN_PATH, JSON.stringify(token, null, 2), "utf8");
+}
+
+function getGoogleClientsOrThrow() {
+  const oauth2Client = getOAuthClient();
+  const token = loadToken();
+
+  if (!token) {
+    throw new Error("Not authenticated. Visit /auth/google to connect your Google account.");
+  }
+
+  oauth2Client.setCredentials(token);
 
   return {
-    drive: google.drive({ version: "v3", auth }),
-    sheets: google.sheets({ version: "v4", auth }),
+    auth: oauth2Client,
+    drive: google.drive({ version: "v3", auth: oauth2Client }),
+    sheets: google.sheets({ version: "v4", auth: oauth2Client }),
   };
 }
 
-// -------------------- Helpers --------------------
 function sanitizeFilename(name) {
-  // Replace spaces + risky characters
   return String(name)
     .replace(/\s+/g, "_")
     .replace(/[^\w.\-]/g, "_")
     .slice(0, 180);
 }
+
+// -------------------- OAuth routes --------------------
+
+// Step A: start OAuth
+app.get("/auth/google", (req, res) => {
+  const oauth2Client = getOAuthClient();
+
+  const scopes = [
+    "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/spreadsheets",
+  ];
+
+  const url = oauth2Client.generateAuthUrl({
+    access_type: "offline", // IMPORTANT: gives refresh_token (first time)
+    prompt: "consent",      // ensures refresh_token is returned
+    scope: scopes,
+  });
+
+  res.redirect(url);
+});
+
+// Step B: OAuth callback
+app.get("/auth/google/callback", async (req, res) => {
+  try {
+    const code = req.query.code;
+    if (!code) return res.status(400).send("Missing code");
+
+    const oauth2Client = getOAuthClient();
+    const { tokens } = await oauth2Client.getToken(String(code));
+
+    // Save token to disk (local dev)
+    saveToken(tokens);
+
+    res.send("✅ Google connected successfully. You can now POST /api/recruitment/apply");
+  } catch (err) {
+    res.status(500).send(err?.message || String(err));
+  }
+});
+
+// Optional: check auth status
+app.get("/auth/status", async (req, res) => {
+  try {
+    const token = loadToken();
+    return res.json({ ok: true, hasToken: !!token });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err?.message || String(err) });
+  }
+});
 
 // -------------------- Drive upload --------------------
 async function uploadToDrive({ drive, folderId, buffer, filename, mimeType }) {
@@ -84,9 +146,7 @@ async function appendToSheet({ sheets, spreadsheetId, row }) {
     spreadsheetId,
     range: SHEET_RANGE,
     valueInputOption: "USER_ENTERED",
-    requestBody: {
-      values: [row],
-    },
+    requestBody: { values: [row] },
   });
 }
 
@@ -95,10 +155,7 @@ async function applyHandler(req, res) {
   try {
     const bb = busboy({
       headers: req.headers,
-      limits: {
-        files: 1,
-        fileSize: MAX_FILE_BYTES,
-      },
+      limits: { files: 1, fileSize: MAX_FILE_BYTES },
     });
 
     const fields = {};
@@ -111,25 +168,19 @@ async function applyHandler(req, res) {
     });
 
     bb.on("file", (name, file, info) => {
-      const { filename, mimeType } = info;
-
       if (name !== "cv") {
         file.resume();
         return;
       }
 
+      const { filename, mimeType } = info;
       fileInfo = { filename, mimeType };
-      const chunks = [];
 
+      const chunks = [];
       file.on("data", (chunk) => {
         totalBytes += chunk.length;
         chunks.push(chunk);
       });
-
-      file.on("limit", () => {
-        // busboy will stop reading further; we handle response in finish/error
-      });
-
       file.on("end", () => {
         fileBuffer = Buffer.concat(chunks);
       });
@@ -140,46 +191,29 @@ async function applyHandler(req, res) {
     });
 
     bb.on("finish", async () => {
-      // Validate required fields
       const required = ["first_name", "last_name", "email", "education", "country", "city"];
       const missing = required.filter((k) => !fields[k] || !String(fields[k]).trim());
+      if (missing.length) return res.status(400).json({ ok: false, error: `Missing fields: ${missing.join(", ")}` });
 
-      if (missing.length) {
-        return res.status(400).json({ ok: false, error: `Missing fields: ${missing.join(", ")}` });
-      }
+      if (!fileBuffer || !fileInfo) return res.status(400).json({ ok: false, error: "Missing cv file field (cv=@file)" });
+      if (totalBytes > MAX_FILE_BYTES) return res.status(413).json({ ok: false, error: `CV too large. Max is ${MAX_FILE_BYTES} bytes` });
 
-      // Validate file
-      if (!fileBuffer || !fileInfo) {
-        return res.status(400).json({ ok: false, error: "Missing cv file field (cv=@file)" });
-      }
+      // Must be authenticated first
+      const { drive, sheets } = getGoogleClientsOrThrow();
 
-      if (totalBytes > MAX_FILE_BYTES) {
-        return res.status(413).json({
-          ok: false,
-          error: `CV too large. Max allowed is ${MAX_FILE_BYTES} bytes.`,
-        });
-      }
-
-      // Build safe filename
-      const safeName = sanitizeFilename(
-        `${fields.first_name}_${fields.last_name}_${Date.now()}_${fileInfo.filename || "cv"}`
-      );
-
-      // Google clients
-      const { drive, sheets } = getGoogleClients();
-
-      // 1) Upload CV to Drive
+      // Upload
       const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+      const safeName = sanitizeFilename(`${fields.first_name}_${fields.last_name}_${Date.now()}_${fileInfo.filename || "cv"}`);
 
       const driveUpload = await uploadToDrive({
         drive,
         folderId,
         buffer: fileBuffer,
         filename: safeName,
-        mimeType: fileInfo.mimeType || "application/octet-stream",
+        mimeType: fileInfo.mimeType,
       });
 
-      // 2) Append row to Sheet
+      // Append sheet
       const spreadsheetId = process.env.GOOGLE_SHEET_ID;
       const now = new Date().toISOString();
 
@@ -200,10 +234,7 @@ async function applyHandler(req, res) {
       return res.json({
         ok: true,
         saved: true,
-        drive: {
-          fileId: driveUpload.fileId,
-          webViewLink: driveUpload.webViewLink,
-        },
+        drive: driveUpload,
       });
     });
 
@@ -213,24 +244,16 @@ async function applyHandler(req, res) {
   }
 }
 
-// -------------------- Routes --------------------
+// Routes
 app.post("/api/recruitment/apply", applyHandler);
 
-app.get("/api/test-sa", (req, res) => {
+app.get("/api/test-oauth", (req, res) => {
   try {
-    const sa = getServiceAccountFromEnv();
-    return res.json({
-      ok: true,
-      project_id: sa.project_id,
-      client_email: sa.client_email,
-      private_key_present: !!sa.private_key,
-    });
+    const token = loadToken();
+    return res.json({ ok: true, hasToken: !!token });
   } catch (err) {
     return res.status(500).json({ ok: false, error: err?.message || String(err) });
   }
 });
 
-// -------------------- Start server --------------------
-app.listen(PORT, () => {
-  console.log(`API server running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`API server running on http://localhost:${PORT}`));
