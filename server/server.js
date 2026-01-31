@@ -25,6 +25,14 @@ app.use((req, _res, next) => {
   console.log(new Date().toISOString(), req.method, req.url);
   next();
 });
+const secure = true; // for app.github.dev always https
+res.cookie("google_tokens", JSON.stringify(tokens), {
+  httpOnly: true,
+  secure,
+  sameSite: "none",
+  path: "/",
+  maxAge: 1000 * 60 * 60 * 24 * 30,
+});
 
 // ---------- Config ----------
 const PORT = Number(process.env.PORT || 3001);
@@ -97,11 +105,12 @@ app.get("/auth/google", (req, res) => {
 
   const secure = isHttpsRequest(req);
 
-  res.cookie("oauth_state", state, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure,
-  });
+ res.cookie("oauth_state", state, {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  path: "/",
+});
 
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
