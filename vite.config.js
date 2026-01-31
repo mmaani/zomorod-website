@@ -7,23 +7,34 @@ export default defineConfig({
   plugins: [
     react(),
     legacy({
+      // legacy bundle target
       targets: ["defaults", "not IE 11"],
+
+      // generate both modern + legacy bundles (what you want)
       renderLegacyChunks: true,
       renderModernChunks: true,
-      modernPolyfills: true,
-    }),
+
+      // modern polyfills chunk (helps some Safari edge cases)
+      modernPolyfills: true
+    })
   ],
   build: {
-    target: "es2015",
     rollupOptions: {
+      output: {
+        // optional: helps reduce the single 8MB chunk
+        manualChunks: {
+          react: ["react", "react-dom"],
+          router: ["react-router-dom"]
+        }
+      },
       plugins: [
         visualizer({
           filename: "dist/stats.html",
           gzipSize: true,
           brotliSize: true,
-          open: false,
-        }),
-      ],
-    },
-  },
+          open: false
+        })
+      ]
+    }
+  }
 });
