@@ -5,6 +5,7 @@ import { google } from "googleapis";
 import { Readable } from "stream";
 import cookieParser from "cookie-parser";
 import crypto from "crypto";
+import path from "path";
 
 dotenv.config();
 const app = express();
@@ -289,6 +290,10 @@ app.get("/api/test-oauth", (req, res) => {
   const connected = !!req.cookies?.google_tokens;
   return res.json({ ok: true, connected });
 });
+app.get("/test-upload.html", (req, res) => {
+  res.sendFile(path.join(process.cwd(), "test-upload.html"));
+});
+
 
 // ---------- Start ----------
 app.listen(PORT, "0.0.0.0", () => {

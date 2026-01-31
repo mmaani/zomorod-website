@@ -7,32 +7,16 @@
   <body>
     <h2>Test Recruitment Upload</h2>
 
-    <!-- IMPORTANT: replace sturdy-space-barnacle-4q54j7pqqx3qjw6 below -->
-    <form action="https://sturdy-space-barnacle-4q54j7pqqx3qjw6-3001.app.github.dev/api/recruitment/apply"
-          method="post"
-          enctype="multipart/form-data">
-
-      <label>First name</label><br/>
-      <input name="first_name" value="Mohammad" /><br/><br/>
-
-      <label>Last name</label><br/>
-      <input name="last_name" value="Maani" /><br/><br/>
-
-      <label>Email</label><br/>
-      <input name="email" value="m.maani@zomorodmedical.com" /><br/><br/>
-
-      <label>Education</label><br/>
-      <input name="education" value="MBA" /><br/><br/>
-
-      <label>Country</label><br/>
-      <input name="country" value="Jordan" /><br/><br/>
-
-      <label>City</label><br/>
-      <input name="city" value="Amman" /><br/><br/>
-
-      <label>CV (file)</label><br/>
+    <!-- IMPORTANT:
+         action is RELATIVE so it uses the same host + same cookies automatically -->
+    <form action="/api/recruitment/apply" method="post" enctype="multipart/form-data">
+      <input name="first_name" value="Mohammad" /><br/>
+      <input name="last_name" value="Maani" /><br/>
+      <input name="email" value="m.maani@zomorodmedical.com" /><br/>
+      <input name="education" value="MBA" /><br/>
+      <input name="country" value="Jordan" /><br/>
+      <input name="city" value="Amman" /><br/>
       <input type="file" name="cv" /><br/><br/>
-
       <button type="submit">Submit</button>
     </form>
   </body>
