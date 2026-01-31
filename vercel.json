@@ -1,13 +1,33 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-
     { "source": "/assets/(.*)", "destination": "/assets/$1" },
-
     {
-      "source": "/((?!api/|assets/|favicon\\.ico|robots\\.txt|sitemap\\.xml|manifest\\.webmanifest).*)",
+      "source": "/((?!api/|assets/|favicon\\.ico|robots\\.txt|sitemap\\.xml|manifest\\.webmanifest|ping\\.html).*)",
       "destination": "/index.html"
+    }
+  ],
+
+  "headers": [
+    {
+      "source": "/",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
     }
   ]
 }
