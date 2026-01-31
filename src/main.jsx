@@ -5,6 +5,7 @@ import "./styles.css";
 import { installMobileErrorOverlay } from "./mobileErrorOverlay.js";
 installMobileErrorOverlay();
 
+console.log("BUILD_ID:", import.meta.env.VITE_BUILD_ID);
 
 const boot = document.createElement("div");
 boot.style.cssText =

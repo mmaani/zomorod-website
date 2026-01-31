@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "VITE_BUILD_ID=$(date +%s) vite build",
     "preview": "vite preview",
     "api": "node server/server.js"
   },
