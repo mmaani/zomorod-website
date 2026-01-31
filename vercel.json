@@ -12,6 +12,7 @@
 
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
+
     {
       "source": "/((?!api/|assets/|favicon\\.ico|robots\\.txt|sitemap\\.xml|manifest\\.webmanifest|ping\\.html).*)",
       "destination": "/index.html"
@@ -25,16 +26,38 @@
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
+
     {
       "source": "/api/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "no-store" }
       ]
     },
+
+    {
+      "source": "/",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+
+    {
+      "source": "/crm/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+
     {
       "source": "/((?!api/|assets/).*)",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store" }
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
       ]
     }
   ]
