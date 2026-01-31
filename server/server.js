@@ -10,6 +10,14 @@ import { fileURLToPath } from "url";
 
 
 dotenv.config();
+process.on("uncaughtException", (err) => {
+  console.error("🔥 uncaughtException:", err);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("🔥 unhandledRejection:", err);
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, ".."); // repo root (one level above /server)
@@ -238,12 +246,19 @@ async function applyHandler(req, res) {
     });
 
     bb.on("finish", async () => {
-      const required = ["first_name", "last_name", "email", "education", "country", "city"];
-      const missing = required.filter((k) => !fields[k] || !String(fields[k]).trim());
-      if (missing.length) {
-        return res.status(400).json({ ok: false, error: `Missing fields: ${missing.join(", ")}` });
-      }
+  try {
+    // validate fields...
+    // getGoogleClients...
+    // uploadToDrive...
+    // appendToSheet...
 
+    return res.json({ ok: true, saved: true, drive: driveUpload });
+  } catch (err) {
+    console.error("🔥 /api/recruitment/apply failed:", err);
+    return res.status(500).json({ ok: false, error: err?.message || String(err) });
+  }
+});
+     
       if (!fileBuffer || !fileInfo) {
         return res.status(400).json({ ok: false, error: "Missing cv file field (cv=@file)" });
       }
