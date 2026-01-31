@@ -1,22 +1,36 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { login, isLoggedIn } from "./auth.js";
+import { useLocation, useNavigate } from "react-router-dom";
+import { login, isLoggedIn, getRememberFlag } from "./auth.js";
 import "./crm.css";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // ✅ new
-  const [rememberMe, setRememberMe] = useState(true);
+  // Default rememberMe from stored preference (safe in our new auth.js)
+  const [rememberMe, setRememberMe] = useState(() => {
+    try {
+      return getRememberFlag();
+    } catch {
+      return true;
+    }
+  });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Where to go after login
+  const from = location.state?.from || "/crm/dashboard";
+
   React.useEffect(() => {
-    if (isLoggedIn()) navigate("/crm/dashboard", { replace: true });
-  }, [navigate]);
+    if (isLoggedIn()) {
+      navigate(from, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate]); // keep it stable; from might be undefined on first render in some cases
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -24,7 +38,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email.trim(), password, rememberMe);
-      navigate("/crm", { replace: true });
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err?.message || "Login failed");
     } finally {
@@ -58,7 +72,6 @@ export default function LoginPage() {
             required
           />
 
-          {/* ✅ Remember me row */}
           <div className="crm-remember">
             <label className="crm-check">
               <input
