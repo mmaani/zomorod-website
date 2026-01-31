@@ -7,7 +7,12 @@ export default defineConfig({
     react(),
     legacy({
       targets: ["defaults", "not IE 11"],
+      renderLegacyChunks: true,
+      renderModernChunks: true,
       modernPolyfills: true,
     }),
   ],
+  build: {
+    target: "es2015",
+  },
 });
