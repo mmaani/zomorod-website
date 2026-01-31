@@ -7,12 +7,10 @@ import cookieParser from "cookie-parser";
 import crypto from "crypto";
 
 dotenv.config();
-app.set("trust proxy", 1);
-
 const app = express();
+app.set("trust proxy", 1);
 app.use(express.json());
 
-// Cookies (for OAuth state + tokens)
 app.use(cookieParser(process.env.COOKIE_SECRET || "dev_cookie_secret"));
 
 // Log all requests (put BEFORE routes)
@@ -22,7 +20,7 @@ app.use((req, _res, next) => {
 });
 
 // ---------- Config ----------
-const PORT = Number(process.env.PORT || 3000);
+const PORT = Number(process.env.PORT || 3001);
 const MAX_FILE_BYTES = Number(process.env.MAX_CV_BYTES || 10 * 1024 * 1024); // 10MB default
 const SHEET_RANGE = process.env.GOOGLE_SHEET_RANGE || "Sheet1!A1";
 
