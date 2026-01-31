@@ -34,6 +34,31 @@ async function safeJson(res) {
   }
 }
 
+function safeRedirectToLogin() {
+  // Avoid crashing in non-browser contexts
+  if (typeof window === "undefined") return;
+
+  // Avoid redirect loops (already on login)
+  const path = window.location?.pathname || "";
+  if (path.startsWith("/crm/login")) return;
+
+  // Guard: don’t redirect repeatedly in a tight loop
+  // (best-effort; if storage blocked, it still won’t crash)
+  try {
+    if (window.__zcrm_redirecting_to_login) return;
+    window.__zcrm_redirecting_to_login = true;
+  } catch {
+    // ignore
+  }
+
+  // Use replace() to avoid back-button loops
+  try {
+    window.location.replace("/crm/login");
+  } catch {
+    window.location.href = "/crm/login";
+  }
+}
+
 export async function apiFetch(path, options = {}) {
   const token = getToken();
   const url = normalizePath(path);
@@ -61,10 +86,10 @@ export async function apiFetch(path, options = {}) {
     throw new Error(msg);
   }
 
-  // If unauthorized, force logout
+  // If unauthorized, logout + redirect (without infinite reload loops)
   if (res.status === 401) {
     logout();
-    window.location.href = "/crm/login";
+    safeRedirectToLogin();
     return res;
   }
 
