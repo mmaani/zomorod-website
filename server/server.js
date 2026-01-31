@@ -237,14 +237,25 @@ app.get("/auth/status", (req, res) => {
 // Optional: verify which Google user you authorized (helps debugging)
 app.get("/auth/whoami", async (req, res) => {
   try {
+    // this reads google_tokens cookie and creates oauth2 client with credentials
     const { auth } = getGoogleClientsFromRequestOrThrow(req);
+
+    // IMPORTANT: call Google API with the authenticated client
     const oauth2 = google.oauth2({ version: "v2", auth });
     const me = await oauth2.userinfo.get();
-    res.json({ ok: true, email: me?.data?.email, name: me?.data?.name });
+
+    return res.json({
+      ok: true,
+      email: me.data.email,
+      name: me.data.name,
+      id: me.data.id,
+    });
   } catch (err) {
+    console.error("🔥 /auth/whoami failed:", err);
     return res.status(401).json({ ok: false, error: err?.message || String(err) });
   }
 });
+
 
 // Recruitment upload endpoint
 app.post("/api/recruitment/apply", async (req, res) => {
