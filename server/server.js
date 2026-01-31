@@ -21,7 +21,7 @@ process.on("unhandledRejection", (err) => {
 // ---- paths ----
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.resolve(__dirname, ".."); // repo root
+const ROOT_DIR = path.resolve(__dirname, ".."); // repo root (one level above /server)
 
 // ---- app ----
 const app = express();
@@ -98,7 +98,7 @@ async function uploadToDrive({ drive, folderId, buffer, filename, mimeType }) {
   console.log("➡️ Drive: uploading into folderId =", folderId);
 
   try {
-    // QUICK sanity check: folder exists + you have access
+    // Sanity check: folder exists + accessible
     await drive.files.get({
       fileId: folderId,
       fields: "id,name,mimeType",
@@ -137,7 +137,12 @@ async function uploadToDrive({ drive, folderId, buffer, filename, mimeType }) {
 async function appendToSheet({ sheets, spreadsheetId, row }) {
   if (!spreadsheetId) throw new Error("Missing GOOGLE_SHEET_ID in .env");
 
-  console.log("➡️ Sheets: appending into sheetId =", spreadsheetId, "range =", SHEET_RANGE);
+  console.log(
+    "➡️ Sheets: appending into sheetId =",
+    spreadsheetId,
+    "range =",
+    SHEET_RANGE
+  );
 
   try {
     // sanity check: sheet exists + accessible
@@ -177,6 +182,9 @@ app.get("/auth/google", (_req, res) => {
   const oauth2Client = getOAuthClient();
   const state = crypto.randomBytes(16).toString("hex");
 
+  // Cookies must work in Codespaces tunnel:
+  // - secure true
+  // - SameSite None
   res.cookie("oauth_state", state, {
     httpOnly: true,
     secure: true,
@@ -187,7 +195,11 @@ app.get("/auth/google", (_req, res) => {
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
+    // ✅ IMPORTANT: include openid/email/profile so we can read email
     scope: [
+      "openid",
+      "email",
+      "profile",
       "https://www.googleapis.com/auth/drive.file",
       "https://www.googleapis.com/auth/spreadsheets",
     ],
@@ -213,6 +225,14 @@ app.get("/auth/google/callback", async (req, res) => {
     const oauth2Client = getOAuthClient();
     const { tokens } = await oauth2Client.getToken(String(code));
 
+    // ✅ set credentials so we can call userinfo now
+    oauth2Client.setCredentials(tokens);
+
+    // ✅ fetch email immediately (this is what you asked for)
+    const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
+    const me = await oauth2.userinfo.get();
+
+    // Store tokens cookie
     res.cookie("google_tokens", JSON.stringify(tokens), {
       httpOnly: true,
       secure: true,
@@ -221,7 +241,9 @@ app.get("/auth/google/callback", async (req, res) => {
       maxAge: 1000 * 60 * 60 * 24 * 30,
     });
 
-    return res.type("text").send("✅ Google connected successfully. Now submit /test-upload.html");
+    return res.type("text").send(
+      `✅ Google connected successfully.\n\nAuthorized email: ${me?.data?.email}\n\nNow open /test-upload.html and submit a file.\nIf Drive/Sheet fails, share the Drive folder & Sheet to that email.`
+    );
   } catch (err) {
     console.error("🔥 /auth/google/callback failed:", err?.response?.data || err);
     return res.status(500).send(err?.message || String(err));
@@ -234,13 +256,10 @@ app.get("/auth/status", (req, res) => {
   return res.json({ ok: true, connected });
 });
 
-// Optional: verify which Google user you authorized (helps debugging)
+// Verify which Google user you authorized
 app.get("/auth/whoami", async (req, res) => {
   try {
-    // this reads google_tokens cookie and creates oauth2 client with credentials
     const { auth } = getGoogleClientsFromRequestOrThrow(req);
-
-    // IMPORTANT: call Google API with the authenticated client
     const oauth2 = google.oauth2({ version: "v2", auth });
     const me = await oauth2.userinfo.get();
 
@@ -251,16 +270,19 @@ app.get("/auth/whoami", async (req, res) => {
       id: me.data.id,
     });
   } catch (err) {
-    console.error("🔥 /auth/whoami failed:", err);
-    return res.status(401).json({ ok: false, error: err?.message || String(err) });
+    console.error("🔥 /auth/whoami failed:", err?.response?.data || err);
+    return res
+      .status(401)
+      .json({ ok: false, error: err?.message || String(err) });
   }
 });
+
+// Logout (clear cookies)
 app.get("/auth/logout", (_req, res) => {
   res.clearCookie("google_tokens", { path: "/" });
   res.clearCookie("oauth_state", { path: "/" });
   return res.type("text").send("Logged out. Now open /auth/google again.");
 });
-
 
 // Recruitment upload endpoint
 app.post("/api/recruitment/apply", async (req, res) => {
@@ -308,7 +330,9 @@ app.post("/api/recruitment/apply", async (req, res) => {
         const required = ["first_name", "last_name", "email", "education", "country", "city"];
         const missing = required.filter((k) => !fields[k] || !String(fields[k]).trim());
         if (missing.length) {
-          return res.status(400).json({ ok: false, error: `Missing fields: ${missing.join(", ")}` });
+          return res
+            .status(400)
+            .json({ ok: false, error: `Missing fields: ${missing.join(", ")}` });
         }
 
         if (!fileBuffer || !fileInfo) {
@@ -316,7 +340,9 @@ app.post("/api/recruitment/apply", async (req, res) => {
         }
 
         if (totalBytes > MAX_FILE_BYTES) {
-          return res.status(413).json({ ok: false, error: `CV too large. Max is ${MAX_FILE_BYTES} bytes` });
+          return res
+            .status(413)
+            .json({ ok: false, error: `CV too large. Max is ${MAX_FILE_BYTES} bytes` });
         }
 
         let drive, sheets;
@@ -373,5 +399,7 @@ app.post("/api/recruitment/apply", async (req, res) => {
 // ---- start ----
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`API server running on http://localhost:${PORT}`);
-  console.log(`Codespace URL: https://${process.env.CODESPACE_NAME || "<CODESPACE_NAME>"}-${PORT}.app.github.dev`);
+  console.log(
+    `Codespace URL: https://${process.env.CODESPACE_NAME || "<CODESPACE_NAME>"}-${PORT}.app.github.dev`
+  );
 });
