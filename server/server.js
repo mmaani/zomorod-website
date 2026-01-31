@@ -255,6 +255,11 @@ app.get("/auth/whoami", async (req, res) => {
     return res.status(401).json({ ok: false, error: err?.message || String(err) });
   }
 });
+app.get("/auth/logout", (_req, res) => {
+  res.clearCookie("google_tokens", { path: "/" });
+  res.clearCookie("oauth_state", { path: "/" });
+  return res.type("text").send("Logged out. Now open /auth/google again.");
+});
 
 
 // Recruitment upload endpoint
