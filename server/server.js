@@ -6,8 +6,14 @@ import { Readable } from "stream";
 import cookieParser from "cookie-parser";
 import crypto from "crypto";
 import path from "path";
+import { fileURLToPath } from "url";
+
 
 dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.resolve(__dirname, ".."); // repo root (one level above /server)
+
 const app = express();
 app.set("trust proxy", 1);
 app.use(express.json());
@@ -290,9 +296,11 @@ app.get("/api/test-oauth", (req, res) => {
   const connected = !!req.cookies?.google_tokens;
   return res.json({ ok: true, connected });
 });
-app.get("/test-upload.html", (req, res) => {
-  res.sendFile(path.join(process.cwd(), "test-upload.html"));
+
+app.get("/test-upload.html", (_req, res) => {
+  res.sendFile(path.join(ROOT_DIR, "test-upload.html"));
 });
+
 
 
 // ---------- Start ----------
