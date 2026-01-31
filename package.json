@@ -27,6 +27,7 @@
     "@vitejs/plugin-legacy": "^5.4.3",
     "@vitejs/plugin-react": "^4.3.1",
     "nodemon": "^3.1.11",
+    "rollup-plugin-visualizer": "^6.0.5",
     "vite": "^5.4.10"
   }
 }

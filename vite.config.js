@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import legacy from "@vitejs/plugin-legacy";
+import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig({
   plugins: [
@@ -15,15 +16,14 @@ export default defineConfig({
   build: {
     target: "es2015",
     rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes("node_modules")) {
-            if (id.includes("react")) return "react";
-            if (id.includes("react-router")) return "router";
-            return "vendor";
-          }
-        },
-      },
+      plugins: [
+        visualizer({
+          filename: "dist/stats.html",
+          gzipSize: true,
+          brotliSize: true,
+          open: false,
+        }),
+      ],
     },
   },
 });
