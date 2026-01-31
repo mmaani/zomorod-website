@@ -1,16 +1,23 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { isLoggedIn } from "./auth.js";
 
-/*
- * A small wrapper component that protects CRM routes.  It checks
- * whether the user is logged in (i.e. a token exists in
- * localStorage) and if not, redirects them to the CRM login page.  The
- * previous implementation redirected to `/login`, which was unused; the
- * correct path is `/crm/login`.
+/**
+ * Protects CRM routes.
+ * If not logged in, redirect to /crm/login and remember where user came from.
  */
-
 export default function ProtectedRoute({ children }) {
-  if (!isLoggedIn()) return <Navigate to="/crm/login" replace />;
+  const location = useLocation();
+
+  if (!isLoggedIn()) {
+    return (
+      <Navigate
+        to="/crm/login"
+        replace
+        state={{ from: location.pathname + location.search }}
+      />
+    );
+  }
+
   return children;
 }
