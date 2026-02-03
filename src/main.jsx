@@ -48,9 +48,18 @@ async function nukeOnceIfRequested() {
 
 nukeOnceIfRequested();
 
-// If using vite-plugin-pwa injectRegister:"auto", this helps activate fresh bundle
+// If using vite-plugin-pwa injectRegister:"auto", reload once on SW update.
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.addEventListener("controllerchange", () => {
+    try {
+      const key = "__zms_sw_reloaded";
+      if (window.sessionStorage.getItem(key) === "1") return;
+      window.sessionStorage.setItem(key, "1");
+    } catch {
+      // if storage blocked, still avoid tight loops by checking a flag on window
+      if (window.__zms_sw_reloaded) return;
+      window.__zms_sw_reloaded = true;
+    }
     window.location.reload();
   });
 }
