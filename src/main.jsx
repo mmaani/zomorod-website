@@ -6,15 +6,16 @@ import { installMobileErrorOverlay } from "./mobileErrorOverlay.js";
 
 installMobileErrorOverlay();
 
-console.log("BUILD_ID:", import.meta.env.VITE_BUILD_ID);
+if (import.meta.env.DEV) {
+  console.log("BUILD_ID:", import.meta.env.VITE_BUILD_ID);
 
-// Small visual proof that new JS executed
-const boot = document.createElement("div");
-boot.style.cssText =
-  "position:fixed;top:8px;left:8px;z-index:99999;background:#000;color:#fff;padding:6px 8px;font:12px system-ui;border-radius:6px";
-boot.textContent = `BOOT OK • ${import.meta.env.VITE_BUILD_ID || ""}`;
-document.body.appendChild(boot);
-
+  // Small visual proof that new JS executed (dev only)
+  const boot = document.createElement("div");
+  boot.style.cssText =
+    "position:fixed;top:8px;left:8px;z-index:99999;background:#000;color:#fff;padding:6px 8px;font:12px system-ui;border-radius:6px";
+  boot.textContent = `BOOT OK • ${import.meta.env.VITE_BUILD_ID || ""}`;
+  document.body.appendChild(boot);
+}
 /**
  * One-time emergency reset:
  * Open: https://www.zomorodmedical.com/?nuke=1
