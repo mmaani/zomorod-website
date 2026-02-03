@@ -28,3 +28,10 @@ dist/
 .env*
 # Vercel
 .vercel/
+
+# secrets
+.env*
+# vercel
+.vercel/
+# build
+/dist/
