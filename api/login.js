@@ -47,6 +47,9 @@ export default async function handler(req, res) {
   }
 
   try {
+     if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
+      return send(res, 500, { ok: false, error: "Server misconfigured" });
+    }
     let body;
     try {
       body = await readJson(req);
