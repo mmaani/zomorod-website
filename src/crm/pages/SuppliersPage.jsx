@@ -1,17 +1,55 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../api.js";
 import { hasRole } from "../auth";
-import { Country, City } from "country-state-city";
 
 /*
- * Suppliers page (updated):
- * - Business Name + Contact Name + Website
- * - Country dropdown (all countries; Jordan/China/Malaysia/Turkey/Syria pinned on top)
- * - City dropdown (depends on selected country)
- * - Supplier Categories multi-select saved to supplier_categories
+ * Suppliers page (production-safe):
+ * - No external dataset dependency (removes country-state-city)
+ * - Country dropdown uses a small built-in list + optional free text "Other"
+ * - City is free text input
+ * - Categories multi-select saved to supplier_categories
  */
 
 const PINNED = ["Jordan", "China", "Malaysia", "Turkey", "Syria"];
+
+// Small, safe list (you can expand anytime without affecting bundle much)
+const COUNTRY_LIST = [
+  ...PINNED,
+  "United Arab Emirates",
+  "Saudi Arabia",
+  "Qatar",
+  "Kuwait",
+  "Oman",
+  "Bahrain",
+  "Egypt",
+  "Lebanon",
+  "Iraq",
+  "Yemen",
+  "Palestine",
+  "Germany",
+  "France",
+  "Italy",
+  "Spain",
+  "United Kingdom",
+  "Netherlands",
+  "Belgium",
+  "Switzerland",
+  "United States",
+  "Canada",
+  "Mexico",
+  "Brazil",
+  "India",
+  "Pakistan",
+  "Bangladesh",
+  "Indonesia",
+  "Singapore",
+  "Thailand",
+  "Vietnam",
+  "South Korea",
+  "Japan",
+  "Australia",
+  "South Africa",
+];
 
 function normalize(v) {
   return String(v ?? "").trim();
@@ -21,20 +59,6 @@ export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // country-state-city lists
-  const allCountries = useMemo(() => Country.getAllCountries() || [], []);
-  const countriesSorted = useMemo(() => {
-    const pinned = [];
-    const rest = [];
-    for (const c of allCountries) {
-      if (PINNED.includes(c.name)) pinned.push(c);
-      else rest.push(c);
-    }
-    pinned.sort((a, b) => PINNED.indexOf(a.name) - PINNED.indexOf(b.name));
-    rest.sort((a, b) => a.name.localeCompare(b.name));
-    return [...pinned, ...rest];
-  }, [allCountries]);
 
   const emptyForm = {
     id: null,
@@ -46,31 +70,34 @@ export default function SuppliersPage() {
     supplierCountry: "",
     supplierCity: "",
     categoryIds: [],
+    // optional: when country is "Other"
+    supplierCountryOther: "",
   };
 
   const [form, setForm] = useState(emptyForm);
 
-  const selectedCountryObj = useMemo(() => {
-    const name = normalize(form.supplierCountry);
-    if (!name) return null;
-    return countriesSorted.find((c) => c.name === name) || null;
-  }, [form.supplierCountry, countriesSorted]);
+  const countriesSorted = useMemo(() => {
+    // De-duplicate and keep pinned on top
+    const set = new Set(COUNTRY_LIST.map((x) => normalize(x)).filter(Boolean));
+    const all = Array.from(set);
 
-  const cityOptions = useMemo(() => {
-    if (!selectedCountryObj?.isoCode) return [];
-    const cities = City.getCitiesOfCountry(selectedCountryObj.isoCode) || [];
-    // Deduplicate by name (some datasets can repeat)
-    const seen = new Set();
-    const uniq = [];
-    for (const c of cities) {
-      const nm = c?.name?.trim();
-      if (!nm || seen.has(nm)) continue;
-      seen.add(nm);
-      uniq.push({ name: nm });
+    const pinned = [];
+    const rest = [];
+    for (const name of all) {
+      if (PINNED.includes(name)) pinned.push(name);
+      else rest.push(name);
     }
-    uniq.sort((a, b) => a.name.localeCompare(b.name));
-    return uniq;
-  }, [selectedCountryObj]);
+    pinned.sort((a, b) => PINNED.indexOf(a) - PINNED.indexOf(b));
+    rest.sort((a, b) => a.localeCompare(b));
+    return [...pinned, ...rest];
+  }, []);
+
+  // Effective country that goes to API
+  const effectiveCountry = useMemo(() => {
+    const raw = normalize(form.supplierCountry);
+    if (raw === "Other") return normalize(form.supplierCountryOther);
+    return raw;
+  }, [form.supplierCountry, form.supplierCountryOther]);
 
   async function load() {
     setLoading(true);
@@ -92,6 +119,9 @@ export default function SuppliersPage() {
   }, []);
 
   const handleEdit = (s) => {
+    // If stored country is not in our list, set dropdown to Other + store actual value
+    const storedCountry = normalize(s.supplierCountry);
+    const inList = countriesSorted.includes(storedCountry);
     setForm({
       id: s.id,
       businessName: s.businessName || "",
@@ -99,7 +129,8 @@ export default function SuppliersPage() {
       phone: s.phone || "",
       email: s.email || "",
       website: s.website || "",
-      supplierCountry: s.supplierCountry || "",
+      supplierCountry: inList ? storedCountry : storedCountry ? "Other" : "",
+      supplierCountryOther: inList ? "" : storedCountry,
       supplierCity: s.supplierCity || "",
       categoryIds: Array.isArray(s.categoryIds) ? s.categoryIds : [],
     });
@@ -132,15 +163,20 @@ export default function SuppliersPage() {
       return;
     }
 
+    // If user picked Other, enforce providing text
+    if (normalize(form.supplierCountry) === "Other" && !normalize(form.supplierCountryOther)) {
+      alert("Please type the country name (Other).");
+      return;
+    }
+
     const payload = {
       id: form.id,
-      // name is optional; API will derive it from business/contact
       businessName: normalize(form.businessName),
       contactName: normalize(form.contactName),
       phone: normalize(form.phone),
       email: normalize(form.email),
       website: normalize(form.website),
-      supplierCountry: normalize(form.supplierCountry),
+      supplierCountry: effectiveCountry,
       supplierCity: normalize(form.supplierCity),
       categoryIds: form.categoryIds,
     };
@@ -225,36 +261,43 @@ export default function SuppliersPage() {
               <select
                 value={form.supplierCountry}
                 onChange={(e) => {
-                  const countryName = e.target.value;
-                  // reset city when changing country
-                  setForm((s) => ({ ...s, supplierCountry: countryName, supplierCity: "" }));
+                  const v = e.target.value;
+                  setForm((s) => ({
+                    ...s,
+                    supplierCountry: v,
+                    supplierCountryOther: v === "Other" ? s.supplierCountryOther : "",
+                  }));
                 }}
               >
                 <option value="">Select country…</option>
-                {countriesSorted.map((c) => (
-                  <option key={c.isoCode} value={c.name}>
-                    {c.name}
+                {countriesSorted.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
                   </option>
                 ))}
+                <option value="Other">Other…</option>
               </select>
+
+              {form.supplierCountry === "Other" ? (
+                <input
+                  className="input"
+                  style={{ marginTop: 8 }}
+                  placeholder="Type country name"
+                  value={form.supplierCountryOther}
+                  onChange={(e) => setForm((s) => ({ ...s, supplierCountryOther: e.target.value }))}
+                />
+              ) : null}
             </div>
 
             <div className="field">
               <label>City</label>
-              <select
+              <input
+                className="input"
+                placeholder={effectiveCountry ? "City (free text)" : "Select country first…"}
                 value={form.supplierCity}
                 onChange={(e) => setForm((s) => ({ ...s, supplierCity: e.target.value }))}
-                disabled={!form.supplierCountry}
-              >
-                <option value="">
-                  {form.supplierCountry ? "Select city…" : "Select a country first…"}
-                </option>
-                {cityOptions.map((c) => (
-                  <option key={c.name} value={c.name}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                disabled={!effectiveCountry}
+              />
             </div>
           </div>
 
@@ -305,11 +348,7 @@ export default function SuppliersPage() {
               {form.id ? "Update Supplier" : "Add Supplier"}
             </button>
             {form.id && (
-              <button
-                className="btn btn-ghost"
-                type="button"
-                onClick={() => setForm(emptyForm)}
-              >
+              <button className="btn btn-ghost" type="button" onClick={() => setForm(emptyForm)}>
                 Cancel
               </button>
             )}
@@ -334,18 +373,25 @@ export default function SuppliersPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} className="muted">Loading…</td></tr>
+              <tr>
+                <td colSpan={9} className="muted">
+                  Loading…
+                </td>
+              </tr>
             ) : null}
 
             {!loading && suppliers.length === 0 ? (
-              <tr><td colSpan={9} className="muted">No suppliers yet.</td></tr>
+              <tr>
+                <td colSpan={9} className="muted">
+                  No suppliers yet.
+                </td>
+              </tr>
             ) : null}
 
             {suppliers.map((s) => {
-              const catNames =
-                (s.categoryIds || [])
-                  .map((id) => categories.find((c) => c.id === id)?.name)
-                  .filter(Boolean);
+              const catNames = (s.categoryIds || [])
+                .map((id) => categories.find((c) => c.id === id)?.name)
+                .filter(Boolean);
 
               return (
                 <tr key={s.id}>
@@ -364,13 +410,7 @@ export default function SuppliersPage() {
                       <span className="muted">—</span>
                     )}
                   </td>
-                  <td>
-                    {catNames.length ? (
-                      <span>{catNames.join(", ")}</span>
-                    ) : (
-                      <span className="muted">—</span>
-                    )}
-                  </td>
+                  <td>{catNames.length ? <span>{catNames.join(", ")}</span> : <span className="muted">—</span>}</td>
                   <td style={{ whiteSpace: "nowrap" }}>
                     {hasRole("main") ? (
                       <>
