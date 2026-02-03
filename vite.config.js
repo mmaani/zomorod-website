@@ -10,28 +10,31 @@ export default defineConfig({
       injectRegister: "auto",
 
       workbox: {
-        // SPA fallback
+        // SPA fallback for navigation
         navigateFallback: "/index.html",
 
-        // ✅ Keep precache small & safe
-        globPatterns: ["**/*.{css,html,ico,png,svg,webp,woff2}"],
+        // ✅ Precache ONLY small, safe files (NO JS)
+        globPatterns: ["**/*.{html,css,ico,png,svg,webp,woff2}"],
 
-        // ✅ Allow bigger files if you really want to precache some JS later
-        // (not needed with globPatterns above, but harmless)
+        // ✅ Belt + suspenders: never precache JS/maps even if something tries to include them
+        globIgnores: ["**/*.js", "**/*.mjs", "**/*.map"],
+
+        // (harmless, but not required since we’re not precaching JS)
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MiB
 
-        // ✅ Navigation: network-first to always get newest HTML after deploy
         runtimeCaching: [
+          // ✅ Navigations: always try network first so new deploy HTML is fetched
           {
             urlPattern: ({ request }) => request.mode === "navigate",
             handler: "NetworkFirst",
             options: {
               cacheName: "html",
               networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 20, maxAgeSeconds: 24 * 60 * 60 }, // 1 day
             },
           },
 
-          // ✅ JS/CSS: cache-first (works great with hashed filenames + immutable)
+          // ✅ Scripts & styles: cache-first (perfect with hashed filenames + immutable headers)
           {
             urlPattern: ({ request }) =>
               request.destination === "script" || request.destination === "style",
@@ -42,7 +45,7 @@ export default defineConfig({
             },
           },
 
-          // ✅ Images/fonts: cache-first
+          // ✅ Images & fonts: cache-first
           {
             urlPattern: ({ request }) =>
               request.destination === "image" || request.destination === "font",
