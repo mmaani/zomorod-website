@@ -2,10 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
+
+    <title>Zomorod Medical Supplies LLC | Medical Consumables in Amman, Jordan</title>
 
     <!-- Primary meta description: only one description should exist per page -->
     <meta
@@ -13,16 +16,26 @@
       content="Zomorod Medical Supplies LLC supplies medical consumer goods in Jordan. Quality-focused sourcing, documentation readiness, and competitive quotes based on volume and delivery needs."
     />
 
-</script>
-    <!-- Favicon -->
+    <meta name="robots" content="index,follow" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://www.zomorodmedical.com/" />
+
+    <!-- Performance hints -->
+    <link rel="dns-prefetch" href="//www.zomorodmedical.com" />
+    <link rel="preconnect" href="https://www.zomorodmedical.com" crossorigin />
+
+    <!-- Favicons -->
     <link rel="icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
 
-    <meta name="robots" content="index,follow" />
-
-    <!-- Prefer www as canonical (match your 308 redirect) -->
-    <link rel="canonical" href="https://www.zomorodmedical.com/" />
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="apple-touch-icon" href="/pwa-192.png" />
 
     <!-- Open Graph -->
     <meta property="og:title" content="Zomorod Medical Supplies LLC" />
@@ -32,7 +45,10 @@
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.zomorodmedical.com/" />
-    <meta property="og:image" content="https://www.zomorodmedical.com/logo.png" />
+    <meta
+      property="og:image"
+      content="https://www.zomorodmedical.com/logo.png"
+    />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -41,9 +57,10 @@
       name="twitter:description"
       content="Medical consumer goods supply & distribution — based in Amman, Jordan."
     />
-    <meta name="twitter:image" content="https://www.zomorodmedical.com/logo.png" />
-
-    <title>Zomorod Medical Supplies LLC | Medical Consumables in Amman, Jordan</title>
+    <meta
+      name="twitter:image"
+      content="https://www.zomorodmedical.com/logo.png"
+    />
 
     <!-- Structured data -->
     <script type="application/ld+json">
@@ -74,7 +91,7 @@
   <body>
     <div id="root"></div>
 
-    <!-- Vite dev entry; during build Vite generates dist/index.html with hashed /assets/*.js -->
+    <!-- Vite entry -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
