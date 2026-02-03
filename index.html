@@ -12,7 +12,24 @@
       name="description"
       content="Zomorod Medical Supplies LLC supplies medical consumer goods in Jordan. Quality-focused sourcing, documentation readiness, and competitive quotes based on volume and delivery needs."
     />
+<script>
+  // TEMP (one deploy): remove any old service workers + caches for this origin
+  (async () => {
+    try {
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      }
 
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch (e) {
+      // ignore
+    }
+  })();
+</script>
     <!-- Favicon -->
     <link rel="icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
