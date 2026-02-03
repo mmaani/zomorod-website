@@ -4,8 +4,24 @@ import { requireUserFromReq } from "../lib/requireAuth.js";
 
 function send(res, status, payload) {
   res.statusCode = status;
-  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+
+  // Important for APIs in SPA/PWA environments:
+  // avoid caching JSON responses by browser/SW/CDN.
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Pragma", "no-cache");
+
   res.end(JSON.stringify(payload));
+}
+
+function setCors(req, res) {
+  // If you want to restrict origins, replace "*" with your domain:
+  // https://www.zomorodmedical.com
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Vary", "Origin");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Setup-Token");
+  res.setHeader("Access-Control-Max-Age", "86400");
 }
 
 function n(v) {
@@ -13,13 +29,55 @@ function n(v) {
   return Number.isFinite(x) ? x : 0;
 }
 
-function cleanStr(v) {
+function cleanStr(v, maxLen = 255) {
   const s = String(v ?? "").trim();
-  return s ? s : null;
+  if (!s) return null;
+  if (s.length > maxLen) return s.slice(0, maxLen);
+  return s;
+}
+
+function cleanEmail(v) {
+  const s = cleanStr(v, 254);
+  if (!s) return null;
+  const lower = s.toLowerCase();
+  // Very lightweight sanity check
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lower)) return null;
+  return lower;
+}
+
+function cleanUrl(v) {
+  const s = cleanStr(v, 2048);
+  if (!s) return null;
+
+  // Allow users to type "example.com" and make it valid
+  const candidate = s.startsWith("http://") || s.startsWith("https://") ? s : `https://${s}`;
+
+  try {
+    const u = new URL(candidate);
+    // Only allow http/https
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
+function uniqPositiveInts(arr) {
+  const out = [];
+  const seen = new Set();
+  for (const v of Array.isArray(arr) ? arr : []) {
+    const x = n(v);
+    if (x > 0 && !seen.has(x)) {
+      seen.add(x);
+      out.push(x);
+    }
+  }
+  return out;
 }
 
 async function readJson(req) {
-  let body = req.body;
+  const body = req.body;
+
   if (typeof body === "string") {
     try {
       return JSON.parse(body || "{}");
@@ -27,6 +85,7 @@ async function readJson(req) {
       throw new Error("Invalid JSON body");
     }
   }
+
   if (body && typeof body === "object") return body;
 
   const chunks = [];
@@ -41,7 +100,6 @@ async function readJson(req) {
 }
 
 async function loadCategories(sql) {
-  // We reuse product_categories as “potential product categories supplier can supply”
   const rows = await sql`
     SELECT id, name
     FROM product_categories
@@ -50,41 +108,96 @@ async function loadCategories(sql) {
   return rows || [];
 }
 
+function getReqUrl(req) {
+  // Works on Vercel + local Node, even if req.url is relative
+  const host = req.headers?.host || "localhost";
+  const proto = (req.headers?.["x-forwarded-proto"] || "http").toString();
+  return new URL(req.url || "/", `${proto}://${host}`);
+}
+
 export default async function handler(req, res) {
   try {
+    setCors(req, res);
+
+    // Preflight
+    if ((req.method || "GET") === "OPTIONS") {
+      res.statusCode = 204;
+      res.end();
+      return;
+    }
+
     const method = req.method || "GET";
     const sql = getSql();
+    const url = getReqUrl(req);
 
     // -------------------------
     // GET /api/suppliers
     // returns: suppliers + categories
+    // supports:
+    //   ?q=term   (search business/name/contact)
+    //   ?limit=200 (default 500)
     // -------------------------
     if (method === "GET") {
       const auth = await requireUserFromReq(req, res);
       if (!auth) return;
 
-      const suppliers = await sql`
-        SELECT
-          s.id,
-          s.name,
-          s.business_name,
-          s.contact_name,
-          s.phone,
-          s.email,
-          s.website,
-          s.supplier_country,
-          s.supplier_city,
-          s.created_at,
-          s.updated_at,
-          COALESCE(
-            ARRAY_AGG(sc.category_id) FILTER (WHERE sc.category_id IS NOT NULL),
-            '{}'::int[]
-          ) AS category_ids
-        FROM suppliers s
-        LEFT JOIN supplier_categories sc ON sc.supplier_id = s.id
-        GROUP BY s.id
-        ORDER BY COALESCE(NULLIF(s.business_name, ''), s.name) ASC, s.id ASC
-      `;
+      const q = cleanStr(url.searchParams.get("q"), 80);
+      const limitRaw = n(url.searchParams.get("limit"));
+      const limit = Math.min(Math.max(limitRaw || 500, 1), 2000);
+
+      const suppliers = q
+        ? await sql`
+            SELECT
+              s.id,
+              s.name,
+              s.business_name,
+              s.contact_name,
+              s.phone,
+              s.email,
+              s.website,
+              s.supplier_country,
+              s.supplier_city,
+              s.created_at,
+              s.updated_at,
+              COALESCE(
+                ARRAY_AGG(DISTINCT sc.category_id)
+                  FILTER (WHERE sc.category_id IS NOT NULL),
+                '{}'::int[]
+              ) AS category_ids
+            FROM suppliers s
+            LEFT JOIN supplier_categories sc ON sc.supplier_id = s.id
+            WHERE
+              COALESCE(NULLIF(s.business_name, ''), '') ILIKE ${"%" + q + "%"}
+              OR COALESCE(NULLIF(s.name, ''), '') ILIKE ${"%" + q + "%"}
+              OR COALESCE(NULLIF(s.contact_name, ''), '') ILIKE ${"%" + q + "%"}
+            GROUP BY s.id
+            ORDER BY COALESCE(NULLIF(s.business_name, ''), s.name) ASC, s.id ASC
+            LIMIT ${limit}
+          `
+        : await sql`
+            SELECT
+              s.id,
+              s.name,
+              s.business_name,
+              s.contact_name,
+              s.phone,
+              s.email,
+              s.website,
+              s.supplier_country,
+              s.supplier_city,
+              s.created_at,
+              s.updated_at,
+              COALESCE(
+                ARRAY_AGG(DISTINCT sc.category_id)
+                  FILTER (WHERE sc.category_id IS NOT NULL),
+                '{}'::int[]
+              ) AS category_ids
+            FROM suppliers s
+            LEFT JOIN supplier_categories sc ON sc.supplier_id = s.id
+            GROUP BY s.id
+            ORDER BY COALESCE(NULLIF(s.business_name, ''), s.name) ASC, s.id ASC
+            LIMIT ${limit}
+          `;
 
       const categories = await loadCategories(sql);
 
@@ -92,7 +205,7 @@ export default async function handler(req, res) {
         ok: true,
         suppliers: (suppliers || []).map((r) => ({
           id: r.id,
-          name: r.name,
+          name: r.name ?? "",
           businessName: r.business_name ?? "",
           contactName: r.contact_name ?? "",
           phone: r.phone ?? "",
@@ -120,37 +233,30 @@ export default async function handler(req, res) {
         return send(res, 400, { ok: false, error: "Invalid JSON body" });
       }
 
-      // UI label is "Business Name" but you also keep "name" in DB (NOT NULL)
-      // We'll store:
-      // - name: always required (fallback to business/contact)
-      // - business_name: optional but if empty -> becomes contact_name (rule)
-      const businessNameRaw = cleanStr(body?.businessName);
-      const contactName = cleanStr(body?.contactName);
-      const phone = cleanStr(body?.phone);
-      const email = cleanStr(body?.email);
-      const website = cleanStr(body?.website);
-      const supplierCountry = cleanStr(body?.supplierCountry);
-      const supplierCity = cleanStr(body?.supplierCity);
+      const businessNameRaw = cleanStr(body?.businessName, 200);
+      const contactName = cleanStr(body?.contactName, 200);
+      const phone = cleanStr(body?.phone, 50);
+      const email = cleanEmail(body?.email);
+      const website = cleanUrl(body?.website);
+      const supplierCountry = cleanStr(body?.supplierCountry, 120);
+      const supplierCity = cleanStr(body?.supplierCity, 120);
 
       // Rule: if business name empty => set it to contact name
       const businessName = businessNameRaw || contactName || null;
 
-      // name must exist (db NOT NULL).
-      // We’ll set name to businessName if present, else contactName, else body.name
-      const name =
-        cleanStr(body?.name) ||
-        businessName ||
-        contactName;
+      // name must exist (db NOT NULL)
+      const name = cleanStr(body?.name, 200) || businessName || contactName;
 
       if (!name) {
-        return send(res, 400, { ok: false, error: "Business Name (or Contact Name) is required" });
+        return send(res, 400, {
+          ok: false,
+          error: "Business Name (or Contact Name) is required",
+        });
       }
 
-      const categoryIds = Array.isArray(body?.categoryIds)
-        ? body.categoryIds.map(n).filter((x) => x > 0)
-        : [];
+      const categoryIds = uniqPositiveInts(body?.categoryIds);
 
-      const result = await sql.begin(async (tx) => {
+      const supplierId = await sql.begin(async (tx) => {
         const rows = await tx`
           INSERT INTO suppliers (
             name, business_name, contact_name, phone, email, website,
@@ -168,22 +274,22 @@ export default async function handler(req, res) {
           )
           RETURNING id
         `;
-        const supplierId = rows?.[0]?.id;
+        const id = rows?.[0]?.id;
 
-        if (supplierId && categoryIds.length) {
+        if (id && categoryIds.length) {
           for (const cid of categoryIds) {
             await tx`
               INSERT INTO supplier_categories (supplier_id, category_id)
-              VALUES (${supplierId}, ${cid})
+              VALUES (${id}, ${cid})
               ON CONFLICT (supplier_id, category_id) DO NOTHING
             `;
           }
         }
 
-        return supplierId;
+        return id;
       });
 
-      return send(res, 201, { ok: true, id: result });
+      return send(res, 201, { ok: true, id: supplierId });
     }
 
     // -------------------------
@@ -203,24 +309,25 @@ export default async function handler(req, res) {
       const id = n(body?.id);
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
-      const businessNameRaw = cleanStr(body?.businessName);
-      const contactName = cleanStr(body?.contactName);
-      const phone = cleanStr(body?.phone);
-      const email = cleanStr(body?.email);
-      const website = cleanStr(body?.website);
-      const supplierCountry = cleanStr(body?.supplierCountry);
-      const supplierCity = cleanStr(body?.supplierCity);
+      const businessNameRaw = cleanStr(body?.businessName, 200);
+      const contactName = cleanStr(body?.contactName, 200);
+      const phone = cleanStr(body?.phone, 50);
+      const email = cleanEmail(body?.email);
+      const website = cleanUrl(body?.website);
+      const supplierCountry = cleanStr(body?.supplierCountry, 120);
+      const supplierCity = cleanStr(body?.supplierCity, 120);
 
       const businessName = businessNameRaw || contactName || null;
-      const name = cleanStr(body?.name) || businessName || contactName;
+      const name = cleanStr(body?.name, 200) || businessName || contactName;
 
       if (!name) {
-        return send(res, 400, { ok: false, error: "Business Name (or Contact Name) is required" });
+        return send(res, 400, {
+          ok: false,
+          error: "Business Name (or Contact Name) is required",
+        });
       }
 
-      const categoryIds = Array.isArray(body?.categoryIds)
-        ? body.categoryIds.map(n).filter((x) => x > 0)
-        : [];
+      const categoryIds = uniqPositiveInts(body?.categoryIds);
 
       await sql.begin(async (tx) => {
         await tx`
@@ -262,7 +369,6 @@ export default async function handler(req, res) {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
 
-      const url = new URL(req.url, "http://localhost");
       const id = n(url.searchParams.get("id"));
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
@@ -272,12 +378,15 @@ export default async function handler(req, res) {
         WHERE supplier_id = ${id}
           AND COALESCE(is_void, false) = false
       `;
+
       if (Number(references?.[0]?.count || 0) > 0) {
-        return send(res, 400, { ok: false, error: "Cannot delete supplier with existing batches" });
+        return send(res, 400, {
+          ok: false,
+          error: "Cannot delete supplier with existing batches",
+        });
       }
 
       await sql.begin(async (tx) => {
-        // supplier_categories will cascade delete, but safe anyway
         await tx`DELETE FROM supplier_categories WHERE supplier_id = ${id}`;
         await tx`DELETE FROM suppliers WHERE id = ${id}`;
       });
@@ -288,6 +397,10 @@ export default async function handler(req, res) {
     return send(res, 405, { ok: false, error: "Method not allowed" });
   } catch (err) {
     console.error("api/suppliers error:", err);
-    return send(res, 500, { ok: false, error: "Server error", detail: String(err?.message || err) });
+    return send(res, 500, {
+      ok: false,
+      error: "Server error",
+      detail: String(err?.message || err),
+    });
   }
 }
