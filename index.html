@@ -2,12 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <!-- Help stubborn mobile caches (server headers still matter most) -->
-    <meta http-equiv="Cache-Control" content="no-store" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
 
     <!-- Primary meta description: only one description should exist per page -->
     <meta
@@ -75,7 +73,7 @@
   <body>
     <div id="root"></div>
 
-    <!-- Vite entry (dev). In production, Vite replaces this with hashed /assets/*.js -->
+    <!-- Vite dev entry; during build Vite generates dist/index.html with hashed /assets/*.js -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
