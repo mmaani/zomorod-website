@@ -1,52 +1,20 @@
+# dependencies
 node_modules/
+
+# build output
 dist/
-.env
+.vite/
+
+# OS
 .DS_Store
-.vercel
-.env*.local
+
+# Vercel
+.vercel/
+
+# Env files (never commit)
+.env
+.env.local
+.env.*.local
+
+# Optional secrets folder
 .secrets/
-*.json
-
-
-# Environment files
-.env*
-
-# Vercel
-.vercel/
-
-
-.env*
-.vercel/
-
-.env*
-.vercel/
-
-# Build output
-dist/
-
-# Env
-.env*
-# Vercel
-.vercel/
-
-# secrets
-.env*
-# vercel
-.vercel/
-# build
-/dist/
-
-# env files
-.env
-.env.local
-.env.*.local
-
-# env files
-.env
-.env.local
-.env.*.local
-
-# env files
-.env
-.env.local
-.env.*.local
