@@ -35,3 +35,18 @@ dist/
 .vercel/
 # build
 /dist/
+
+# env files
+.env
+.env.local
+.env.*.local
+
+# env files
+.env
+.env.local
+.env.*.local
+
+# env files
+.env
+.env.local
+.env.*.local
