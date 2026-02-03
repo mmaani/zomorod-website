@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { login, isLoggedIn, getRememberFlag } from "./auth.js";
 import "./crm.css";
@@ -10,7 +10,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Default rememberMe from stored preference (safe in our new auth.js)
+  // Default rememberMe from stored preference
   const [rememberMe, setRememberMe] = useState(() => {
     try {
       return getRememberFlag();
@@ -22,23 +22,46 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Where to go after login
-  const from = location.state?.from || "/crm/dashboard";
+  /**
+   * "from" can be:
+   * - string (your current ProtectedRoute uses this)
+   * - object-like location (if you later upgrade ProtectedRoute)
+   * Fallback is dashboard.
+   */
+  const redirectTo = useMemo(() => {
+    const fallback = "/crm/dashboard";
+    const raw = location.state?.from;
 
-  React.useEffect(() => {
-    if (isLoggedIn()) {
-      navigate(from, { replace: true });
+    // Case 1: from is a string path (recommended w/ your current ProtectedRoute)
+    if (typeof raw === "string" && raw.startsWith("/")) return raw;
+
+    // Case 2: from is a location-like object (pathname/search/hash)
+    if (raw && typeof raw === "object" && typeof raw.pathname === "string") {
+      const p = raw.pathname || "";
+      const s = raw.search || "";
+      const h = raw.hash || "";
+      const full = `${p}${s}${h}`;
+      if (full.startsWith("/")) return full;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate]); // keep it stable; from might be undefined on first render in some cases
+
+    return fallback;
+  }, [location.state]);
+
+  // If already logged in, go directly to the intended place
+  useEffect(() => {
+    if (isLoggedIn()) {
+      navigate(redirectTo, { replace: true });
+    }
+  }, [navigate, redirectTo]);
 
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
     setLoading(true);
+
     try {
       await login(email.trim(), password, rememberMe);
-      navigate(from, { replace: true });
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(err?.message || "Login failed");
     } finally {
@@ -85,7 +108,11 @@ export default function LoginPage() {
 
           {error ? <div className="crm-error">{error}</div> : null}
 
-          <button className="crm-btn crm-btn-primary" type="submit" disabled={loading}>
+          <button
+            className="crm-btn crm-btn-primary"
+            type="submit"
+            disabled={loading}
+          >
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
