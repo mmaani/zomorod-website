@@ -3,6 +3,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { login, isLoggedIn, getRememberFlag } from "./auth.js";
 import "./crm.css";
 
+function normalizePath(p) {
+  if (!p) return null;
+  const s = String(p);
+  if (!s) return null;
+  return s.startsWith("/") ? s : `/${s}`;
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -10,7 +17,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Default rememberMe from stored preference
   const [rememberMe, setRememberMe] = useState(() => {
     try {
       return getRememberFlag();
@@ -22,32 +28,29 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /**
-   * "from" can be:
-   * - string (your current ProtectedRoute uses this)
-   * - object-like location (if you later upgrade ProtectedRoute)
-   * Fallback is dashboard.
-   */
   const redirectTo = useMemo(() => {
     const fallback = "/crm/dashboard";
     const raw = location.state?.from;
 
-    // Case 1: from is a string path (recommended w/ your current ProtectedRoute)
-    if (typeof raw === "string" && raw.startsWith("/")) return raw;
+    // from as string
+    if (typeof raw === "string") {
+      const p = normalizePath(raw);
+      if (p && p !== "/crm/login") return p;
+      return fallback;
+    }
 
-    // Case 2: from is a location-like object (pathname/search/hash)
+    // from as location-like object
     if (raw && typeof raw === "object" && typeof raw.pathname === "string") {
-      const p = raw.pathname || "";
+      const p = normalizePath(raw.pathname);
       const s = raw.search || "";
       const h = raw.hash || "";
-      const full = `${p}${s}${h}`;
-      if (full.startsWith("/")) return full;
+      const full = `${p || ""}${s}${h}`;
+      if (full.startsWith("/") && full !== "/crm/login") return full;
     }
 
     return fallback;
-  }, [location.state]);
+  }, [location]);
 
-  // If already logged in, go directly to the intended place
   useEffect(() => {
     if (isLoggedIn()) {
       navigate(redirectTo, { replace: true });
@@ -108,11 +111,7 @@ export default function LoginPage() {
 
           {error ? <div className="crm-error">{error}</div> : null}
 
-          <button
-            className="crm-btn crm-btn-primary"
-            type="submit"
-            disabled={loading}
-          >
+          <button className="crm-btn crm-btn-primary" type="submit" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
