@@ -11,28 +11,17 @@ import SalesPage from "./crm/pages/SalesPage.jsx";
 import SuppliersPage from "./crm/pages/SuppliersPage.jsx";
 import SalespersonsPage from "./crm/pages/SalespersonsPage.jsx";
 
-/*
- * Top‑level app router.  Defines both the marketing site and the
- * protected CRM routes.  The suppliers route was previously
- * commented out despite the navigation link existing in the CRM
- * layout.  This update imports the SuppliersPage component and
- * enables the route so users can manage suppliers from the CRM.
- */
-
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Marketing site */}
         <Route path="/" element={<MarketingPage />} />
 
-        {/* IMPORTANT: redirect old login to CRM login */}
+        {/* keep old login working */}
         <Route path="/login" element={<Navigate to="/crm/login" replace />} />
 
-        {/* CRM auth */}
         <Route path="/crm/login" element={<LoginPage />} />
 
-        {/* CRM protected routes */}
         <Route
           path="/crm"
           element={
@@ -49,9 +38,10 @@ export default function App() {
           <Route path="suppliers" element={<SuppliersPage />} />
           <Route path="salespersons" element={<SalespersonsPage />} />
 
+          {/* optional: keep CRM unknown paths inside CRM */}
+          <Route path="*" element={<Navigate to="/crm/dashboard" replace />} />
         </Route>
 
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

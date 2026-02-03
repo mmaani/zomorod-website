@@ -3,39 +3,58 @@ import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import "./styles.css";
 import { installMobileErrorOverlay } from "./mobileErrorOverlay.js";
+
 installMobileErrorOverlay();
-// TEMP: remove any previously-registered service workers + caches
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations().then((regs) => {
-    regs.forEach((r) => r.unregister());
-  });
-}
-
-if ("caches" in window) {
-  caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
-}
-
-if ("caches" in window) {
-  caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
-}
-
-
 
 console.log("BUILD_ID:", import.meta.env.VITE_BUILD_ID);
 
+// Small visual proof that new JS executed
 const boot = document.createElement("div");
 boot.style.cssText =
   "position:fixed;top:8px;left:8px;z-index:99999;background:#000;color:#fff;padding:6px 8px;font:12px system-ui;border-radius:6px";
-boot.textContent = "BOOT OK";
+boot.textContent = `BOOT OK • ${import.meta.env.VITE_BUILD_ID || ""}`;
 document.body.appendChild(boot);
-// If using vite-plugin-pwa with injectRegister:"auto", this is optional.
-// But it's still useful to hard-refresh when a new SW takes control.
+
+/**
+ * One-time emergency reset:
+ * Open: https://www.zomorodmedical.com/?nuke=1
+ * This unregisters SW + clears caches ONCE, then reloads clean.
+ */
+async function nukeOnceIfRequested() {
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("nuke") !== "1") return;
+
+    // Remove param so it doesn't keep nuking
+    url.searchParams.delete("nuke");
+    window.history.replaceState({}, "", url.toString());
+
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+
+    // Hard reload after cleanup
+    window.location.reload();
+  } catch {
+    // ignore
+  }
+}
+
+nukeOnceIfRequested();
+
+// If using vite-plugin-pwa injectRegister:"auto", this helps activate fresh bundle
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    // New service worker took control -> load the newest bundle
     window.location.reload();
   });
 }
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <App />
