@@ -13,17 +13,6 @@ function send(res, status, payload) {
 
   res.end(JSON.stringify(payload));
 }
-
-function setCors(req, res) {
-  // If you want to restrict origins, replace "*" with your domain:
-  // https://www.zomorodmedical.com
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Vary", "Origin");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Setup-Token");
-  res.setHeader("Access-Control-Max-Age", "86400");
-}
-
 function n(v) {
   const x = Number(v);
   return Number.isFinite(x) ? x : 0;
@@ -117,14 +106,7 @@ function getReqUrl(req) {
 
 export default async function handler(req, res) {
   try {
-    setCors(req, res);
-
-    // Preflight
-    if ((req.method || "GET") === "OPTIONS") {
-      res.statusCode = 204;
-      res.end();
-      return;
-    }
+  
 
     const method = req.method || "GET";
     const sql = getSql();
