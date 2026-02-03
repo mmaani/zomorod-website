@@ -1,16 +1,19 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-
   "rewrites": [
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },
     {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/favicon.ico"
+    },
+    {
       "source": "/(.*)",
-      "has": [
-        { "type": "header", "key": "accept", "value": "text/html" }
-      ],
       "destination": "/index.html"
     }
   ]
