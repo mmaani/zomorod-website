@@ -7,3 +7,10 @@ dist/
 .secrets/
 *.json
 
+
+# Environment files
+.env*
+
+# Vercel
+.vercel/
+
