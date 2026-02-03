@@ -17,3 +17,6 @@ dist/
 
 .env*
 .vercel/
+
+.env*
+.vercel/
