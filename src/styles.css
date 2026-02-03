@@ -390,31 +390,16 @@ tr:hover td{ background: rgba(255,255,255,.04); }
 .list { color: var(--muted); }
 .footer { color: var(--muted-2); }
 
-/* Prevent nav from forcing a wider-than-screen layout on phones */
+/* Prevent header/nav from forcing a wider-than-screen layout on phones */
 @media (max-width: 860px) {
-  .nav {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    justify-content: flex-start;
-    gap: 8px;
-  }
-  .nav__link { flex: 0 0 auto; }
+  html, body { width: 100%; overflow-x: hidden; }
   .page { overflow-x: hidden; }
-}
-@media (max-width: 860px) {
-  body { overflow-x: hidden; }
 
-  .nav {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    justify-content: flex-start;
-    gap: 8px;
+  /* Critical for flex layouts: allow items to shrink instead of overflowing */
+  .header, .header__left, .header__right, .brand, .nav {
+    min-width: 0;
+    max-width: 100%;
   }
-  .nav__link { flex: 0 0 auto; }
-}
-/* ===== Mobile fix: prevent header/nav from forcing a wider viewport ===== */
-@media (max-width: 860px) {
-  body { overflow-x: hidden; }
 
   .header {
     position: static;          /* sticky header often makes overflow worse on mobile */
@@ -434,42 +419,14 @@ tr:hover td{ background: rgba(255,255,255,.04); }
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     justify-content: flex-start;
+    gap: 8px;
   }
 
-  .nav__link {
-    flex: 0 0 auto;            /* keep each link its own size */
-  }
-
-  .brand__title {
-    font-size: 18px;           /* optional: helps fit on small screens */
-  }
-}
-/* ===== Device-specific mobile "blank page" fix: stop header/nav overflow ===== */
-@media (max-width: 860px) {
-  /* Prevent any element from forcing the page wider than the screen */
-  html, body { width: 100%; overflow-x: hidden; }
-
-  /* Critical for flex layouts: allow items to shrink instead of overflowing */
-  .header, .header__left, .header__right, .brand, .nav {
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  /* Make header wrap instead of staying one long row */
-  .header { flex-wrap: wrap; }
-  .header__right { width: 100%; justify-content: flex-start; }
-
-  /* If links are nowrap, allow horizontal scroll instead of widening the viewport */
-  .nav {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    justify-content: flex-start;
-  }
   .nav__link { flex: 0 0 auto; }
 
   /* If brand text gets huge due to accessibility scaling, stop it from breaking layout */
   .brand__title {
+    font-size: 18px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
