@@ -104,6 +104,19 @@ export default async function handler(req, res) {
       user: { id: user.id, fullName: user.full_name, email: user.email, roles },
     });
   } catch (e) {
-    return send(res, 500, { ok: false, error: "Server error", detail: String(e?.message || e) });
+    const message = String(e?.message || e);
+    if (message.includes("relation \"users\" does not exist")
+      || message.includes("relation \"roles\" does not exist")
+      || message.includes("relation \"user_roles\" does not exist")) {
+      return send(res, 500, {
+        ok: false,
+        error: "Database not initialized",
+        detail: "Run /api/setup or apply migrations before logging in.",
+      });
+    }
+    if (message.includes("ECONNREFUSED") || message.includes("connect ECONNREFUSED")) {
+      return send(res, 503, { ok: false, error: "Database unavailable" });
+    }
+    return send(res, 500, { ok: false, error: "Server error", detail: message });
   }
 }
