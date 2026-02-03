@@ -6,35 +6,30 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      strategies: "generateSW",
       registerType: "autoUpdate",
       injectRegister: "auto",
 
       workbox: {
-        // SPA fallback for navigation
+        // SPA fallback
         navigateFallback: "/index.html",
 
-        // ✅ Precache ONLY small, safe files (NO JS)
-        globPatterns: ["**/*.{html,css,ico,png,svg,webp,woff2}"],
+        // Workbox precache defaults include js/css/html; keep that (recommended)
+        // and simply raise the size limit so build won't fail.
+        maximumFileSizeToCacheInBytes: 12 * 1024 * 1024, // 12 MiB
 
-        // ✅ Belt + suspenders: never precache JS/maps even if something tries to include them
-        globIgnores: ["**/*.js", "**/*.mjs", "**/*.map"],
-
-        // (harmless, but not required since we’re not precaching JS)
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MiB
-
+        // Always fetch newest HTML after deploy (prevents "old site" problem)
         runtimeCaching: [
-          // ✅ Navigations: always try network first so new deploy HTML is fetched
           {
             urlPattern: ({ request }) => request.mode === "navigate",
             handler: "NetworkFirst",
             options: {
               cacheName: "html",
               networkTimeoutSeconds: 3,
-              expiration: { maxEntries: 20, maxAgeSeconds: 24 * 60 * 60 }, // 1 day
             },
           },
 
-          // ✅ Scripts & styles: cache-first (perfect with hashed filenames + immutable headers)
+          // Hashed assets can be cached forever
           {
             urlPattern: ({ request }) =>
               request.destination === "script" || request.destination === "style",
@@ -45,7 +40,6 @@ export default defineConfig({
             },
           },
 
-          // ✅ Images & fonts: cache-first
           {
             urlPattern: ({ request }) =>
               request.destination === "image" || request.destination === "font",
