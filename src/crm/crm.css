@@ -604,15 +604,23 @@ select option{
 .crm-login-input:focus{ outline: none; border-color: rgba(84,183,100,0.55); box-shadow: var(--z-focus); }
 
 .crm-password-row{
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.crm-password-row .crm-login-input{
+  padding-right: 86px;
 }
 
 .crm-password-toggle{
-  min-width: 74px;
-  height: 44px;
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 72px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
 }
 
 .crm-login-row{
