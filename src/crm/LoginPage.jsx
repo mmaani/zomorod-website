@@ -28,7 +28,7 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-    const [info, setInfo] = useState("");
+  const [info, setInfo] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
 
   const redirectTo = useMemo(() => {
@@ -94,45 +94,62 @@ export default function LoginPage() {
     }
   }
 
-  return (
-    <div className="crm-container">
-      <div className="crm-card">
-        <img className="crm-login-logo" src="/logo.png" alt="Zomorod logo" />
-        <h1 className="crm-title">ZOMOROD CRM Login</h1>
+  return (   <div className="crm-login-screen">
+      <div className="crm-login-shell">
+        <aside className="crm-login-brand-panel" aria-hidden="true">
+          <img className="crm-login-logo" src="/logo.png" alt="" />
+          <p className="crm-login-kicker">Zomorod Medical Supplies</p>
+          <h1>CRM Portal</h1>
+          <p className="crm-login-copy">
+            Manage customers, products, suppliers, and sales from one secure dashboard.
+          </p>
+        </aside>
 
-        <form onSubmit={onSubmit} className="crm-form">
-          <label className="crm-label">Email</label>
-          <input
-            className="crm-input"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            type="email"
-            autoComplete="username"
-            required
-          />
+        <section className="crm-login-form-panel">
+          <img className="crm-login-logo crm-login-logo-mobile" src="/logo.png" alt="Zomorod logo" />
+          <h2 className="crm-login-title">Welcome back</h2>
+          <p className="crm-login-subtitle">Sign in to continue to your CRM workspace.</p>
 
-          <label className="crm-label">Password</label>
-              <div className="crm-password-row">
+          <form onSubmit={onSubmit} className="crm-login-form">
+            <label className="crm-login-label" htmlFor="crm-email">
+              Email
+            </label>
             <input
-              className="crm-input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              type={showPassword ? "text" : "password"}
-              autoComplete="current-password"
+              id="crm-email"
+              className="crm-login-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              autoComplete="username"
+              placeholder="you@zomorodmedical.com"
               required
             />
-            <button
-              className="crm-btn crm-btn-outline crm-password-toggle"
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-            >
-              {showPassword ? "Hide" : "Show"}
-            </button>
-          </div>
+
+            <label className="crm-login-label" htmlFor="crm-password">
+              Password
+            </label>
+            <div className="crm-password-row">
+                            <input
+                id="crm-password"
+                className="crm-login-input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                required
+              />
+               <button
+                className="crm-btn crm-btn-outline crm-password-toggle"
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
 
             <div className="crm-login-row">
-            <div className="crm-remember">
-              <label className="crm-check">
+              <label className="crm-check crm-remember">
                 <input
                   type="checkbox"
                   checked={rememberMe}
@@ -140,25 +157,25 @@ export default function LoginPage() {
                 />
                 <span>Remember me</span>
               </label>
+
+              <button
+                className="crm-link-btn"
+                type="button"
+                onClick={onForgotPassword}
+                disabled={resetLoading}
+              >
+                {resetLoading ? "Sending..." : "Forgot password?"}
+              </button>
             </div>
 
-            <button
-              className="crm-link-btn"
-              type="button"
-              onClick={onForgotPassword}
-              disabled={resetLoading}
-            >
-              {resetLoading ? "Sending..." : "Forgot password?"}
+            {error ? <div className="crm-error">{error}</div> : null}
+            {info ? <div className="crm-info">{info}</div> : null}
+
+            <button className="crm-btn crm-btn-primary crm-login-submit" type="submit" disabled={loading}>
+              {loading ? "Signing in..." : "Sign In"}
             </button>
-          </div>
-
-          {error ? <div className="crm-error">{error}</div> : null}
-          {info ? <div className="crm-info">{info}</div> : null}
-
-          <button className="crm-btn crm-btn-primary" type="submit" disabled={loading}>
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
+          </form>
+        </section>
       </div>
     </div>
   );
