@@ -1,11 +1,12 @@
 import React from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { logout as doLogout, getUser } from "./auth.js";
+import { logout as doLogout, getUser, hasRole } from "./auth.js";
 import "./crm.css";
 
 export default function CRMLayout() {
   const nav = useNavigate();
   const user = getUser();
+  const isMain = hasRole("main");
 
   function handleLogout() {
     doLogout();
@@ -34,6 +35,7 @@ export default function CRMLayout() {
             <NavLink to="/crm/suppliers" className={navLinkClass}>Suppliers</NavLink>
             <NavLink to="/crm/clients" className={navLinkClass}>Clients</NavLink>
             <NavLink to="/crm/sales" className={navLinkClass}>Sales</NavLink>
+            {isMain ? <NavLink to="/crm/users" className={navLinkClass}>Users</NavLink> : null}
           </nav>
 
           <div className="crm-user">
