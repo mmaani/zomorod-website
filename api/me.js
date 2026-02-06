@@ -216,8 +216,6 @@ export const config = { runtime: "nodejs" };
 export default async function handler(req, res) {
   const user = await requireUserFromReq(req, res);
   if (!user) return;
-
-
   const scope = parseScope(req);
 
   if (scope !== "users") {

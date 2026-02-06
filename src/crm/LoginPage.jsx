@@ -85,7 +85,7 @@ export default function LoginPage() {
 
     setResetLoading(true);
     try {
-      await forgotPassword(email.trim());
+      await forgotPassword(normalizeEmailForLogin(email));
       setInfo("If this email is valid, we sent a temporary CRM password.");
     } catch (err) {
       setError(err?.message || "Failed to process password reset.");

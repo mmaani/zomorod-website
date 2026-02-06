@@ -34,6 +34,19 @@ async function readJson(req) {
   }
 }
 
+function looksLikeBcryptHash(hash) {
+  return /^\$2[abxy]?\$\d{2}\$/.test(String(hash || ""));
+}
+
+async function verifyViaPgCrypto(sql, password, passwordHash) {
+  try {
+    const rows = await sql`SELECT (crypt(${String(password)}, ${String(passwordHash)}) = ${String(passwordHash)}) AS ok`;
+    return !!rows?.[0]?.ok;
+  } catch {
+    return false;
+  }
+}
+
 export default async function handler(req, res) {
   // handle preflight safely (optional but good)
   if (req.method === "OPTIONS") {
@@ -77,7 +90,13 @@ export default async function handler(req, res) {
       return send(res, 401, { ok: false, error: "Invalid credentials" });
     }
 
-    const ok = await verifyPassword(password, user.password_hash);
+    let ok = await verifyPassword(password, user.password_hash);
+
+    // Backstop for legacy bcrypt hashes when JS bcrypt verification is unavailable.
+    if (!ok && looksLikeBcryptHash(user.password_hash)) {
+      ok = await verifyViaPgCrypto(sql, password, user.password_hash);
+    }
+    
     if (!ok) {
       return send(res, 401, { ok: false, error: "Invalid credentials" });
     }
