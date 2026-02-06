@@ -10,6 +10,13 @@ function normalizePath(p) {
   return s.startsWith("/") ? s : `/${s}`;
 }
 
+function normalizeEmailForLogin(value) {
+  const email = String(value || "").trim().toLowerCase();
+  // Common typo we repeatedly see in support tickets.
+  return email.replace("@zoomorodmedical.com", "@zomorodmedical.com");
+}
+
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
