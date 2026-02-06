@@ -39,6 +39,14 @@ function formatMoneyMax2(value) {
   }).format(n);
 }
 
+
+function expiryBadge(status) {
+  if (status === "EXPIRED") return { label: "Expired", color: "#ef4444" };
+  if (status === "EXPIRING_SOON") return { label: "Expiring soon", color: "#f59e0b" };
+  if (status === "GOOD") return { label: "Good", color: "#22c55e" };
+  return { label: "No expiry", color: "#94a3b8" };
+}
+
 export default function ProductsPage() {
   const user = getUser();
   const roles = user?.roles || [];
@@ -617,7 +625,9 @@ export default function ProductsPage() {
                           <th>Date</th>
                           <th>Expiry</th>
                           <th>Qty</th>
+                          <th>Remaining</th>
                           <th>Price (JOD)</th>
+                          <th>Status</th>
                           <th>Supplier</th>
                           <th></th>
                         </tr>
@@ -629,7 +639,13 @@ export default function ProductsPage() {
                             <td>{formatDateTime(b.purchaseDate)}</td>
                             <td>{formatDateTime(b.expiryDate)}</td>
                             <td>{b.qtyReceived}</td>
-                            <td>{b.purchasePriceJod ?? ""}</td>
+                            <td>{b.qtyRemaining ?? b.qtyReceived}</td>
+                            <td>{formatMoneyMax2(b.purchasePriceJod)}</td>
+                            <td>
+                              <span style={{ color: expiryBadge(b.expiryStatus).color, fontWeight: 800 }}>
+                                {expiryBadge(b.expiryStatus).label}
+                              </span>
+                            </td>
                             <td>{b.supplierName || "—"}</td>
                             <td style={{ whiteSpace: "nowrap" }}>
                               <button className="crm-btn crm-btn-outline" type="button" onClick={() => voidBatch(b.id)}>
