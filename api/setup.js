@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     if (!envToken) {
       return send(res, 500, { ok: false, error: "SETUP_TOKEN is not set in Vercel env vars" });    }
     if (!headerToken || headerToken !== envToken) {
-      return Response.json({ ok: false, error: 'Invalid setup token' }, { status: 401 });
+      return send(res, 401, { ok: false, error: "Invalid setup token" });
     }
 
     let body = req.body;

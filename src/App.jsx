@@ -13,6 +13,7 @@ const ClientsPage = lazy(() => import("./crm/pages/ClientsPage.jsx"));
 const SalesPage = lazy(() => import("./crm/pages/SalesPage.jsx"));
 const SuppliersPage = lazy(() => import("./crm/pages/SuppliersPage.jsx"));
 const SalespersonsPage = lazy(() => import("./crm/pages/SalespersonsPage.jsx"));
+const UsersPage = lazy(() => import("./crm/pages/UsersPage.jsx"));
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="sales" element={<SalesPage />} />
             <Route path="suppliers" element={<SuppliersPage />} />
             <Route path="salespersons" element={<SalespersonsPage />} />
+            <Route path="users" element={<UsersPage />} />
 
             {/* optional: keep CRM unknown paths inside CRM */}
             <Route path="*" element={<Navigate to="/crm/dashboard" replace />} />

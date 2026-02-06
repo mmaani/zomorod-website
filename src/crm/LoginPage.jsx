@@ -10,6 +10,13 @@ function normalizePath(p) {
   return s.startsWith("/") ? s : `/${s}`;
 }
 
+
+function normalizeEmailForLogin(value) {
+  const email = String(value || "").trim().toLowerCase();
+  // Common typo we repeatedly see in support tickets.
+  return email.replace("@zoomorodmedical.com", "@zomorodmedical.com");
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -65,7 +72,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email.trim(), password, rememberMe);
+      await login(normalizeEmailForLogin(email), password, rememberMe);
       navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(err?.message || "Login failed");
@@ -85,7 +92,7 @@ export default function LoginPage() {
 
     setResetLoading(true);
     try {
-      await forgotPassword(email.trim());
+      await forgotPassword(normalizeEmailForLogin(email));
       setInfo("If this email is valid, we sent a temporary CRM password.");
     } catch (err) {
       setError(err?.message || "Failed to process password reset.");
