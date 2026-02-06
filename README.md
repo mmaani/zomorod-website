@@ -22,3 +22,5 @@ If you need to run the legacy Express server in `server/` for recruitment/Google
 ## Notes
 - Legacy `lib/crmAuth.js` has been removed; use `src/crm/auth.js` for CRM client auth helpers.
 - Removed the unused Next-style health route under `src/app/api`; use `/api/ping` or `/api/db-check` instead.
+## Troubleshooting
+- CRM login 500 diagnosis and fix plan: `docs/troubleshooting/CRM_LOGIN_500_DIAGNOSIS.md`.
