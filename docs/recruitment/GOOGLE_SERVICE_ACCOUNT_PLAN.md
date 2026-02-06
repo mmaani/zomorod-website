@@ -43,9 +43,9 @@ This creates:
 - `jobs` table for posting and publishing positions.
 - `job_applications` table for incoming candidates + Drive links.
 
-## 4) API endpoints to implement/use
+## 4) API endpoints now implemented (`server/recruitment.js` served at `/api/recruitment`)
 
-Use a single endpoint file (`api/recruitment.js`) with resources:
+The following resources are available via `server/recruitment.js` at `/api/recruitment`:
 
 - `GET /api/recruitment?resource=jobs` (public published jobs)
 - `GET /api/recruitment?resource=jobs_admin` (main-role only)
@@ -55,17 +55,13 @@ Use a single endpoint file (`api/recruitment.js`) with resources:
 - `POST /api/recruitment?resource=apply` (public multipart form submit)
 - `GET /api/recruitment?resource=applications` (main-role list)
 
-Reference logic already exists in `server/recruitment.js` (commented API version near the bottom), including:
+Implementation notes:
 
-- multipart parsing (`Busboy`)
-- upload to Google Drive via service account
-- DB insert for applications
+- multipart form parsing is handled directly in the endpoint.
+- uploads to Google Drive and Sheets are done through Google REST APIs using service-account JWT exchange (no OAuth user flow required).
+- application data is stored in Postgres and links are persisted for CRM/admin review.
 
-## 5) Login fix applied
-
-CRM login now routes through the centralized API client (`apiFetch`) and normalizes email typo domain (`zoomorod` → `zomorod`) before sending credentials. This avoids base-URL mismatches and common support typo failures.
-
-## 6) Recommended rollout order
+## 5) Recommended rollout order
 
 1. Run SQL migration.
 2. Add env vars.
@@ -73,3 +69,14 @@ CRM login now routes through the centralized API client (`apiFetch`) and normali
 4. Deploy endpoint.
 5. Test with one job + one application.
 6. Add CRM page for viewing `applications` if needed.
+
+## 6) If Vercel API function count is a concern
+
+If you are close to function-count limits on Vercel Hobby, place recruitment in one of these alternatives:
+
+1. **Use the existing Express backend in `server/`** and expose `/api/recruitment` there.
+   - Point frontend to that backend using `VITE_API_BASE`.
+2. **Consolidate handlers** into fewer serverless files (resource routing in one file).
+3. **Use a separate backend project** for recruitment only (recommended when file uploads are heavy).
+
+The repository already contains server-side recruitment logic references in `server/recruitment.js` and upload flow in `server/server.js`, so moving recruitment there is straightforward.
