@@ -268,7 +268,7 @@ export default async function handler(req, res) {
         // mark void
         await tx`
           UPDATE sales_orders
-          SET is_void = true, voided_at = now(), updated_at = now()
+          SET is_void = true, voided_at = now()
           WHERE id = ${id}
         `;
 
