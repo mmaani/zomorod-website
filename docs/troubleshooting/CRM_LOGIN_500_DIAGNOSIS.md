@@ -2,10 +2,9 @@
 
 ## Key findings
 
-1. **Missing runtime dependency (`bcryptjs`)**
-   - `lib/auth.js` imports `bcryptjs`.
-   - `package.json` does not list `bcryptjs` under dependencies.
-   - This causes `/api/login` to fail to load at runtime because `api/login.js` imports `verifyPassword` from `lib/auth.js`.
+1. **Root cause addressed in code**
+   - Auth hashing now uses Node built-in `crypto.scrypt` in `lib/auth.js` (no external bcrypt dependency needed).
+   - This removes the previous module-load failure path for `/api/login` tied to missing bcrypt packages.
 
 2. **Serverless handler style is inconsistent across `/api`**
    - Most CRM handlers use Vercel Node-style default export `(req, res)`.
@@ -20,9 +19,7 @@
 
 ## Recommended fix order
 
-1. Add missing dependency:
-   - `npm i bcryptjs`
-   - commit updated `package.json` + `package-lock.json`
+1. Ensure your deployment includes the auth hashing implementation from `lib/auth.js` (now uses Node built-in `crypto.scrypt`, so no external bcrypt package is required).
 
 2. Standardize `/api` handlers to one runtime style (recommended: Vercel Node default export handler):
    - Convert `api/ping.js`, `api/db-check.js`, `api/me.js`, and `api/setup.js` to `(req, res)` style if deploying as Vercel serverless functions.
@@ -46,8 +43,8 @@
 node -e "import('./api/login.js').then(()=>console.log('api/login loaded')).catch(e=>{console.error('load failed:', e.message);process.exit(1);})"
 ```
 
-Expected current output:
+Expected success output after the fix:
 
 ```text
-load failed: Cannot find package 'bcryptjs' imported from /workspace/zomorod-website/lib/auth.js
+api/login loaded
 ```
