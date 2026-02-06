@@ -609,7 +609,8 @@ export default function ProductsPage() {
             {/* Batches table */}
             {bForm.productId ? (
               <div style={{ marginTop: 18 }}>
-                <h4 style={{ margin: "0 0 10px" }}>Batches for selected product</h4>
+                <h4 style={{ margin: "0 0 6px" }}>Batches (for selected product)</h4>
+                <p className="muted" style={{ margin: "0 0 10px" }}>These are only lots for the product selected above.</p>
                 {batchesLoading ? <p className="muted">Loading batches…</p> : null}
                 {!batchesLoading && batches.length === 0 ? <p className="muted">No batches yet.</p> : null}
 

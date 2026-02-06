@@ -48,14 +48,37 @@ function toDateOrNull(s) {
 }
 
 
+function toUtcDayStamp(value) {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    return Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate());
+  }
+
+  const raw = String(value).trim();
+  if (!raw) return null;
+
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    const y = Number(m[1]);
+    const mm = Number(m[2]) - 1;
+    const dd = Number(m[3]);
+    return Date.UTC(y, mm, dd);
+  }
+
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return null;
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
 function computeExpiryStatus(expiryDate) {
-  if (!expiryDate) return "NO_EXPIRY";
-  const d = new Date(`${expiryDate}T00:00:00Z`);
-  if (Number.isNaN(d.getTime())) return "NO_EXPIRY";
+  const expiryDay = toUtcDayStamp(expiryDate);
+  if (expiryDay == null) return "NO_EXPIRY";
 
   const now = new Date();
   const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-  const diffDays = Math.floor((d.getTime() - todayUtc) / 86400000);
+  const diffDays = Math.floor((expiryDay - todayUtc) / 86400000);
 
   if (diffDays < 0) return "EXPIRED";
   if (diffDays <= 90) return "EXPIRING_SOON";
