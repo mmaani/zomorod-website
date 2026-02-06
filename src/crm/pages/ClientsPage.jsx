@@ -4,6 +4,7 @@ import { hasRole } from "../auth";
 
 export default function ClientsPage() {
   const [clients, setClients] = useState([]);
+  const [products, setProducts] = useState([]);
   const [form, setForm] = useState({
     id: null,
     clientType: "pharmacy",
@@ -12,13 +13,24 @@ export default function ClientsPage() {
     contactPerson: "",
     phone: "",
     email: "",
+    interestProductIds: [],
   });
 
   async function load() {
-    const res = await apiFetch("/api/clients");
-    if (!res) return;
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data.ok) setClients(data.clients || []);
+    const [clientsRes, productsRes] = await Promise.all([
+      apiFetch("/api/clients"),
+      apiFetch("/api/products"),
+    ]);
+
+    if (clientsRes) {
+      const data = await clientsRes.json().catch(() => ({}));
+      if (clientsRes.ok && data.ok) setClients(data.clients || []);
+    }
+
+    if (productsRes) {
+      const data = await productsRes.json().catch(() => ({}));
+      if (productsRes.ok && data.ok) setProducts(data.products || []);
+    }
   }
 
   useEffect(() => {
@@ -38,6 +50,7 @@ export default function ClientsPage() {
       contactPerson: form.contactPerson,
       phone: form.phone,
       email: form.email,
+      interestProductIds: form.interestProductIds,
     };
 
     const res = await apiFetch("/api/clients", { method, body: payload });
@@ -56,6 +69,7 @@ export default function ClientsPage() {
       contactPerson: "",
       phone: "",
       email: "",
+      interestProductIds: [],
     });
     load();
   };
@@ -69,6 +83,7 @@ export default function ClientsPage() {
       contactPerson: c.contact_person || "",
       phone: c.phone || "",
       email: c.email || "",
+      interestProductIds: (c.interests || []).map((i) => i.id),
     });
 
   const handleDelete = async (id) => {
@@ -110,6 +125,23 @@ export default function ClientsPage() {
           <input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           <input placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
 
+          <label>Client Interests (products)</label>
+          <select
+            multiple
+            value={form.interestProductIds.map(String)}
+            onChange={(e) => {
+              const vals = Array.from(e.target.selectedOptions).map((opt) => Number(opt.value));
+              setForm({ ...form, interestProductIds: vals });
+            }}
+            style={{ minHeight: 130 }}
+          >
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.productCode} — {p.officialName}
+              </option>
+            ))}
+          </select>
+
           <button type="submit">{form.id ? "Update" : "Add"}</button>
 
           {form.id && (
@@ -124,6 +156,7 @@ export default function ClientsPage() {
                   contactPerson: "",
                   phone: "",
                   email: "",
+                  interestProductIds: [],
                 })
               }
             >
@@ -139,6 +172,7 @@ export default function ClientsPage() {
             <th>Type</th>
             <th>Name</th>
             <th>Contact</th>
+            <th>Interests</th>
             <th>Website</th>
             <th>Phone</th>
             <th>Email</th>
@@ -151,6 +185,7 @@ export default function ClientsPage() {
               <td>{c.client_type}</td>
               <td>{c.name}</td>
               <td>{c.contact_person}</td>
+              <td>{(c.interests || []).map((i) => i.name).join(", ") || "—"}</td>
               <td>{c.website}</td>
               <td>{c.phone}</td>
               <td>{c.email}</td>
