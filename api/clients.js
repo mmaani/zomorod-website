@@ -35,6 +35,19 @@ function cleanStr(v) {
   const s = String(v ?? "").trim();
   return s || null;
 }
+function parseInterestIds(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  const seen = new Set();
+  for (const x of raw) {
+    const id = Number(x);
+    if (!Number.isInteger(id) || id <= 0) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
 
 export default async function handler(req, res) {
   try {
@@ -48,16 +61,26 @@ export default async function handler(req, res) {
 
       const rows = await sql`
         SELECT
-          id,
-          client_type,
-          name,
-          website,
-          email,
-          phone,
-          contact_person,
-          created_at
-        FROM clients
-        ORDER BY name
+          c.id,
+          c.client_type,
+          c.name,
+          c.website,
+          c.email,
+          c.phone,
+          c.contact_person,
+          c.created_at,
+          COALESCE(
+            json_agg(
+              json_build_object('id', p.id, 'name', p.official_name)
+              ORDER BY p.official_name
+            ) FILTER (WHERE p.id IS NOT NULL),
+            '[]'::json
+          ) AS interests
+        FROM clients c
+        LEFT JOIN client_interests ci ON ci.client_id = c.id
+        LEFT JOIN products p ON p.id = ci.product_id
+        GROUP BY c.id
+        ORDER BY c.name
       `;
 
       return send(res, 200, { ok: true, clients: rows });
@@ -75,22 +98,36 @@ export default async function handler(req, res) {
         return send(res, 400, { ok: false, error: "Invalid JSON body" });
       }
 
-      const clientType = cleanStr(body?.clientType) || "pharmacy"; // must NOT be null
+      const clientType = cleanStr(body?.clientType) || "pharmacy";
       const name = cleanStr(body?.name);
       const website = cleanStr(body?.website);
       const email = cleanStr(body?.email);
       const phone = cleanStr(body?.phone);
       const contactPerson = cleanStr(body?.contactPerson);
-
+      const interestProductIds = parseInterestIds(body?.interestProductIds);
+     
       if (!name) return send(res, 400, { ok: false, error: "Name is required" });
 
-      const rows = await sql`
-        INSERT INTO clients (client_type, name, website, email, phone, contact_person)
-        VALUES (${clientType}, ${name}, ${website}, ${email}, ${phone}, ${contactPerson})
-        RETURNING id
-      `;
+      const created = await sql.begin(async (tx) => {
+        const rows = await tx`
+          INSERT INTO clients (client_type, name, website, email, phone, contact_person)
+          VALUES (${clientType}, ${name}, ${website}, ${email}, ${phone}, ${contactPerson})
+          RETURNING id
+        `;
+        const clientId = rows?.[0]?.id;
 
-      return send(res, 201, { ok: true, id: rows?.[0]?.id });
+        for (const productId of interestProductIds) {
+          await tx`
+            INSERT INTO client_interests (client_id, product_id)
+            VALUES (${clientId}, ${productId})
+            ON CONFLICT DO NOTHING
+          `;
+        }
+
+        return clientId;
+      });
+
+      return send(res, 201, { ok: true, id: created });
     }
 
     // PATCH /api/clients
@@ -114,20 +151,33 @@ export default async function handler(req, res) {
       const email = cleanStr(body?.email);
       const phone = cleanStr(body?.phone);
       const contactPerson = cleanStr(body?.contactPerson);
-
+      const interestProductIds = parseInterestIds(body?.interestProductIds);
+      
       if (!name) return send(res, 400, { ok: false, error: "Name is required" });
 
-      await sql`
-        UPDATE clients
-        SET
-          client_type = ${clientType},
-          name = ${name},
-          website = ${website},
-          email = ${email},
-          phone = ${phone},
-          contact_person = ${contactPerson}
-        WHERE id = ${id}
-      `;
+      await sql.begin(async (tx) => {
+        await tx`
+          UPDATE clients
+          SET
+            client_type = ${clientType},
+            name = ${name},
+            website = ${website},
+            email = ${email},
+            phone = ${phone},
+            contact_person = ${contactPerson}
+          WHERE id = ${id}
+        `;
+
+        await tx`DELETE FROM client_interests WHERE client_id = ${id}`;
+
+        for (const productId of interestProductIds) {
+          await tx`
+            INSERT INTO client_interests (client_id, product_id)
+            VALUES (${id}, ${productId})
+            ON CONFLICT DO NOTHING
+          `;
+        }
+      });
 
       return send(res, 200, { ok: true });
     }
@@ -141,9 +191,7 @@ export default async function handler(req, res) {
       const id = Number(url.searchParams.get("id"));
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
-      // protect delete if linked to sales
-      const references = await sql`SELECT COUNT(*) AS count FROM sales WHERE client_id = ${id}`;
-      if (Number(references?.[0]?.count || 0) > 0) {
+      const references = await sql`SELECT COUNT(*) AS count FROM sales_orders WHERE client_id = ${id}`;      if (Number(references?.[0]?.count || 0) > 0) {
         return send(res, 400, { ok: false, error: "Cannot delete client with existing sales" });
       }
 
