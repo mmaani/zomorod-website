@@ -47,6 +47,20 @@ function toDateOrNull(s) {
   return v;
 }
 
+function computeExpiryStatus(expiryDate) {
+  if (!expiryDate) return "NO_EXPIRY";
+  const d = new Date(`${expiryDate}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return "NO_EXPIRY";
+
+  const now = new Date();
+  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const diffDays = Math.floor((d.getTime() - todayUtc) / 86400000);
+
+  if (diffDays < 0) return "EXPIRED";
+  if (diffDays <= 90) return "EXPIRING_SOON";
+  return "GOOD";
+}
+
 async function readJson(req) {
   // Vercel sometimes provides req.body already parsed
   let body = req.body;
@@ -81,27 +95,29 @@ async function handleGET(req, res) {
 
   const url = new URL(req.url, "http://localhost");
   const productId = n(url.searchParams.get("productId"));
-  if (!productId) return send(res, 400, { ok: false, error: "productId is required" });
-
+  const includeVoided = url.searchParams.get("includeVoided") === "1";
   const sql = getSql();
-
   const rows = await sql`
     SELECT
-      id,
-      product_id,
-      lot_number,
-      purchase_date,
-      expiry_date,
-      qty_received,
-      purchase_price_jod,
-      supplier_name,
-      supplier_invoice_no,
-      supplier_id,
-      created_at
-    FROM batches
-    WHERE product_id = ${productId}
-      AND COALESCE(is_void, false) = false
-    ORDER BY purchase_date DESC, id DESC
+      b.id,
+      b.product_id,
+      p.product_code,
+      p.official_name,
+      b.lot_number,
+      b.purchase_date,
+      b.expiry_date,
+      b.qty_received,
+      b.purchase_price_jod,
+      b.supplier_name,
+      b.supplier_invoice_no,
+      b.supplier_id,
+      b.created_at,
+      b.is_void
+    FROM batches b
+    JOIN products p ON p.id = b.product_id
+    WHERE (${productId} = 0 OR b.product_id = ${productId})
+      AND (${includeVoided} = true OR COALESCE(b.is_void, false) = false)
+    ORDER BY b.purchase_date DESC, b.id DESC
   `;
 
   const showPurchase = canSeePurchasePrice(auth.roles);
@@ -109,6 +125,8 @@ async function handleGET(req, res) {
   const batches = (rows || []).map((r) => ({
     id: r.id,
     productId: r.product_id,
+    productCode: r.product_code,
+    officialName: r.official_name,
     lotNumber: r.lot_number,
     purchaseDate: r.purchase_date,
     expiryDate: r.expiry_date,
@@ -121,6 +139,9 @@ async function handleGET(req, res) {
     supplierName: r.supplier_name ?? null,
     supplierInvoiceNo: r.supplier_invoice_no ?? null,
     createdAt: r.created_at,
+    isVoid: !!r.is_void,
+    expiryStatus: computeExpiryStatus(r.expiry_date),
+    qtyRemaining: n(r.qty_received),
   }));
 
   return send(res, 200, { ok: true, batches });
@@ -165,6 +186,7 @@ async function handlePOST(req, res) {
         SELECT id, qty_received, purchase_price_jod
         FROM batches
         WHERE product_id = ${productId}
+          AND warehouse_id = ${warehouseId}
           AND lot_number = ${lotNumber}
           AND COALESCE(is_void, false) = false
         LIMIT 1
