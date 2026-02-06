@@ -1,124 +1,6 @@
-import { google } from "googleapis";
-import Busboy from "busboy";
+import { createSign } from "node:crypto";
 import { getSql } from "../lib/db.js";
-
-function getGoogleClient() {
-  const b64 = process.env.GOOGLE_SA_B64;
-  if (!b64) throw new Error("Missing GOOGLE_SA_B64");
-
-  const sa = JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
-
-  return new google.auth.JWT({
-    email: sa.client_email,
-    key: sa.private_key,
-    scopes: [
-      "https://www.googleapis.com/auth/drive",
-      "https://www.googleapis.com/auth/spreadsheets"
-    ]
-  });
-}
-
-export async function applyHandler(req, res) {
-  try {
-    const auth = getGoogleClient();
-    const drive = google.drive({ version: "v3", auth });
-    const sheets = google.sheets({ version: "v4", auth });
-    const sql = getSql();
-
-    const busboy = Busboy({ headers: req.headers });
-
-    const fields = {};
-    const files = {};
-
-    busboy.on("field", (name, value) => {
-      fields[name] = value;
-    });
-
-    busboy.on("file", (name, file, info) => {
-      const chunks = [];
-      file.on("data", d => chunks.push(d));
-      file.on("end", () => {
-        files[name] = {
-          buffer: Buffer.concat(chunks),
-          filename: info.filename,
-          mimeType: info.mimeType
-        };
-      });
-    });
-
-    busboy.on("finish", async () => {
-      if (!files.cv) {
-        return res.status(400).json({ ok: false, error: "CV is required" });
-      }
-
-      const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-
-      async function upload(file) {
-        const r = await drive.files.create({
-          requestBody: {
-            name: file.filename,
-            parents: [folderId]
-          },
-          media: {
-            mimeType: file.mimeType,
-            body: Buffer.from(file.buffer)
-          }
-        });
-
-        await drive.permissions.create({
-          fileId: r.data.id,
-          requestBody: { role: "reader", type: "anyone" }
-        });
-
-        return `https://drive.google.com/file/d/${r.data.id}/view`;
-      }
-
-      const cvUrl = await upload(files.cv);
-      const coverUrl = files.cover_letter ? await upload(files.cover_letter) : null;
-
-      await sql`
-        INSERT INTO job_applications
-          (first_name, last_name, email, education, country, city, cv_drive_url, cover_letter_drive_url)
-        VALUES
-          (${fields.first_name}, ${fields.last_name}, ${fields.email},
-           ${fields.education}, ${fields.country}, ${fields.city},
-           ${cvUrl}, ${coverUrl})
-      `;
-
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "Sheet1!A:I",
-        valueInputOption: "USER_ENTERED",
-        requestBody: {
-          values: [[
-            fields.first_name,
-            fields.last_name,
-            fields.email,
-            fields.education,
-            fields.country,
-            fields.city,
-            cvUrl,
-            coverUrl,
-            new Date().toISOString()
-          ]]
-        }
-      });
-
-      res.json({ ok: true });
-    });
-
-    req.pipe(busboy);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ ok: false, error: err.message });
-  }
-}
-/** 
-// api/recruitment.js
-import Busboy from "busboy";
-import { google } from "googleapis";
-import { getSql } from "../lib/db.js";
+import { getGoogleServiceAccount } from "../lib/google-sa.js";
 import { requireUserFromReq } from "../lib/requireAuth.js";
 
 function send(res, status, payload) {
@@ -136,267 +18,280 @@ function s(v) {
   return String(v ?? "").trim();
 }
 
-// -------- Google Drive helpers --------
-function getDriveClient() {
-  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-
-  if (!raw) throw new Error("Missing GOOGLE_SERVICE_ACCOUNT_JSON");
-  if (!folderId) throw new Error("Missing GOOGLE_DRIVE_FOLDER_ID");
-
-  let creds;
-  try {
-    creds = JSON.parse(raw);
-  } catch {
-    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON");
-  }
-
-  const auth = new google.auth.JWT({
-    email: creds.client_email,
-    key: creds.private_key,
-    scopes: ["https://www.googleapis.com/auth/drive"],
-  });
-
-  const drive = google.drive({ version: "v3", auth });
-  return { drive, folderId };
+function b64url(input) {
+  const b = Buffer.isBuffer(input) ? input : Buffer.from(String(input));
+  return b.toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
 
-// upload buffer -> Drive file -> returns {fileId, webViewLink}
-async function uploadToDrive({ filename, mimeType, buffer, folderId, drive }) {
-  const media = {
-    mimeType: mimeType || "application/octet-stream",
-    body: Buffer.from(buffer),
+function parseQuery(req) {
+  const u = new URL(req.url || "", "http://localhost");
+  return u.searchParams;
+}
+
+async function readBodyBuffer(req, maxBytes = 12 * 1024 * 1024) {
+  const chunks = [];
+  let total = 0;
+  for await (const chunk of req) {
+    total += chunk.length;
+    if (total > maxBytes) throw new Error("Request body too large");
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+function parseMultipart(req, body) {
+  const ct = String(req.headers["content-type"] || "");
+  const m = ct.match(/boundary=([^;]+)/i);
+  if (!m) throw new Error("Missing multipart boundary");
+
+  const boundary = m[1].trim().replace(/^"|"$/g, "");
+  const delimiter = `--${boundary}`;
+  const raw = body.toString("latin1");
+  const sections = raw.split(delimiter);
+
+  const fields = {};
+  const files = {};
+
+  for (let part of sections) {
+    if (!part || part === "--" || part === "--\r\n") continue;
+    if (part.startsWith("\r\n")) part = part.slice(2);
+    if (part.endsWith("\r\n")) part = part.slice(0, -2);
+    if (part.endsWith("--")) part = part.slice(0, -2);
+
+    const headerEnd = part.indexOf("\r\n\r\n");
+    if (headerEnd === -1) continue;
+
+    const rawHeaders = part.slice(0, headerEnd);
+    let content = part.slice(headerEnd + 4);
+    if (content.endsWith("\r\n")) content = content.slice(0, -2);
+
+    const disp = rawHeaders.match(/content-disposition:\s*form-data;([^\n\r]+)/i)?.[1] || "";
+    const name = disp.match(/name="([^"]+)"/i)?.[1];
+    if (!name) continue;
+
+    const filename = disp.match(/filename="([^"]*)"/i)?.[1];
+    const mimeType = rawHeaders.match(/content-type:\s*([^\n\r]+)/i)?.[1]?.trim() || "application/octet-stream";
+
+    if (filename != null && filename !== "") {
+      files[name] = {
+        filename,
+        mimeType,
+        buffer: Buffer.from(content, "latin1"),
+      };
+    } else {
+      fields[name] = content;
+    }
+  }
+
+  return { fields, files };
+}
+
+async function getGoogleAccessToken(sa, scopes) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", typ: "JWT" };
+  const payload = {
+    iss: sa.client_email,
+    scope: scopes.join(" "),
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now,
   };
 
-  const fileMetadata = {
-    name: filename,
-    parents: [folderId],
-  };
+  const signingInput = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
+  const signer = createSign("RSA-SHA256");
+  signer.update(signingInput);
+  signer.end();
+  const signature = signer.sign(sa.private_key);
+  const assertion = `${signingInput}.${b64url(signature)}`;
 
-  const created = await drive.files.create({
-    requestBody: fileMetadata,
-    media,
-    fields: "id, webViewLink",
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
   });
 
-  const fileId = created?.data?.id;
-  if (!fileId) throw new Error("Drive upload failed (no file id)");
+  const data = await tokenRes.json().catch(() => ({}));
+  if (!tokenRes.ok || !data.access_token) {
+    throw new Error(`Google token exchange failed (${tokenRes.status})`);
+  }
 
-  // Make file viewable by anyone with link (so CRM can open it)
-  await drive.permissions.create({
-    fileId,
-    requestBody: { role: "reader", type: "anyone" },
+  return data.access_token;
+}
+
+async function uploadToDrive({ accessToken, folderId, file }) {
+  const boundary = `zomorod_${Date.now()}`;
+  const meta = { name: file.filename, parents: [folderId] };
+
+  const pre = Buffer.from(
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n` +
+      `--${boundary}\r\nContent-Type: ${file.mimeType || "application/octet-stream"}\r\n\r\n`,
+    "utf8"
+  );
+  const post = Buffer.from(`\r\n--${boundary}--`, "utf8");
+  const body = Buffer.concat([pre, file.buffer, post]);
+
+  const uploadRes = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": `multipart/related; boundary=${boundary}`,
+    },
+    body,
   });
 
-  // Re-fetch link (sometimes not included initially)
-  const meta = await drive.files.get({
-    fileId,
-    fields: "id, webViewLink",
+  const uploaded = await uploadRes.json().catch(() => ({}));
+  if (!uploadRes.ok || !uploaded.id) {
+    throw new Error(`Drive upload failed (${uploadRes.status})`);
+  }
+
+  await fetch(`https://www.googleapis.com/drive/v3/files/${uploaded.id}/permissions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ role: "reader", type: "anyone" }),
   });
 
   return {
-    fileId,
-    webViewLink: meta?.data?.webViewLink || null,
+    fileId: uploaded.id,
+    webViewLink: uploaded.webViewLink || `https://drive.google.com/file/d/${uploaded.id}/view`,
   };
 }
 
-// -------- multipart parser --------
-function parseMultipart(req) {
-  return new Promise((resolve, reject) => {
-    const bb = Busboy({ headers: req.headers });
+async function appendToSheet({ accessToken, spreadsheetId, values }) {
+  if (!spreadsheetId) return;
+  const range = encodeURIComponent("Sheet1!A:K");
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED`;
 
-    const fields = {};
-    const files = {}; // { cv: {buffer, filename, mimeType}, cover: {...} }
-
-    bb.on("field", (name, val) => {
-      fields[name] = val;
-    });
-
-    bb.on("file", (name, file, info) => {
-      const { filename, mimeType } = info;
-      const chunks = [];
-      file.on("data", (d) => chunks.push(d));
-      file.on("limit", () => reject(new Error(`File too large: ${name}`)));
-      file.on("end", () => {
-        files[name] = {
-          filename: filename || `${name}.bin`,
-          mimeType,
-          buffer: Buffer.concat(chunks),
-        };
-      });
-    });
-
-    bb.on("error", reject);
-    bb.on("finish", () => resolve({ fields, files }));
-
-    req.pipe(bb);
+  const r = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ values: [values] }),
   });
+
+  if (!r.ok) throw new Error(`Sheets append failed (${r.status})`);
 }
 
-// -------- slug helper --------
-function slugify(title) {
-  return s(title)
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
+async function readJson(req) {
+  let body = req.body;
+  if (typeof body === "string") {
+    try {
+      return JSON.parse(body || "{}");
+    } catch {
+      throw new Error("Invalid JSON body");
+    }
+  }
+  if (body && typeof body === "object") return body;
+
+  const bodyBuf = await readBodyBuffer(req);
+  if (!bodyBuf.length) return {};
+  try {
+    return JSON.parse(bodyBuf.toString("utf8"));
+  } catch {
+    throw new Error("Invalid JSON body");
+  }
 }
 
-export default async function handler(req, res) {
+export default async function recruitmentHandler(req, res) {
   try {
     const sql = getSql();
-    const method = req.method || "GET";
+    const q = parseQuery(req);
+    const method = req.method;
+    const resource = String(q.get("resource") || "").toLowerCase();
 
-    const url = new URL(req.url, "http://localhost");
-    const resource = s(url.searchParams.get("resource"));
-
-    // ---------------------------
-    // PUBLIC: list jobs
-    // GET /api/recruitment?resource=jobs
-    // ---------------------------
     if (method === "GET" && resource === "jobs") {
-      const slug = s(url.searchParams.get("slug"));
-
-      if (slug) {
-        const rows = await sql`
-          SELECT id, title, slug, department, location_country, location_city, employment_type,
-                 job_description_html, is_published, published_at, created_at, updated_at
-          FROM jobs
-          WHERE slug = ${slug} AND is_published = true
-          LIMIT 1
-        `;
-        if (!rows.length) return send(res, 404, { ok: false, error: "Job not found" });
-        return send(res, 200, { ok: true, job: rows[0] });
-      }
-
       const rows = await sql`
-        SELECT id, title, slug, department, location_country, location_city, employment_type,
-               published_at
+        SELECT id, title, department, location_country, location_city, employment_type,
+               job_description_html, is_published, published_at, created_at, updated_at
         FROM jobs
         WHERE is_published = true
         ORDER BY published_at DESC NULLS LAST, id DESC
+        LIMIT 100
       `;
       return send(res, 200, { ok: true, jobs: rows });
     }
 
-    // ---------------------------
-    // ADMIN: list jobs (including unpublished)
-    // GET /api/recruitment?resource=jobs_admin
-    // ---------------------------
     if (method === "GET" && resource === "jobs_admin") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
-
       const rows = await sql`
-        SELECT id, title, slug, department, location_country, location_city, employment_type,
-               is_published, published_at, created_at, updated_at
+        SELECT id, title, department, location_country, location_city, employment_type,
+               job_description_html, is_published, published_at, created_at, updated_at
         FROM jobs
         ORDER BY created_at DESC, id DESC
+        LIMIT 200
       `;
       return send(res, 200, { ok: true, jobs: rows });
     }
 
-    // ---------------------------
-    // ADMIN: create job
-    // POST /api/recruitment?resource=jobs
-    // JSON body
-    // ---------------------------
     if (method === "POST" && resource === "jobs") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
+      const body = await readJson(req);
 
-      const chunks = [];
-      for await (const c of req) chunks.push(c);
-      const raw = Buffer.concat(chunks).toString("utf8") || "{}";
-      let body;
-      try { body = JSON.parse(raw); } catch { return send(res, 400, { ok: false, error: "Invalid JSON" }); }
+      const title = s(body.title);
+      const jobDescriptionHtml = s(body.jobDescriptionHtml);
+      const department = s(body.department) || null;
+      const locationCountry = s(body.locationCountry) || null;
+      const locationCity = s(body.locationCity) || null;
+      const employmentType = s(body.employmentType) || null;
+      const isPublished = body.isPublished === true;
 
-      const title = s(body?.title);
-      const department = s(body?.department) || null;
-      const locationCountry = s(body?.locationCountry) || null;
-      const locationCity = s(body?.locationCity) || null;
-      const employmentType = s(body?.employmentType) || null;
-      const jobDescriptionHtml = s(body?.jobDescriptionHtml);
-      const isPublished = body?.isPublished === true;
-
-      if (!title) return send(res, 400, { ok: false, error: "title is required" });
-      if (!jobDescriptionHtml) return send(res, 400, { ok: false, error: "jobDescriptionHtml is required" });
-
-      const baseSlug = slugify(title);
-      if (!baseSlug) return send(res, 400, { ok: false, error: "title cannot produce slug" });
-
-      // make slug unique
-      let slug = baseSlug;
-      for (let i = 1; i <= 50; i++) {
-        const chk = await sql`SELECT id FROM jobs WHERE slug = ${slug} LIMIT 1`;
-        if (!chk.length) break;
-        slug = `${baseSlug}-${i}`;
+      if (!title || !jobDescriptionHtml) {
+        return send(res, 400, { ok: false, error: "title and jobDescriptionHtml are required" });
       }
 
       const ins = await sql`
         INSERT INTO jobs
-          (title, slug, department, location_country, location_city, employment_type,
-           job_description_html, is_published, published_at, created_by, created_at, updated_at)
+          (title, department, location_country, location_city, employment_type,
+           job_description_html, is_published, published_at, created_at, updated_at)
         VALUES
-          (${title}, ${slug}, ${department}, ${locationCountry}, ${locationCity}, ${employmentType},
-           ${jobDescriptionHtml}, ${isPublished},
-           ${isPublished ? sql`now()` : null},
-           ${auth.sub || null}, now(), now())
-        RETURNING id, slug
+          (${title}, ${department}, ${locationCountry}, ${locationCity}, ${employmentType},
+           ${jobDescriptionHtml}, ${isPublished}, ${isPublished ? sql`now()` : null}, now(), now())
+        RETURNING id
       `;
 
-      return send(res, 201, { ok: true, id: ins[0].id, slug: ins[0].slug });
+      return send(res, 201, { ok: true, id: ins[0].id });
     }
 
-    // ---------------------------
-    // ADMIN: update job
-    // PATCH /api/recruitment?resource=jobs
-    // JSON body
-    // ---------------------------
     if (method === "PATCH" && resource === "jobs") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
+      const body = await readJson(req);
 
-      const chunks = [];
-      for await (const c of req) chunks.push(c);
-      const raw = Buffer.concat(chunks).toString("utf8") || "{}";
-      let body;
-      try { body = JSON.parse(raw); } catch { return send(res, 400, { ok: false, error: "Invalid JSON" }); }
-
-      const id = n(body?.id);
+      const id = n(body.id);
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
-      const title = s(body?.title);
-      const department = s(body?.department) || null;
-      const locationCountry = s(body?.locationCountry) || null;
-      const locationCity = s(body?.locationCity) || null;
-      const employmentType = s(body?.employmentType) || null;
-      const jobDescriptionHtml = s(body?.jobDescriptionHtml);
-      const isPublished = body?.isPublished === true;
+      const title = s(body.title);
+      const jobDescriptionHtml = s(body.jobDescriptionHtml);
+      const department = s(body.department) || null;
+      const locationCountry = s(body.locationCountry) || null;
+      const locationCity = s(body.locationCity) || null;
+      const employmentType = s(body.employmentType) || null;
+      const isPublished = body.isPublished === true;
 
-      if (!title) return send(res, 400, { ok: false, error: "title is required" });
-      if (!jobDescriptionHtml) return send(res, 400, { ok: false, error: "jobDescriptionHtml is required" });
+      if (!title || !jobDescriptionHtml) {
+        return send(res, 400, { ok: false, error: "title and jobDescriptionHtml are required" });
+      }
 
-      // publish timestamp only when switching to published and published_at is null
       await sql.begin(async (tx) => {
-        const cur = await tx`SELECT is_published, published_at FROM jobs WHERE id = ${id} LIMIT 1`;
+        const cur = await tx`SELECT id, published_at FROM jobs WHERE id = ${id} LIMIT 1`;
         if (!cur.length) throw new Error("JOB_NOT_FOUND");
-
-        const shouldSetPublishedAt = isPublished && !cur[0].published_at;
+        const publishedAt = isPublished && !cur[0].published_at ? tx`now()` : cur[0].published_at;
 
         await tx`
           UPDATE jobs
-          SET
-            title = ${title},
-            department = ${department},
-            location_country = ${locationCountry},
-            location_city = ${locationCity},
-            employment_type = ${employmentType},
-            job_description_html = ${jobDescriptionHtml},
-            is_published = ${isPublished},
-            published_at = ${shouldSetPublishedAt ? sql`now()` : cur[0].published_at},
-            updated_at = now()
+          SET title = ${title}, department = ${department}, location_country = ${locationCountry},
+              location_city = ${locationCity}, employment_type = ${employmentType},
+              job_description_html = ${jobDescriptionHtml}, is_published = ${isPublished},
+              published_at = ${publishedAt}, updated_at = now()
           WHERE id = ${id}
         `;
       });
@@ -404,36 +299,19 @@ export default async function handler(req, res) {
       return send(res, 200, { ok: true });
     }
 
-    // ---------------------------
-    // ADMIN: delete job (soft = unpublish)
-    // DELETE /api/recruitment?resource=jobs&id=123
-    // ---------------------------
     if (method === "DELETE" && resource === "jobs") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
-
-      const id = n(url.searchParams.get("id"));
+      const id = n(q.get("id"));
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
-      // soft delete: just unpublish
-      await sql`
-        UPDATE jobs
-        SET is_published = false, updated_at = now()
-        WHERE id = ${id}
-      `;
+      await sql`UPDATE jobs SET is_published = false, updated_at = now() WHERE id = ${id}`;
       return send(res, 200, { ok: true });
     }
 
-    // ---------------------------
-    // PUBLIC: apply (multipart)
-    // POST /api/recruitment?resource=apply
-    // form-data fields:
-    //  jobId, firstName, lastName, educationLevel, country, city
-    // files:
-    //  cv, cover
-    // ---------------------------
     if (method === "POST" && resource === "apply") {
-      const { fields, files } = await parseMultipart(req);
+      const bodyBuf = await readBodyBuffer(req);
+      const { fields, files } = parseMultipart(req, bodyBuf);
 
       const jobId = n(fields.jobId);
       const firstName = s(fields.firstName);
@@ -442,42 +320,46 @@ export default async function handler(req, res) {
       const country = s(fields.country);
       const city = s(fields.city);
 
-      if (!jobId) return send(res, 400, { ok: false, error: "jobId is required" });
-      if (!firstName || !lastName) return send(res, 400, { ok: false, error: "First/Last name required" });
-      if (!educationLevel) return send(res, 400, { ok: false, error: "educationLevel is required" });
-      if (!country || !city) return send(res, 400, { ok: false, error: "country and city are required" });
+      if (!jobId || !firstName || !lastName || !educationLevel || !country || !city) {
+        return send(res, 400, { ok: false, error: "jobId, firstName, lastName, educationLevel, country, city are required" });
+      }
+      if (!files.cv?.buffer?.length) {
+        return send(res, 400, { ok: false, error: "cv file is required" });
+      }
 
-      // ensure job exists and published
       const job = await sql`SELECT id, title FROM jobs WHERE id = ${jobId} AND is_published = true LIMIT 1`;
-      if (!job.length) return send(res, 404, { ok: false, error: "Job not found or not published" });
+      if (!job.length) return send(res, 404, { ok: false, error: "Job not found or unpublished" });
 
-      const { drive, folderId } = getDriveClient();
+      const folderId = String(process.env.GOOGLE_DRIVE_FOLDER_ID || "").trim();
+      if (!folderId) return send(res, 500, { ok: false, error: "Missing GOOGLE_DRIVE_FOLDER_ID" });
 
-      // Upload files if present
-      let cv = null;
-      let cover = null;
+      const sa = getGoogleServiceAccount();
+      const accessToken = await getGoogleAccessToken(sa, [
+        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/spreadsheets",
+      ]);
 
-      // naming
       const stamp = new Date().toISOString().replace(/[:.]/g, "-");
       const safeName = `${firstName}_${lastName}`.replace(/[^\w-]+/g, "_");
 
-      if (files.cv?.buffer?.length) {
-        cv = await uploadToDrive({
-          filename: `CV_${safeName}_${stamp}_${files.cv.filename}`,
-          mimeType: files.cv.mimeType,
-          buffer: files.cv.buffer,
-          folderId,
-          drive,
-        });
-      }
+      const cv = await uploadToDrive({
+        accessToken,
+        folderId,
+        file: {
+          ...files.cv,
+          filename: `CV_${safeName}_${stamp}_${files.cv.filename || "file"}`,
+        },
+      });
 
+      let cover = null;
       if (files.cover?.buffer?.length) {
         cover = await uploadToDrive({
-          filename: `Cover_${safeName}_${stamp}_${files.cover.filename}`,
-          mimeType: files.cover.mimeType,
-          buffer: files.cover.buffer,
+          accessToken,
           folderId,
-          drive,
+          file: {
+            ...files.cover,
+            filename: `Cover_${safeName}_${stamp}_${files.cover.filename || "file"}`,
+          },
         });
       }
 
@@ -488,45 +370,49 @@ export default async function handler(req, res) {
            status, created_at)
         VALUES
           (${jobId}, ${firstName}, ${lastName}, ${educationLevel}, ${country}, ${city},
-           ${cv?.fileId || null}, ${cv?.webViewLink || null},
-           ${cover?.fileId || null}, ${cover?.webViewLink || null},
+           ${cv.fileId}, ${cv.webViewLink}, ${cover?.fileId || null}, ${cover?.webViewLink || null},
            'new', now())
         RETURNING id
       `;
 
+      const sheetId = String(process.env.GOOGLE_SHEET_ID || "").trim();
+      if (sheetId) {
+        await appendToSheet({
+          accessToken,
+          spreadsheetId: sheetId,
+          values: [
+            ins[0].id,
+            jobId,
+            firstName,
+            lastName,
+            educationLevel,
+            country,
+            city,
+            cv.webViewLink,
+            cover?.webViewLink || "",
+            "new",
+            new Date().toISOString(),
+          ],
+        });
+      }
+
       return send(res, 201, { ok: true, applicationId: ins[0].id });
     }
 
-    // ---------------------------
-    // ADMIN: list applications
-    // GET /api/recruitment?resource=applications
-    // optional jobId=...
-    // ---------------------------
     if (method === "GET" && resource === "applications") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
 
-      const jobId = n(url.searchParams.get("jobId")) || null;
-
+      const jobId = n(q.get("jobId")) || null;
       const rows = await sql`
-        SELECT
-          a.id,
-          a.job_id,
-          j.title AS job_title,
-          a.first_name,
-          a.last_name,
-          a.education_level,
-          a.country,
-          a.city,
-          a.cv_drive_link,
-          a.cover_drive_link,
-          a.status,
-          a.created_at
+        SELECT a.id, a.job_id, j.title AS job_title, a.first_name, a.last_name,
+               a.education_level, a.country, a.city, a.cv_drive_link, a.cover_drive_link,
+               a.status, a.created_at
         FROM job_applications a
         JOIN jobs j ON j.id = a.job_id
         WHERE (${jobId}::int IS NULL OR a.job_id = ${jobId})
         ORDER BY a.created_at DESC, a.id DESC
-        LIMIT 200
+        LIMIT 300
       `;
 
       return send(res, 200, { ok: true, applications: rows });
@@ -534,8 +420,8 @@ export default async function handler(req, res) {
 
     return send(res, 400, { ok: false, error: "Unknown route. Use ?resource=..." });
   } catch (err) {
-    console.error("api/recruitment error:", err);
-    return send(res, 500, { ok: false, error: "Server error", detail: String(err?.message || err) });
+    const message = String(err?.message || err);
+    if (message === "JOB_NOT_FOUND") return send(res, 404, { ok: false, error: "Job not found" });
+    return send(res, 500, { ok: false, error: "Server error", detail: message });
   }
 }
-  **/

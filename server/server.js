@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import crypto from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
+import recruitmentHandler from "./recruitment.js";
 
 dotenv.config();
 
@@ -284,7 +285,10 @@ app.get("/auth/logout", (_req, res) => {
   return res.type("text").send("Logged out. Now open /auth/google again.");
 });
 
-// Recruitment upload endpoint
+// Recruitment endpoint (implemented in server/recruitment.js)
+app.all("/api/recruitment", recruitmentHandler);
+
+// Legacy endpoint kept for backward compatibility.
 app.post("/api/recruitment/apply", async (req, res) => {
   try {
     const bb = busboy({
