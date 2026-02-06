@@ -16,6 +16,28 @@ import { getUser, hasRole } from "../auth";
  * 4) Supplier dropdown + option readability relies on CRM.CSS select/option rules (make sure you added them).
  */
 
+function formatDateTime(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const yyyy = d.getUTCFullYear();
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const min = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${dd}-${mm}-${yyyy} / ${hh}:${min}`;
+}
+
+function formatMoneyMax2(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "";
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
 export default function ProductsPage() {
   const user = getUser();
   const roles = user?.roles || [];
@@ -340,9 +362,9 @@ export default function ProductsPage() {
                   <td>{p.officialName}</td>
                   <td>{p.marketName}</td>
                   <td style={{ fontWeight: 900 }}>{p.onHandQty}</td>
-                  <td>{p.defaultSellPriceJod}</td>
-                  {canSeePurchase ? <td>{p.avgPurchasePriceJod ?? ""}</td> : null}
-                  {canSeePurchase ? <td>{p.lastPurchaseDate ?? ""}</td> : null}
+                  <td>{formatMoneyMax2(p.defaultSellPriceJod)}</td>
+                  {canSeePurchase ? <td>{formatMoneyMax2(p.avgPurchasePriceJod)}</td> : null}
+                  {canSeePurchase ? <td>{formatDateTime(p.lastPurchaseDate)}</td> : null}
 
                   <td>
                     {Array.isArray(p.priceTiers) && p.priceTiers.length ? (
@@ -461,7 +483,7 @@ export default function ProductsPage() {
                   {canSeePurchase && selectedProduct.avgPurchasePriceJod != null ? (
                     <>
                       {" "}
-                      • Avg purchase: <b>{selectedProduct.avgPurchasePriceJod}</b>
+                      • Avg purchase: <b>{formatMoneyMax2(selectedProduct.avgPurchasePriceJod)}</b>
                     </>
                   ) : null}
                 </div>
@@ -603,8 +625,8 @@ export default function ProductsPage() {
                         {batches.map((b) => (
                           <tr key={b.id}>
                             <td style={{ fontWeight: 900 }}>{b.lotNumber}</td>
-                            <td>{b.purchaseDate}</td>
-                            <td>{b.expiryDate || "—"}</td>
+                            <td>{formatDateTime(b.purchaseDate)}</td>
+                            <td>{formatDateTime(b.expiryDate)}</td>
                             <td>{b.qtyReceived}</td>
                             <td>{b.purchasePriceJod ?? ""}</td>
                             <td>{b.supplierName || "—"}</td>
