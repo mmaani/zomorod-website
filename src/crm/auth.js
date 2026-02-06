@@ -179,6 +179,20 @@ export async function fetchMe() {
   return data.user;
 }
 
+export async function forgotPassword(email) {
+  const res = await fetch("/api/forgot-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || data.detail || `Request failed (${res.status})`);
+  }
+  return data;
+}
+
 export function hasRole(role) {
   const u = getUser();
   return (u?.roles || []).includes(role);

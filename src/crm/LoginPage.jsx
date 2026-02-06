@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { login, isLoggedIn, getRememberFlag } from "./auth.js";
+import { forgotPassword, login, isLoggedIn, getRememberFlag } from "./auth.js";
 import "./crm.css";
 
 function normalizePath(p) {
@@ -16,6 +16,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [rememberMe, setRememberMe] = useState(() => {
     try {
@@ -27,19 +28,19 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+    const [info, setInfo] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
 
   const redirectTo = useMemo(() => {
     const fallback = "/crm/dashboard";
     const raw = location.state?.from;
 
-    // from as string
     if (typeof raw === "string") {
       const p = normalizePath(raw);
       if (p && p !== "/crm/login") return p;
       return fallback;
     }
 
-    // from as location-like object
     if (raw && typeof raw === "object" && typeof raw.pathname === "string") {
       const p = normalizePath(raw.pathname);
       const s = raw.search || "";
@@ -60,6 +61,7 @@ export default function LoginPage() {
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
+    setInfo("");
     setLoading(true);
 
     try {
@@ -71,10 +73,31 @@ export default function LoginPage() {
       setLoading(false);
     }
   }
+    async function onForgotPassword(e) {
+    e.preventDefault();
+    setError("");
+    setInfo("");
+
+    if (!email.trim()) {
+      setError("Please enter your email first.");
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      await forgotPassword(email.trim());
+      setInfo("If this email is valid, we sent a temporary CRM password.");
+    } catch (err) {
+      setError(err?.message || "Failed to process password reset.");
+    } finally {
+      setResetLoading(false);
+    }
+  }
 
   return (
     <div className="crm-container">
       <div className="crm-card">
+        <img className="crm-login-logo" src="/logo.png" alt="Zomorod logo" />
         <h1 className="crm-title">ZOMOROD CRM Login</h1>
 
         <form onSubmit={onSubmit} className="crm-form">
@@ -89,27 +112,48 @@ export default function LoginPage() {
           />
 
           <label className="crm-label">Password</label>
-          <input
-            className="crm-input"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            type="password"
-            autoComplete="current-password"
-            required
-          />
+              <div className="crm-password-row">
+            <input
+              className="crm-input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              required
+            />
+            <button
+              className="crm-btn crm-btn-outline crm-password-toggle"
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
 
-          <div className="crm-remember">
-            <label className="crm-check">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-              />
-              <span>Remember me</span>
-            </label>
+            <div className="crm-login-row">
+            <div className="crm-remember">
+              <label className="crm-check">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <span>Remember me</span>
+              </label>
+            </div>
+
+            <button
+              className="crm-link-btn"
+              type="button"
+              onClick={onForgotPassword}
+              disabled={resetLoading}
+            >
+              {resetLoading ? "Sending..." : "Forgot password?"}
+            </button>
           </div>
 
           {error ? <div className="crm-error">{error}</div> : null}
+          {info ? <div className="crm-info">{info}</div> : null}
 
           <button className="crm-btn crm-btn-primary" type="submit" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}

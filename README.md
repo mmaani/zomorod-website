@@ -16,6 +16,7 @@ The `/api` directory contains Vercel-style serverless handlers used by the CRM. 
 - `DATABASE_URL` (Postgres connection string)
 - `JWT_SECRET` (JWT signing/verification for CRM auth)
 - `GOOGLE_SA_B64` (base64-encoded service account JSON for Google Drive/Sheets integrations)
+- `RESEND_API_KEY` and `CRM_FROM_EMAIL` (optional, used by `/api/forgot-password` to email temporary CRM passwords)
 
 If you need to run the legacy Express server in `server/` for recruitment/Google integrations, see the environment variables referenced in `server/server.js` (OAuth + Drive/Sheets IDs).
 

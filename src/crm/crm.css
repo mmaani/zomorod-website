@@ -449,3 +449,51 @@ select option{
 @media (prefers-reduced-motion: reduce){
   *{ scroll-behavior: auto !important; transition: none !important; }
 }
+
+.crm-login-logo{
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 10px;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,.35));
+}
+
+.crm-password-row{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.crm-password-toggle{
+  min-width: 72px;
+  height: 42px;
+}
+
+.crm-login-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.crm-link-btn{
+  background: transparent;
+  border: 0;
+  color: var(--z-accent);
+  cursor: pointer;
+  font-weight: 700;
+  padding: 2px 4px;
+}
+
+.crm-link-btn:hover{ text-decoration: underline; }
+
+.crm-info{
+  margin-top: 8px;
+  border: 1px solid rgba(84,183,100,0.5);
+  background: rgba(84,183,100,0.1);
+  color: var(--z-text-strong);
+  padding: 10px 12px;
+  border-radius: 10px;
+}
