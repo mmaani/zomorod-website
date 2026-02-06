@@ -18,3 +18,16 @@ dist/
 
 # Optional secrets folder
 .secrets/
+
+# Local editor / agent config
+.codex/
+.cursor/
+.gemini/
+.zed/
+.vscode/
+.mcp.json
+.opencode.json
+
+# Local DB/schema dumps
+*.sql
+neon_schema.mjs
