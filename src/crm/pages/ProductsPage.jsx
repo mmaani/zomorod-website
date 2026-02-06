@@ -31,12 +31,9 @@ function formatDateTime(value) {
 }
 
 function formatMoneyMax2(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return "";
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(n);
+  const num = Number(value);
+  if (!Number.isFinite(num)) return "";
+  return (Math.round(num * 100) / 100).toString();
 }
 
 
@@ -633,27 +630,30 @@ export default function ProductsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {batches.map((b) => (
-                          <tr key={b.id}>
-                            <td style={{ fontWeight: 900 }}>{b.lotNumber}</td>
-                            <td>{formatDateTime(b.purchaseDate)}</td>
-                            <td>{formatDateTime(b.expiryDate)}</td>
-                            <td>{b.qtyReceived}</td>
-                            <td>{b.qtyRemaining ?? b.qtyReceived}</td>
-                            <td>{formatMoneyMax2(b.purchasePriceJod)}</td>
+                        {batches.map((batch) => {
+                          const status = expiryBadge(batch.expiryStatus);
+                          return (
+                          <tr key={batch.id}>
+                            <td style={{ fontWeight: 900 }}>{batch.lotNumber}</td>
+                            <td>{formatDateTime(batch.purchaseDate)}</td>
+                            <td>{formatDateTime(batch.expiryDate)}</td>
+                            <td>{batch.qtyReceived}</td>
+                            <td>{batch.qtyRemaining ?? batch.qtyReceived}</td>
+                            <td>{formatMoneyMax2(batch.purchasePriceJod)}</td>
                             <td>
-                              <span style={{ color: expiryBadge(b.expiryStatus).color, fontWeight: 800 }}>
-                                {expiryBadge(b.expiryStatus).label}
+                              <span style={{ color: status.color, fontWeight: 800 }}>
+                                {status.label}
                               </span>
                             </td>
-                            <td>{b.supplierName || "—"}</td>
+                            <td>{batch.supplierName || "—"}</td>
                             <td style={{ whiteSpace: "nowrap" }}>
-                              <button className="crm-btn crm-btn-outline" type="button" onClick={() => voidBatch(b.id)}>
+                              <button className="crm-btn crm-btn-outline" type="button" onClick={() => voidBatch(batch.id)}>
                                 Void
                               </button>
                             </td>
                           </tr>
-                        ))}
+                        );
+                        })}
                       </tbody>
                     </table>
                   </div>
