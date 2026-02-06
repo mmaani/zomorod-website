@@ -136,6 +136,13 @@ export default async function handler(req, res) {
     if (message.includes("ECONNREFUSED") || message.includes("connect ECONNREFUSED")) {
       return send(res, 503, { ok: false, error: "Database unavailable" });
     }
+    if (message.toLowerCase().includes("password authentication failed")) {
+      return send(res, 500, {
+        ok: false,
+        error: "Database authentication failed",
+        detail: "Check DATABASE_URL/POSTGRES_URL credentials in deployment environment.",
+      });
+    }
     return send(res, 500, { ok: false, error: "Server error", detail: message });
   }
 }
