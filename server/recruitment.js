@@ -1,6 +1,4 @@
-import { createSign } from "node:crypto";
 import { getSql } from "../lib/db.js";
-import { getGoogleServiceAccount } from "../lib/google-sa.js";
 import { requireUserFromReq } from "../lib/requireAuth.js";
 
 function send(res, status, payload) {
@@ -15,14 +13,83 @@ const toNum = (v) => {
 };
 
 const toStr = (v) => String(v ?? "").trim();
+let recruitmentSchemaReady = false;
 
+async function ensureRecruitmentSchema(sql) {
+  if (recruitmentSchemaReady) return;
+
+  await sql`CREATE TABLE IF NOT EXISTS jobs (
+    id BIGSERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    department TEXT,
+    location_country TEXT,
+    location_city TEXT,
+    employment_type TEXT,
+    job_description_html TEXT NOT NULL,
+    is_published BOOLEAN NOT NULL DEFAULT FALSE,
+    published_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+
+  await sql`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS title TEXT`;
+  await sql`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS department TEXT`;
+  await sql`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS location_country TEXT`;
+  await sql`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS location_city TEXT`;
+  await sql`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS employment_type TEXT`;
+  await sql`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_description_html TEXT`;
+  await sql`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT FALSE`;
+  await sql`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()`;
+  await sql`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`;
+  await sql`UPDATE jobs SET is_published = FALSE WHERE is_published IS NULL`;
+  await sql`UPDATE jobs SET created_at = NOW() WHERE created_at IS NULL`;
+  await sql`UPDATE jobs SET updated_at = NOW() WHERE updated_at IS NULL`;
+
+  await sql`CREATE TABLE IF NOT EXISTS job_applications (
+    id BIGSERIAL PRIMARY KEY,
+    job_id BIGINT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    education_level TEXT,
+    country TEXT,
+    city TEXT,
+    cv_drive_file_id TEXT,
+    cv_drive_link TEXT,
+    cover_drive_file_id TEXT,
+    cover_drive_link TEXT,
+    status TEXT NOT NULL DEFAULT 'new',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+
+  await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS job_id BIGINT`;
+  await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS first_name TEXT`;
+  await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS last_name TEXT`;
+  await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS email TEXT`;
+  await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS phone TEXT`;
+  await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS education_level TEXT`;
+  await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS country TEXT`;
+  await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS city TEXT`;
+  await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS cv_drive_file_id TEXT`;
+  await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS cv_drive_link TEXT`;
+  await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS cover_drive_file_id TEXT`;
+  await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS cover_drive_link TEXT`;
+  await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'new'`;
+  await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()`;
+
+  await sql`CREATE INDEX IF NOT EXISTS idx_jobs_is_published ON jobs (is_published, published_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_job_applications_job_id ON job_applications (job_id, created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_job_applications_status ON job_applications (status, created_at DESC)`;
+
+  recruitmentSchemaReady = true;
+}
 function getResource(req) {
-  // Express has req.originalUrl; fallback to req.url
   const raw = typeof req.originalUrl === "string"
     ? req.originalUrl
     : (typeof req.url === "string" ? req.url : "");
 
-  // Ensure it always parses
   const url = new URL(raw.startsWith("/") ? raw : `/${raw}`, "http://127.0.0.1");
 
   return {
@@ -102,14 +169,6 @@ function parseMultipart(req, rawBody) {
   return { fields, files };
 }
 
-function b64url(input) {
-  const b = Buffer.isBuffer(input) ? input : Buffer.from(String(input));
-  return b
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
-}
 
 function mustEnv(name) {
   const v = String(process.env[name] || "").trim();
@@ -117,16 +176,11 @@ function mustEnv(name) {
   return v;
 }
 
-async function getAccessToken(scopes) {
-  void scopes;
+async function getAccessToken() {
 
   const clientId = mustEnv("GOOGLE_OAUTH_CLIENT_ID");
   const clientSecret = mustEnv("GOOGLE_OAUTH_CLIENT_SECRET");
   const refreshToken = mustEnv("GOOGLE_OAUTH_REFRESH_TOKEN");
-
-  // ✅ log AFTER initialization (optional)
-  console.log("Using OAuth refresh token flow, client_id suffix:", clientId.slice(-12));
-
   const resp = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -149,77 +203,35 @@ async function getAccessToken(scopes) {
 async function uploadFileToDrive(accessToken, folderId, file) {
   const boundary = `zomorod_${Date.now()}`;
 
-  // IMPORTANT: ensure we always attach into the target folder
-  const metadata = {
-    name: file.filename,
-    parents: [folderId],
-  };
-
+  const metadata = { name: file.filename, parents: [folderId] };
   const pre = Buffer.from(
-    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(
-      metadata
-    )}\r\n` +
-      `--${boundary}\r\nContent-Type: ${
-        file.mimeType || "application/octet-stream"
-      }\r\n\r\n`,
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
+      `--${boundary}\r\nContent-Type: ${file.mimeType || "application/octet-stream"}\r\n\r\n`,
     "utf8"
   );
   const post = Buffer.from(`\r\n--${boundary}--`, "utf8");
   const body = Buffer.concat([pre, file.buffer, post]);
 
-  // supportsAllDrives is harmless for My Drive, but helps if a folder ever ends up elsewhere.
-  const uploadUrl =
-    "https://www.googleapis.com/upload/drive/v3/files" +
-    "?uploadType=multipart&fields=id,webViewLink&supportsAllDrives=true";
-
-  const upload = await fetch(uploadUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": `multipart/related; boundary=${boundary}`,
-    },
-    body,
-  });
-
-  const data = await upload.json().catch(() => ({}));
-  if (!upload.ok || !data.id) {
-    // give you the REAL reason (often: "insufficientPermissions", "insufficientAuthenticationScopes", etc.)
-    throw new Error(
-      `Drive upload failed (${upload.status}): ${JSON.stringify(data)}`
-    );
-  }
-
-  // Make file viewable via link (optional). If your org blocks "anyone" sharing, this may fail.
-  const permRes = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${data.id}/permissions?supportsAllDrives=true`,
+   const upload = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink&supportsAllDrives=true",
     {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
+          "Content-Type": `multipart/related; boundary=${boundary}`,
       },
-      body: JSON.stringify({ role: "reader", type: "anyone" }),
+      body,
     }
   );
 
-  if (!permRes.ok) {
-    // Don't fail the entire application if org policy blocks public sharing.
-    const permData = await permRes.json().catch(() => ({}));
-    // You can inspect this in your API response detail if needed.
-    // (CV is still uploaded and linked may still be accessible to account holders.)
-    // If you prefer hard-fail, replace this block with: throw new Error(...)
-    // eslint-disable-next-line no-console
-    console.warn(
-      "Drive permission set failed:",
-      permRes.status,
-      JSON.stringify(permData)
-    );
+  const data = await upload.json().catch(() => ({}));
+  if (!upload.ok || !data.id) {
+    throw new Error(`Drive upload failed (${upload.status}): ${JSON.stringify(data)}`);
   }
 
   return {
     fileId: data.id,
-    webViewLink:
-      data.webViewLink || `https://drive.google.com/file/d/${data.id}/view`,
+    webViewLink: data.webViewLink || `https://drive.google.com/file/d/${data.id}/view`,
   };
 }
 
@@ -251,6 +263,7 @@ async function requireMain(req, res) {
 export default async function recruitmentHandler(req, res) {
   try {
     const sql = getSql();
+    await ensureRecruitmentSchema(sql);
     const { resource, params } = getResource(req);
 
     if (req.method === "GET" && resource === "jobs") {
@@ -284,10 +297,7 @@ export default async function recruitmentHandler(req, res) {
       const title = toStr(body.title);
       const jobDescriptionHtml = toStr(body.jobDescriptionHtml);
       if (!title || !jobDescriptionHtml) {
-        return send(res, 400, {
-          ok: false,
-          error: "title and jobDescriptionHtml are required",
-        });
+        return send(res, 400, { ok: false, error: "title and jobDescriptionHtml are required" });
       }
 
       const department = toStr(body.department) || null;
@@ -302,9 +312,7 @@ export default async function recruitmentHandler(req, res) {
            job_description_html, is_published, published_at, created_at, updated_at)
         VALUES
           (${title}, ${department}, ${locationCountry}, ${locationCity}, ${employmentType},
-           ${jobDescriptionHtml}, ${isPublished}, ${
-        isPublished ? sql`now()` : null
-      }, now(), now())
+           ${jobDescriptionHtml}, ${isPublished}, ${isPublished ? sql`now()` : null}, now(), now())
         RETURNING id
       `;
 
@@ -320,10 +328,7 @@ export default async function recruitmentHandler(req, res) {
       const title = toStr(body.title);
       const jobDescriptionHtml = toStr(body.jobDescriptionHtml);
       if (!title || !jobDescriptionHtml) {
-        return send(res, 400, {
-          ok: false,
-          error: "title and jobDescriptionHtml are required",
-        });
+        return send(res, 400, { ok: false, error: "title and jobDescriptionHtml are required" });
       }
 
       const department = toStr(body.department) || null;
@@ -335,8 +340,7 @@ export default async function recruitmentHandler(req, res) {
       await sql.begin(async (tx) => {
         const cur = await tx`SELECT id, published_at FROM jobs WHERE id = ${id} LIMIT 1`;
         if (!cur.length) throw new Error("JOB_NOT_FOUND");
-        const publishedAt =
-          isPublished && !cur[0].published_at ? tx`now()` : cur[0].published_at;
+        const publishedAt = isPublished && !cur[0].published_at ? tx`now()` : cur[0].published_at;
 
         await tx`
           UPDATE jobs
@@ -358,16 +362,9 @@ export default async function recruitmentHandler(req, res) {
             const mode = toStr(params.get("mode")).toLowerCase();
 
       if (mode === "hard") {
-        const refs = await sql`
-          SELECT COUNT(*)::int AS count
-          FROM job_applications
-          WHERE job_id = ${id}
-        `;
+        const refs = await sql`SELECT COUNT(*)::int AS count FROM job_applications WHERE job_id = ${id}`;
         if (Number(refs?.[0]?.count || 0) > 0) {
-          return send(res, 400, {
-            ok: false,
-            error: "Cannot delete a vacancy with applications. Unpublish it instead.",
-          });
+          return send(res, 400, { ok: false, error: "Cannot delete a vacancy with applications. Unpublish it instead." });
         }
 
         const del = await sql`DELETE FROM jobs WHERE id = ${id}`;
