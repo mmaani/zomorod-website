@@ -431,6 +431,7 @@ export default async function recruitmentHandler(req, res) {
           jobId,
           firstName,
           lastName,
+          email,               
           educationLevel,
           country,
           city,
