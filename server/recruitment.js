@@ -366,16 +366,18 @@ export default async function recruitmentHandler(req, res) {
       const jobId = toNum(fields.jobId);
       const firstName = toStr(fields.firstName);
       const lastName = toStr(fields.lastName);
+      const email = toStr(fields.email);
       const educationLevel = toStr(fields.educationLevel);
       const country = toStr(fields.country);
       const city = toStr(fields.city);
 
-      if (!jobId || !firstName || !lastName || !educationLevel || !country || !city) {
+      if (!jobId || !firstName || !lastName || !email || !educationLevel || !country || !city) {
         return send(res, 400, {
           ok: false,
-          error: "jobId, firstName, lastName, educationLevel, country, city are required",
+          error: "jobId, firstName, lastName, email, educationLevel, country, city are required",
         });
       }
+
       if (!files.cv?.buffer?.length)
         return send(res, 400, { ok: false, error: "cv file is required" });
 
@@ -412,15 +414,13 @@ export default async function recruitmentHandler(req, res) {
 
       const ins = await sql`
         INSERT INTO job_applications
-          (job_id, first_name, last_name, education_level, country, city,
-           cv_drive_file_id, cv_drive_link, cover_drive_file_id, cover_drive_link,
-           status, created_at)
+          (job_id, first_name, last_name, email, education_level, country, city,
+          cv_drive_file_id, cv_drive_link, cover_drive_file_id, cover_drive_link,
+          status, created_at)
         VALUES
-          (${jobId}, ${firstName}, ${lastName}, ${educationLevel}, ${country}, ${city},
-           ${cv.fileId}, ${cv.webViewLink}, ${cover?.fileId || null}, ${
-        cover?.webViewLink || null
-      },
-           'new', now())
+          (${jobId}, ${firstName}, ${lastName}, ${email}, ${educationLevel}, ${country}, ${city},
+          ${cv.fileId}, ${cv.webViewLink}, ${cover?.fileId || null}, ${cover?.webViewLink || null},
+          'new', now())
         RETURNING id
       `;
 
