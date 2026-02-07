@@ -384,17 +384,14 @@ export default async function recruitmentHandler(req, res) {
       const lastName = toStr(fields.lastName);
       const email = toStr(fields.email);
       const phone = toStr(fields.phone);
-      const educationLevel = toStr(fields.educationLevel);
-      const country = toStr(fields.country);
-      const city = toStr(fields.city);
+const educationLevel = toStr(fields.educationLevel);
+const country = toStr(fields.country);
+const city = toStr(fields.city);
 
-      if (!jobId || !firstName || !lastName || !email || !phone || !educationLevel || !country || !city) {
-        return send(res, 400, {
-          ok: false,
-          error: "jobId, firstName, lastName, email, phone, educationLevel, country, city are required",
-        });
-      }
-
+if (!jobId || !firstName || !lastName || !email || !phone || !educationLevel || !country || !city) {
+  return send(res, 400, { ok: false, error: "jobId, firstName, lastName, email, phone, educationLevel, country, city are required" });
+}
+     
       if (!files.cv?.buffer?.length)
         return send(res, 400, { ok: false, error: "cv file is required" });
 
@@ -431,7 +428,7 @@ export default async function recruitmentHandler(req, res) {
 
       const ins = await sql`
         INSERT INTO job_applications
-          (job_id, first_name, last_name, email, phone, education_level, country, city,
+        (job_id, first_name, last_name, email, phone, education_level, country, city,
           cv_drive_file_id, cv_drive_link, cover_drive_file_id, cover_drive_link,
           status, created_at)
         VALUES

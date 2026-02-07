@@ -515,6 +515,22 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   display: grid;
   gap: 10px;
 }
+.mkt-inline-btn{
+  width: fit-content;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.mkt-inline-btn:hover{
+  background: rgba(255,255,255,.09);
+}
+
 .mkt-success{
   border: 1px solid rgba(14,142,50,.35);
   background: rgba(14,142,50,.14);

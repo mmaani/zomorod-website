@@ -37,13 +37,16 @@ const COPY = {
     submitting: "Submitting...",
     applySuccess: "Your application has been submitted successfully.",
     applyError: "Please fill all required fields.",
+    readMore: "Read more",
+    readLess: "Show less",
+    educationPlaceholder: "Education level",
     cv: "CV (required)",
-    cover: "Cover letter (optional)",
     contactTitle: "Contact",
     contactEmail: "Email",
     contactPhone: "Phone",
     contactAddress: "Address",
     addressValue: "Amman, Jordan",
+  
   },
   ar: {
     dir: "rtl",
@@ -80,6 +83,9 @@ const COPY = {
     submitting: "جاري الإرسال...",
     applySuccess: "تم إرسال طلبك بنجاح.",
     applyError: "يرجى تعبئة جميع الحقول المطلوبة.",
+    readMore: "اقرأ المزيد",
+    readLess: "عرض أقل",
+    educationPlaceholder: "المؤهل العلمي",
     cv: "السيرة الذاتية (مطلوب)",
     cover: "رسالة تغطية (اختياري)",
     contactTitle: "التواصل",
@@ -108,6 +114,21 @@ const PRODUCT_CARDS = {
     { title: "توريد حسب الطلب", body: "هل تحتاج منتجاً محدداً؟ نوفر دعماً لطلبات التوريد المؤسسي والمشاريع." },
   ],
 };
+const EDUCATION_LEVEL_OPTIONS = {
+  en: ["High School", "Diploma", "Bachelor's Degree", "Master's Degree", "PhD", "Other"],
+  ar: ["ثانوي", "دبلوم", "بكالوريوس", "ماجستير", "دكتوراه", "أخرى"],
+};
+
+function stripHtml(html) {
+  return String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function truncateWords(text, maxWords) {
+  const words = String(text || "").split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) return text;
+  return `${words.slice(0, maxWords).join(" ")}...`;
+}
+
 
 export default function MarketingPage() {
   const [lang, setLang] = useState("en");
@@ -118,6 +139,7 @@ export default function MarketingPage() {
   const [applyMsg, setApplyMsg] = useState("");
   const [applyErr, setApplyErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [expandedJobs, setExpandedJobs] = useState({});
   const t = useMemo(() => COPY[lang], [lang]);
 
   useEffect(() => {
@@ -222,7 +244,28 @@ export default function MarketingPage() {
                   <article key={job.id} className="mkt-job-card">
                     <div className="mkt-card-title">{job.title}</div>
                     <p className="mkt-card-body">{[job.department, job.location_city, job.location_country, job.employment_type].filter(Boolean).join(" • ")}</p>
-                    <div className="mkt-job-description" dangerouslySetInnerHTML={{ __html: job.job_description_html }} />
+                    {(() => {
+                      const fullText = stripHtml(job.job_description_html);
+                      const isLong = fullText.split(/\s+/).filter(Boolean).length > 50;
+                      const isExpanded = !!expandedJobs[job.id];
+                      return (
+                        <>
+                          <div className="mkt-job-description">
+                            {isLong && !isExpanded ? <p>{truncateWords(fullText, 50)}</p> : <div dangerouslySetInnerHTML={{ __html: job.job_description_html }} />}
+                          </div>
+                          {isLong ? (
+                            <button
+                              type="button"
+                              className="mkt-inline-btn"
+                              onClick={() => setExpandedJobs((prev) => ({ ...prev, [job.id]: !prev[job.id] }))}
+                            >
+                              {isExpanded ? t.readLess : t.readMore}
+                            </button>
+                          ) : null}
+                        </>
+                      );
+                    })()}
+
                     <button className="btn btn-primary" type="button" onClick={() => setSelectedJobId(String(job.id))}>{t.selectJob}</button>
                   </article>
                 ))}
@@ -238,7 +281,12 @@ export default function MarketingPage() {
                   <input className="input" name="lastName" placeholder={lang === "ar" ? "اسم العائلة" : "Last name"} required />
                   <input className="input" type="email" name="email" placeholder="Email" required />
                   <input className="input" name="phone" placeholder={lang === "ar" ? "رقم الهاتف" : "Phone number"} required />
-                  <input className="input" name="educationLevel" placeholder={lang === "ar" ? "المؤهل العلمي" : "Education level"} required />
+                  <select className="input" name="educationLevel" defaultValue="" required>
+                    <option value="" disabled>{t.educationPlaceholder}</option>
+                    {EDUCATION_LEVEL_OPTIONS[lang].map((level) => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </select>
                   <input className="input" name="country" placeholder={lang === "ar" ? "الدولة" : "Country"} required />
                   <input className="input" name="city" placeholder={lang === "ar" ? "المدينة" : "City"} required />
                 </div>
