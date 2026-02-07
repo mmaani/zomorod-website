@@ -110,6 +110,7 @@ async function uploadToDrive({ drive, folderId, buffer, filename, mimeType }) {
     });
 
     const fileStream = Readable.from(buffer);
+console.log("Drive upload using access token prefix:", String(accessToken).slice(0, 12));
 
     const createRes = await drive.files.create({
       requestBody: {
