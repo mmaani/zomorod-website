@@ -172,7 +172,8 @@ export default function MarketingPage() {
       setApplyErr(t.applyError);
       return;
     }
-    setSubmitting(true);
+ 
+          setSubmitting(true);
     try {
       const res = await fetch("/api/recruitment?resource=apply", { method: "POST", body: form });
       const data = await res.json().catch(() => ({}));
