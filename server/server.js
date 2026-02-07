@@ -20,8 +20,6 @@ const ROOT_DIR = path.resolve(__dirname, ".."); // repo root
 // ---- load .env explicitly from repo root ----
 dotenv.config({ path: path.join(ROOT_DIR, ".env") });
 
-dotenv.config();
-
 // ---- crash visibility (avoid silent 502) ----
 process.on("uncaughtException", (err) => {
   console.error("🔥 uncaughtException:", err);
