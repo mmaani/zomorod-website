@@ -220,7 +220,6 @@ export default async function recruitmentHandler(req, res) {
     if (method === "GET" && resource === "jobs_admin") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
-
       const rows = await sql`
         SELECT id, title, department, location_country, location_city, employment_type,
                job_description_html, is_published, published_at, created_at, updated_at
@@ -349,6 +348,7 @@ const body = await readJson(req);
 
       let cover = null;
 
+      let cover = null;
       if (files.cover?.buffer?.length) {
         cover = await uploadToDrive({
           accessToken,

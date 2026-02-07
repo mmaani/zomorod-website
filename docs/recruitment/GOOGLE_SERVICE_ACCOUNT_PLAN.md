@@ -80,3 +80,4 @@ If you are close to function-count limits on Vercel Hobby, place recruitment in 
 3. **Use a separate backend project** for recruitment only (recommended when file uploads are heavy).
 
 The repository already contains server-side recruitment logic references in `server/recruitment.js` and upload flow in `server/server.js`, so moving recruitment there is straightforward.
+
