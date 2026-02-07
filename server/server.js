@@ -8,6 +8,7 @@ import crypto from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
 import recruitmentHandler from "./recruitment.js";
+import loginHandler from "../api/login.js";
 
 dotenv.config();
 
@@ -284,6 +285,10 @@ app.get("/auth/logout", (_req, res) => {
   res.clearCookie("oauth_state", { path: "/" });
   return res.type("text").send("Logged out. Now open /auth/google again.");
 });
+
+// Recruitment upload endpoint
+// CRM login route bridged from serverless handler for single-backend local/dev usage
+app.post("/api/login", loginHandler);
 
 // Recruitment endpoint (implemented in server/recruitment.js)
 app.all("/api/recruitment", recruitmentHandler);
