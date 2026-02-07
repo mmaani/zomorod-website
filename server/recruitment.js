@@ -121,6 +121,7 @@ async function getAccessToken(scopes) {
   // scopes param kept for compatibility; Google decides scopes from the refresh token grant.
   // You can optionally validate scopes here if you want.
   void scopes;
+console.log("Using OAuth refresh token flow (client_id ends with):", String(clientId).slice(-20));
 
   const clientId = mustEnv("GOOGLE_OAUTH_CLIENT_ID");
   const clientSecret = mustEnv("GOOGLE_OAUTH_CLIENT_SECRET");
