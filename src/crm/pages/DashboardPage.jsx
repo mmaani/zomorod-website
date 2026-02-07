@@ -39,6 +39,8 @@ export default function DashboardPage() {
     clients: 0,
     salespersons: 0,
     onHandTotal: 0,
+    availableJobs: 0,
+    applicants: 0,
   });
 
   useEffect(() => {
@@ -82,6 +84,31 @@ export default function DashboardPage() {
             0;
           return sum + (Number(v) || 0);
         }, 0);
+                let availableJobs = 0;
+        try {
+          const jobsRes = await apiFetch(`/recruitment?resource=${isMain ? "jobs_admin" : "jobs"}`);
+          const jobsData = await jobsRes.json().catch(() => ({}));
+          if (jobsRes.ok && jobsData.ok) {
+            const jobs = Array.isArray(jobsData.jobs) ? jobsData.jobs : [];
+            availableJobs = isMain ? jobs.filter((j) => j?.is_published).length : jobs.length;
+          }
+        } catch {
+          availableJobs = 0;
+        }
+
+        let applicants = 0;
+        if (isMain) {
+          try {
+            const appsRes = await apiFetch("/recruitment?resource=applications");
+            const appsData = await appsRes.json().catch(() => ({}));
+            if (appsRes.ok && appsData.ok) {
+              const rows = Array.isArray(appsData.applications) ? appsData.applications : [];
+              applicants = rows.length;
+            }
+          } catch {
+            applicants = 0;
+          }
+        }
 
         if (!alive) return;
 
@@ -91,6 +118,8 @@ export default function DashboardPage() {
           clients: clients.length,
           salespersons: Array.isArray(salespersons) ? salespersons.length : 0,
           onHandTotal,
+          availableJobs,
+          applicants,
         });
       } catch (e) {
         if (!alive) return;
@@ -155,6 +184,8 @@ export default function DashboardPage() {
         <StatCard label="Clients" value={stats.clients} hint="Customer accounts & buyers" />
         <StatCard label="Salespersons" value={stats.salespersons} hint="People who can be assigned to sales" />
         <StatCard label="Total On-Hand Units" value={stats.onHandTotal} hint="Sum of inventory across products" />
+        <StatCard label="Available Jobs" value={stats.availableJobs} hint="Currently published vacancies" />
+        <StatCard label="Applicants" value={stats.applicants} hint={isMain ? "Total received applications" : "Visible to main admin"} />
       </div>
 
       <div className="quick-grid">
