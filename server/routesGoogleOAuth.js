@@ -1,4 +1,3 @@
-cat > server/routesGoogleOAuth.js <<'EOF'
 function sendHtml(res, html, status = 200) {
   res.status(status).set("Content-Type", "text/html; charset=utf-8").send(html);
 }
@@ -88,4 +87,3 @@ export async function googleOAuthCallback(req, res) {
     return sendHtml(res, `<pre>${String(e?.message || e)}</pre>`, 500);
   }
 }
-EOF
