@@ -46,8 +46,8 @@ export default function RecruitmentPage() {
     setError("");
     try {
       const [jobsRes, appsRes] = await Promise.all([
-        apiFetch("/api/recruitment?resource=jobs_admin"),
-        apiFetch("/api/recruitment?resource=applications"),
+        apiFetch("/recruitment?resource=jobs_admin"),
+        apiFetch("/recruitment?resource=applications"),
       ]);
       if (!jobsRes || !appsRes) return;
 
@@ -115,7 +115,7 @@ export default function RecruitmentPage() {
     }
 
     try {
-      const res = await apiFetch(`/api/recruitment?resource=jobs`, {
+      const res = await apiFetch(`/recruitment?resource=jobs`, {
         method: editingId ? "PATCH" : "POST",
         body: payload,
       });
@@ -137,7 +137,7 @@ export default function RecruitmentPage() {
     setError("");
     setOk("");
     try {
-      const res = await apiFetch(`/api/recruitment?resource=jobs&id=${id}`, { method: "DELETE" });
+      const res = await apiFetch(`/recruitment?resource=jobs&id=${id}`, { method: "DELETE" });
       if (!res) return;
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || "Failed to unpublish");
