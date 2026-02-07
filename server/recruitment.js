@@ -175,7 +175,21 @@ function mustEnv(name) {
   if (!v) throw new Error(`Missing ${name}`);
   return v;
 }
-
+function isSafeClientError(message) {
+  return (
+    message.startsWith("Missing ") ||
+    message.startsWith("Invalid JSON body") ||
+    message.startsWith("Request body too large") ||
+    message.startsWith("Missing multipart boundary") ||
+    message.startsWith("Drive upload failed") ||
+    message.startsWith("Google refresh_token exchange failed") ||
+    message.startsWith("Sheets append failed") ||
+    message.includes("fetch failed") ||
+    message.includes("ECONNREFUSED") ||
+    message.includes("ENOTFOUND") ||
+    message.includes("ETIMEDOUT")
+  );
+}
 async function getAccessToken() {
 
   const clientId = mustEnv("GOOGLE_OAUTH_CLIENT_ID");
@@ -384,35 +398,24 @@ export default async function recruitmentHandler(req, res) {
       const lastName = toStr(fields.lastName);
       const email = toStr(fields.email);
       const phone = toStr(fields.phone);
-const educationLevel = toStr(fields.educationLevel);
-const country = toStr(fields.country);
-const city = toStr(fields.city);
+      const educationLevel = toStr(fields.educationLevel);
+      const country = toStr(fields.country);
+      const city = toStr(fields.city);
 
-if (!jobId || !firstName || !lastName || !email || !phone || !educationLevel || !country || !city) {
-  return send(res, 400, { ok: false, error: "jobId, firstName, lastName, email, phone, educationLevel, country, city are required" });
-}
+      if (!jobId || !firstName || !lastName || !email || !phone || !educationLevel || !country || !city) {
+        return send(res, 400, { ok: false, error: "jobId, firstName, lastName, email, phone, educationLevel, country, city are required" });
+      }
      
-      if (!files.cv?.buffer?.length)
-        return send(res, 400, { ok: false, error: "cv file is required" });
+      if (!files.cv?.buffer?.length) return send(res, 400, { ok: false, error: "cv file is required" });
 
       const job = await sql`SELECT id FROM jobs WHERE id = ${jobId} AND is_published = true LIMIT 1`;
-      if (!job.length)
-        return send(res, 404, { ok: false, error: "Job not found or unpublished" });
+      if (!job.length) return send(res, 404, { ok: false, error: "Job not found or unpublished" });
 
       const folderId = toStr(process.env.GOOGLE_DRIVE_FOLDER_ID);
-      if (!folderId)
-        return send(res, 500, { ok: false, error: "Missing GOOGLE_DRIVE_FOLDER_ID" });
-
-      // ✅ Use drive.file (best practice) + spreadsheets.
-      // drive.file is enough to create/upload and manage files your app creates.
-      const accessToken = await getAccessToken([
-        "https://www.googleapis.com/auth/drive.file",
-        "https://www.googleapis.com/auth/spreadsheets",
-      ]);
-
+      if (!folderId) throw new Error("Missing GOOGLE_DRIVE_FOLDER_ID");
+      const accessToken = await getAccessToken();
       const stamp = new Date().toISOString().replace(/[:.]/g, "-");
       const safe = `${firstName}_${lastName}`.replace(/[^\w-]+/g, "_");
-
       const cv = await uploadFileToDrive(accessToken, folderId, {
         ...files.cv,
         filename: `CV_${safe}_${stamp}_${files.cv.filename || "file"}`,
@@ -420,12 +423,16 @@ if (!jobId || !firstName || !lastName || !email || !phone || !educationLevel || 
 
       let cover = null;
       if (files.cover?.buffer?.length) {
-        cover = await uploadFileToDrive(accessToken, folderId, {
-          ...files.cover,
-          filename: `Cover_${safe}_${stamp}_${files.cover.filename || "file"}`,
-        });
-      }
-
+          try {
+                cover = await uploadFileToDrive(accessToken, folderId, {
+                  ...files.cover,
+                  filename: `Cover_${safe}_${stamp}_${files.cover.filename || "file"}`,
+                });
+              } catch (err) {
+                console.warn("Cover upload failed, continuing without cover link", err);
+              }
+            }
+        
       const ins = await sql`
         INSERT INTO job_applications
         (job_id, first_name, last_name, email, phone, education_level, country, city,
@@ -440,21 +447,25 @@ if (!jobId || !firstName || !lastName || !email || !phone || !educationLevel || 
 
       const sheetId = toStr(process.env.GOOGLE_SHEET_ID);
       if (sheetId) {
-        await appendSheet(accessToken, sheetId, [
-          ins[0].id,
-          jobId,
-          firstName,
-          lastName,
-          email,       
-          phone,       
-          educationLevel,
-          country,
-          city,
-          cv.webViewLink,
-          cover?.webViewLink || "",
-          "new",
-          new Date().toISOString(),
-        ]);
+        try {
+          await appendSheet(accessToken, sheetId, [
+            ins[0].id,
+            jobId,
+            firstName,
+            lastName,
+            email,
+            phone,
+            educationLevel,
+            country,
+            city,
+            cv.webViewLink,
+            cover?.webViewLink || "",
+            "new",
+            new Date().toISOString(),
+          ]);
+        } catch (err) {
+          console.warn("Sheets append failed, application remains saved", err);
+        }
       }
 
       return send(res, 201, { ok: true, applicationId: ins[0].id });
@@ -467,8 +478,7 @@ if (!jobId || !firstName || !lastName || !email || !phone || !educationLevel || 
       const rows = await sql`
         SELECT a.id, a.job_id, j.title AS job_title, a.first_name, a.last_name,
                a.education_level, a.country, a.city, a.cv_drive_link, a.cover_drive_link,
-               a.email, a.phone, 
-                       a.status, a.created_at
+               a.email, a.phone, a.status, a.created_at
         FROM job_applications a
         JOIN jobs j ON j.id = a.job_id
         WHERE (${jobId}::int IS NULL OR a.job_id = ${jobId})
@@ -481,9 +491,12 @@ if (!jobId || !firstName || !lastName || !email || !phone || !educationLevel || 
 
     return send(res, 400, { ok: false, error: "Unknown route. Use ?resource=..." });
   } catch (err) {
-    const message = String(err?.message || err);
-    if (message === "JOB_NOT_FOUND")
-      return send(res, 404, { ok: false, error: "Job not found" });
-    return send(res, 500, { ok: false, error: "Server error", detail: message });
+  const message = String(err?.message || err);
+  if (message === "JOB_NOT_FOUND") return send(res, 404, { ok: false, error: "Job not found" });
+  recruitmentSchemaReady = false;
+  if (isSafeClientError(message)) {
+    return send(res, 400, { ok: false, error: message });
   }
-}
+  return send(res, 500, { ok: false, error: "Server error", detail: message });
+  }
+  }

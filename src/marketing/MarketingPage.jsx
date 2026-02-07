@@ -173,7 +173,7 @@ export default function MarketingPage() {
     try {
       const res = await fetch("/api/recruitment?resource=apply", { method: "POST", body: form });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || "Failed to submit application");
+      if (!res.ok || !data.ok) throw new Error(data.error || data.detail || "Failed to submit application");
       setApplyMsg(t.applySuccess);
       e.currentTarget.reset();
     } catch (err) {
