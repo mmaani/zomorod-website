@@ -6,14 +6,28 @@ const COPY = {
     dir: "ltr",
     langLabel: "عربي",
     brandName: "Zomorod Medical Supplies LLC",
-    tagline: "A modern distribution partner for compliant medical consumables and dependable supply operations in Jordan and Syria..",
+    tagline: "A trusted distribution partner for compliant medical consumables and dependable supply operations in Jordan and Syria.",
     ctaStaff: "Staff Login",
     ctaWhatsapp: "WhatsApp",
+        metrics: [
+      { value: "Jordan & Syria", label: "Coverage" },
+      { value: "Hospitals to retail", label: "Client segments" },
+      { value: "Quality-focused", label: "Sourcing approach" },
+    ],
     tabs: { about: "Company", products: "Products", careers: "Careers" },
     aboutTitle: "Professional medical supply solutions",
-    aboutText: "Based in Amman, Zomorod supports hospitals, clinics, laboratories, and distributors in Jordan and Syria with quality-focused sourcing and documented compliance.",
+    aboutText: "Based in Amman, Zomorod supports hospitals, clinics, laboratories, and distributors with quality-focused sourcing and documented compliance.",
     aboutPoints: ["Regulatory-ready documentation", "Traceable sourcing", "Responsive local support"],
+    servicesTitle: "Our services",
+    services: [
+      "Medical consumables procurement and supply planning",
+      "Support for tenders and institutional sourcing requirements",
+      "Order fulfillment coordination and after-sales follow-up",
+      "Product and document traceability for compliance workflows",
+    ],
     productsTitle: "Our product lines",
+    sectorsTitle: "Who we serve",
+    sectors: ["Hospitals", "Clinics", "Laboratories", "Pharmacies & distributors"],
     careersTitle: "Recruitment announcements",
     careersSubtitle: "Open vacancies published from CRM. Apply directly below.",
     jobsLoading: "Loading opportunities...",
@@ -26,19 +40,37 @@ const COPY = {
     cv: "CV (required)",
     cover: "Cover letter (optional)",
     contactTitle: "Contact",
+    contactEmail: "Email",
+    contactPhone: "Phone",
+    contactAddress: "Address",
+    addressValue: "Amman, Jordan",
   },
   ar: {
     dir: "rtl",
     langLabel: "EN",
     brandName: "شركة زمرد للمستلزمات الطبية ذ.م.م",
-    tagline: "شريكك الموثوق لتوريد المستلزمات الطبية عالية الجودة في الأردن وسوريا.",
+    tagline: "شريك موثوق لتوريد المستلزمات الطبية المتوافقة مع المتطلبات التشغيلية والتنظيمية في الأردن وسوريا.",
     ctaStaff: "دخول الموظفين",
-       ctaWhatsapp: "واتساب",
+    ctaWhatsapp: "واتساب",
+    metrics: [
+      { value: "الأردن وسوريا", label: "نطاق التغطية" },
+      { value: "من المستشفيات إلى التجزئة", label: "شرائح العملاء" },
+      { value: "تركيز على الجودة", label: "منهجية التوريد" },
+    ],
     tabs: { about: "الشركة", products: "المنتجات", careers: "الوظائف" },
     aboutTitle: "حلول احترافية للمستلزمات الطبية",
-    aboutText: "من مقرّنا في عمّان، ندعم المستشفيات والعيادات والمختبرات والموزعين في الأردن وسوريا عبر توريد موثوق ونهج يركز على الجودة والامتثال.",
+  aboutText: "من مقرّنا في عمّان، ندعم المستشفيات والعيادات والمختبرات والموزعين عبر توريد موثوق ونهج يركز على الجودة والامتثال.",
     aboutPoints: ["وثائق جاهزة للمتطلبات التنظيمية", "توريد قابل للتتبع", "دعم محلي سريع"],
+    servicesTitle: "خدماتنا",
+    services: [
+      "توريد المستهلكات الطبية وتخطيط احتياجات الإمداد",
+      "دعم المناقصات ومتطلبات الشراء المؤسسي",
+      "تنسيق تنفيذ الطلبات والمتابعة بعد البيع",
+      "إتاحة تتبع المنتجات والوثائق ضمن مسارات الامتثال",
+    ],
     productsTitle: "خطوط منتجاتنا",
+    sectorsTitle: "الجهات التي نخدمها",
+    sectors: ["المستشفيات", "العيادات", "المختبرات", "الصيدليات والموزعون"],
     careersTitle: "إعلانات التوظيف",
     careersSubtitle: "الوظائف المفتوحة المنشورة من CRM. يمكن التقديم مباشرة.",
     jobsLoading: "جاري تحميل الفرص...",
@@ -51,19 +83,29 @@ const COPY = {
     cv: "السيرة الذاتية (مطلوب)",
     cover: "رسالة تغطية (اختياري)",
     contactTitle: "التواصل",
+        contactEmail: "البريد الإلكتروني",
+    contactPhone: "الهاتف",
+    contactAddress: "العنوان",
+    addressValue: "عمّان، الأردن",
   },
 };
 
 const PRODUCT_CARDS = {
   en: [
-    { title: "PPE", body: "Masks, gloves, gowns, and essential protective equipment." },
-    { title: "Medical Consumables", body: "Daily sterile supplies, procedure kits, and infusion-related materials." },
-    { title: "Devices & Accessories", body: "Selected devices and accessories for practical and reliable field use." },
+    { title: "PPE", body: "Masks, gloves, gowns, and essential protective equipment for clinical environments." },
+    { title: "Medical Consumables", body: "Daily sterile supplies, procedure kits, infusion and wound-care consumables." },
+    { title: "Devices & Accessories", body: "Selected medical devices and accessories for reliable daily operation." },
+    { title: "Laboratory Supplies", body: "Routine lab disposables and supporting products for testing workflows." },
+    { title: "Infection Control", body: "Products that support hygiene, disinfection, and safer patient environments." },
+    { title: "Custom Sourcing", body: "Need a specific item? We support institutional and project-based sourcing requests." },
   ],
   ar: [
-    { title: "معدات الوقاية", body: "كمامات وقفازات وأرواب وكامل مستلزمات الوقاية الأساسية." },
-    { title: "المستهلكات الطبية", body: "مستلزمات معقمة يومية وأطقم إجراءات ومستلزمات التسريب." },
-    { title: "الأجهزة والملحقات", body: "أجهزة وملحقات مختارة وفق الاعتمادية وسهولة الاستخدام." },
+    { title: "معدات الوقاية", body: "كمامات وقفازات وأرواب ومستلزمات الوقاية الأساسية للبيئات الطبية." },
+    { title: "المستهلكات الطبية", body: "مستلزمات معقمة يومية وأطقم إجراءات ومستلزمات التسريب والعناية بالجروح." },
+    { title: "الأجهزة والملحقات", body: "أجهزة وملحقات طبية مختارة للاستخدام العملي اليومي." },
+    { title: "مستلزمات المختبر", body: "مستهلكات مخبرية روتينية ومنتجات داعمة لسير العمل التحليلي." },
+    { title: "مكافحة العدوى", body: "منتجات تدعم النظافة والتعقيم وبيئة رعاية أكثر أماناً." },
+    { title: "توريد حسب الطلب", body: "هل تحتاج منتجاً محدداً؟ نوفر دعماً لطلبات التوريد المؤسسي والمشاريع." },
   ],
 };
 
@@ -131,6 +173,11 @@ export default function MarketingPage() {
         <div className="mkt-cta-row">
           <a className="btn mkt-cta" href="https://api.whatsapp.com/send?phone=962791752686" target="_blank" rel="noopener noreferrer">{t.ctaWhatsapp}</a>
           <Link to="/login" className="btn btn-primary mkt-cta">{t.ctaStaff}</Link>
+        </div>
+        <div className="mkt-hero-metrics">
+          {t.metrics.map((m) => (
+            <div className="mkt-metric" key={m.label}><strong>{m.value}</strong><span>{m.label}</span></div>
+          ))}
         </div>
       </header>
 
@@ -210,13 +257,30 @@ export default function MarketingPage() {
 
       <section className="mkt-section card">
         
-              </section>
+            <div className="grid grid-2">
+          <article>
+            <h2 className="mkt-h2">{t.servicesTitle}</h2>
+            <ul className="mkt-list">
+              {t.services.map((service) => <li key={service}>{service}</li>)}
+            </ul>
+          </article>
+          <article>
+            <h2 className="mkt-h2">{t.sectorsTitle}</h2>
+            <div className="mkt-grid mkt-grid-compact">
+              {t.sectors.map((sector) => (
+                <div key={sector} className="mkt-card"><div className="mkt-card-title">{sector}</div></div>
+              ))}
+            </div>
+          </article>
+        </div>
+      </section>
 
       <section className="mkt-section card">
         <h2 className="mkt-h2">{t.contactTitle}</h2>
         <div className="mkt-contact">
-                   <div className="mkt-contact-row"><span className="mkt-contact-label">Email</span><a href="mailto:info@zomorodmedical.com">info@zomorodmedical.com</a></div>
-          <div className="mkt-contact-row"><span className="mkt-contact-label">Phone</span><a href="tel:+962791752686">+962 79 175 2686</a></div>
+          <div className="mkt-contact-row"><span className="mkt-contact-label">{t.contactEmail}</span><a href="mailto:info@zomorodmedical.com">info@zomorodmedical.com</a></div>
+          <div className="mkt-contact-row"><span className="mkt-contact-label">{t.contactPhone}</span><a href="tel:+962791752686">+962 79 175 2686</a></div>
+          <div className="mkt-contact-row"><span className="mkt-contact-label">{t.contactAddress}</span><span>{t.addressValue}</span></div>
         </div>
       </section>
     </main>
