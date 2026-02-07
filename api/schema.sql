@@ -225,6 +225,7 @@ CREATE TABLE IF NOT EXISTS payment_schedule (
   amount_jod NUMERIC(12,3) NOT NULL,
   status TEXT NOT NULL DEFAULT 'PENDING' -- PENDING/PAID
 );
+
 -- Recruitment
 CREATE TABLE IF NOT EXISTS jobs (
   id SERIAL PRIMARY KEY,
