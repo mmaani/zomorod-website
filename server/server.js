@@ -27,12 +27,6 @@ process.on("uncaughtException", (err) => {
 process.on("unhandledRejection", (err) => {
   console.error("🔥 unhandledRejection:", err);
 });
-
-// ---- paths ----
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.resolve(__dirname, ".."); // repo root (one level above /server)
-
 // ---- app ----
 const app = express();
 
