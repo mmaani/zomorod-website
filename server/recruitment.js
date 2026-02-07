@@ -22,12 +22,10 @@ function b64url(input) {
   const b = Buffer.isBuffer(input) ? input : Buffer.from(String(input));
   return b.toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
-
 function parseQuery(req) {
   const u = new URL(req.url || "", "http://localhost");
   return u.searchParams;
 }
-
 async function readBodyBuffer(req, maxBytes = 12 * 1024 * 1024) {
   const chunks = [];
   let total = 0;
@@ -96,8 +94,7 @@ async function getGoogleAccessToken(sa, scopes) {
     exp: now + 3600,
     iat: now,
   };
-
-  const signingInput = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
+   const signingInput = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
   const signer = createSign("RSA-SHA256");
   signer.update(signingInput);
   signer.end();
@@ -175,7 +172,7 @@ async function appendToSheet({ accessToken, spreadsheetId, values }) {
     },
     body: JSON.stringify({ values: [values] }),
   });
-
+  
   if (!r.ok) throw new Error(`Sheets append failed (${r.status})`);
 }
 
@@ -200,23 +197,25 @@ async function readJson(req) {
 }
 
 export default async function recruitmentHandler(req, res) {
-  try {
+    try {
     const sql = getSql();
     const q = parseQuery(req);
     const method = req.method;
     const resource = String(q.get("resource") || "").toLowerCase();
 
     if (method === "GET" && resource === "jobs") {
+
       const rows = await sql`
         SELECT id, title, department, location_country, location_city, employment_type,
                job_description_html, is_published, published_at, created_at, updated_at
         FROM jobs
         WHERE is_published = true
         ORDER BY published_at DESC NULLS LAST, id DESC
-        LIMIT 100
+                LIMIT 100
       `;
       return send(res, 200, { ok: true, jobs: rows });
     }
+
 
     if (method === "GET" && resource === "jobs_admin") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
@@ -227,14 +226,14 @@ export default async function recruitmentHandler(req, res) {
         FROM jobs
         ORDER BY created_at DESC, id DESC
         LIMIT 200
-      `;
+              `;
       return send(res, 200, { ok: true, jobs: rows });
     }
 
     if (method === "POST" && resource === "jobs") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
-      const body = await readJson(req);
+const body = await readJson(req);
 
       const title = s(body.title);
       const jobDescriptionHtml = s(body.jobDescriptionHtml);
@@ -259,13 +258,14 @@ export default async function recruitmentHandler(req, res) {
       `;
 
       return send(res, 201, { ok: true, id: ins[0].id });
-    }
+        }
 
+
+    // ---------------------------
     if (method === "PATCH" && resource === "jobs") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
-      const body = await readJson(req);
-
+            const body = await readJson(req);
       const id = n(body.id);
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
@@ -285,20 +285,18 @@ export default async function recruitmentHandler(req, res) {
         const cur = await tx`SELECT id, published_at FROM jobs WHERE id = ${id} LIMIT 1`;
         if (!cur.length) throw new Error("JOB_NOT_FOUND");
         const publishedAt = isPublished && !cur[0].published_at ? tx`now()` : cur[0].published_at;
-
         await tx`
           UPDATE jobs
           SET title = ${title}, department = ${department}, location_country = ${locationCountry},
               location_city = ${locationCity}, employment_type = ${employmentType},
               job_description_html = ${jobDescriptionHtml}, is_published = ${isPublished},
               published_at = ${publishedAt}, updated_at = now()
-          WHERE id = ${id}
+              WHERE id = ${id}
         `;
       });
 
       return send(res, 200, { ok: true });
     }
-
     if (method === "DELETE" && resource === "jobs") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
@@ -312,7 +310,6 @@ export default async function recruitmentHandler(req, res) {
     if (method === "POST" && resource === "apply") {
       const bodyBuf = await readBodyBuffer(req);
       const { fields, files } = parseMultipart(req, bodyBuf);
-
       const jobId = n(fields.jobId);
       const firstName = s(fields.firstName);
       const lastName = s(fields.lastName);
@@ -329,10 +326,8 @@ export default async function recruitmentHandler(req, res) {
 
       const job = await sql`SELECT id, title FROM jobs WHERE id = ${jobId} AND is_published = true LIMIT 1`;
       if (!job.length) return send(res, 404, { ok: false, error: "Job not found or unpublished" });
-
       const folderId = String(process.env.GOOGLE_DRIVE_FOLDER_ID || "").trim();
       if (!folderId) return send(res, 500, { ok: false, error: "Missing GOOGLE_DRIVE_FOLDER_ID" });
-
       const sa = getGoogleServiceAccount();
       const accessToken = await getGoogleAccessToken(sa, [
         "https://www.googleapis.com/auth/drive",
@@ -350,6 +345,8 @@ export default async function recruitmentHandler(req, res) {
           filename: `CV_${safeName}_${stamp}_${files.cv.filename || "file"}`,
         },
       });
+
+      let cover = null;
 
       let cover = null;
       if (files.cover?.buffer?.length) {
@@ -374,7 +371,6 @@ export default async function recruitmentHandler(req, res) {
            'new', now())
         RETURNING id
       `;
-
       const sheetId = String(process.env.GOOGLE_SHEET_ID || "").trim();
       if (sheetId) {
         await appendToSheet({
@@ -395,9 +391,9 @@ export default async function recruitmentHandler(req, res) {
           ],
         });
       }
-
       return send(res, 201, { ok: true, applicationId: ins[0].id });
     }
+
 
     if (method === "GET" && resource === "applications") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });

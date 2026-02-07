@@ -149,10 +149,16 @@ export function logout() {
  * @param {boolean} rememberMe store in localStorage if true, else sessionStorage
  */
 export async function login(email, password, rememberMe = true) {
-  const res = await fetch("/api/login", {
+  
+  const normalizedEmail = String(email || "")
+   .trim()
+   .toLowerCase()
+   .replace("@zoomorodmedical.com", "@zomorodmedical.com");
+
+  const res = await apiFetch("/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email: normalizedEmail, password }),
   });
 
   const data = await res.json().catch(() => ({}));
