@@ -508,13 +508,7 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   line-height: 1.7;
 }
 .mkt-job-description p{ margin: 0 0 8px; }
-.mkt-apply-form{
-  margin-top: 12px;
-  border-top: 1px solid var(--border);
-  padding-top: 14px;
-  display: grid;
-  gap: 10px;
-}
+
 .mkt-inline-btn{
   width: fit-content;
   border: 1px solid var(--border);
@@ -530,7 +524,13 @@ tr:hover td{ background: rgba(255,255,255,.04); }
 .mkt-inline-btn:hover{
   background: rgba(255,255,255,.09);
 }
-
+.mkt-apply-form{
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  display: grid;
+  gap: 10px;
+}
 .mkt-success{
   border: 1px solid rgba(14,142,50,.35);
   background: rgba(14,142,50,.14);

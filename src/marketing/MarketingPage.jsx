@@ -89,7 +89,7 @@ const COPY = {
     cv: "السيرة الذاتية (مطلوب)",
     cover: "رسالة تغطية (اختياري)",
     contactTitle: "التواصل",
-        contactEmail: "البريد الإلكتروني",
+    contactEmail: "البريد الإلكتروني",
     contactPhone: "الهاتف",
     contactAddress: "العنوان",
     addressValue: "عمّان، الأردن",
@@ -265,7 +265,6 @@ export default function MarketingPage() {
                         </>
                       );
                     })()}
-
                     <button className="btn btn-primary" type="button" onClick={() => setSelectedJobId(String(job.id))}>{t.selectJob}</button>
                   </article>
                 ))}
