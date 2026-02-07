@@ -286,6 +286,8 @@ app.get("/auth/logout", (_req, res) => {
   res.clearCookie("oauth_state", { path: "/" });
   return res.type("text").send("Logged out. Now open /auth/google again.");
 });
+app.get("/api/google/oauth/start", googleOAuthStart);
+app.get("/api/google/oauth/callback", googleOAuthCallback);
 
 // Recruitment upload endpoint
 // CRM login route bridged from serverless handler for single-backend local/dev usage
