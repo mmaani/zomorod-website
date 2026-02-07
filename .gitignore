@@ -31,3 +31,4 @@ dist/
 # Local DB/schema dumps
 *.sql
 neon_schema.mjs
+service-account.json
