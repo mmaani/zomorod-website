@@ -225,7 +225,7 @@ async function uploadFileToDrive(accessToken, folderId, file) {
 
 async function appendSheet(accessToken, spreadsheetId, values) {
   if (!spreadsheetId) return;
-  const range = encodeURIComponent("Sheet1!A:K");
+  const range = encodeURIComponent("Sheet1!A:L");
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED`;
 
   const r = await fetch(url, {
