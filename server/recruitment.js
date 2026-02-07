@@ -17,7 +17,14 @@ const toNum = (v) => {
 const toStr = (v) => String(v ?? "").trim();
 
 function getResource(req) {
-  const url = new URL(req.url || "", "http://localhost");
+  // Express has req.originalUrl; fallback to req.url
+  const raw = typeof req.originalUrl === "string"
+    ? req.originalUrl
+    : (typeof req.url === "string" ? req.url : "");
+
+  // Ensure it always parses
+  const url = new URL(raw.startsWith("/") ? raw : `/${raw}`, "http://127.0.0.1");
+
   return {
     resource: String(url.searchParams.get("resource") || "").toLowerCase(),
     params: url.searchParams,
