@@ -8,7 +8,7 @@ const COPY = {
     brandName: "Zomorod Medical Supplies LLC",
     tagline: "A trusted distribution partner for compliant medical consumables and dependable supply operations in Jordan and Syria.",
     ctaStaff: "Staff Login",
-    ctaWhatsapp: "WhatsApp",
+    ctaWhatsapp: "Message us on WhatsApp",
         metrics: [
       { value: "Jordan & Syria", label: "Coverage" },
       { value: "Hospitals to retail", label: "Client segments" },
@@ -54,7 +54,7 @@ const COPY = {
     brandName: "شركة زمرد للمستلزمات الطبية ذ.م.م",
     tagline: "شريك موثوق لتوريد المستلزمات الطبية المتوافقة مع المتطلبات التشغيلية والتنظيمية في الأردن وسوريا.",
     ctaStaff: "دخول الموظفين",
-    ctaWhatsapp: "واتساب",
+    ctaWhatsapp: "تواصل معنا على واتساب",
     metrics: [
       { value: "الأردن وسوريا", label: "نطاق التغطية" },
       { value: "من المستشفيات إلى التجزئة", label: "شرائح العملاء" },
