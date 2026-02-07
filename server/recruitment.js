@@ -9,24 +9,22 @@ function send(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-function n(v) {
-  const x = Number(v);
-  return Number.isFinite(x) ? x : 0;
+const toNum = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const toStr = (v) => String(v ?? "").trim();
+
+function getResource(req) {
+  const url = new URL(req.url || "", "http://localhost");
+  return {
+    resource: String(url.searchParams.get("resource") || "").toLowerCase(),
+    params: url.searchParams,
+  };
 }
 
-function s(v) {
-  return String(v ?? "").trim();
-}
-
-function b64url(input) {
-  const b = Buffer.isBuffer(input) ? input : Buffer.from(String(input));
-  return b.toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-}
-function parseQuery(req) {
-  const u = new URL(req.url || "", "http://localhost");
-  return u.searchParams;
-}
-async function readBodyBuffer(req, maxBytes = 12 * 1024 * 1024) {
+async function readBody(req, maxBytes = 12 * 1024 * 1024) {
   const chunks = [];
   let total = 0;
   for await (const chunk of req) {
@@ -37,45 +35,51 @@ async function readBodyBuffer(req, maxBytes = 12 * 1024 * 1024) {
   return Buffer.concat(chunks);
 }
 
-function parseMultipart(req, body) {
+async function readJson(req) {
+  if (req.body && typeof req.body === "object") return req.body;
+  const body = await readBody(req);
+  if (!body.length) return {};
+  try {
+    return JSON.parse(body.toString("utf8"));
+  } catch {
+    throw new Error("Invalid JSON body");
+  }
+}
+
+function parseMultipart(req, rawBody) {
   const ct = String(req.headers["content-type"] || "");
-  const m = ct.match(/boundary=([^;]+)/i);
-  if (!m) throw new Error("Missing multipart boundary");
+  const boundaryMatch = ct.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+  if (!boundaryMatch) throw new Error("Missing multipart boundary");
+  const boundary = boundaryMatch[1] || boundaryMatch[2];
 
-  const boundary = m[1].trim().replace(/^"|"$/g, "");
   const delimiter = `--${boundary}`;
-  const raw = body.toString("latin1");
-  const sections = raw.split(delimiter);
-
+  const raw = rawBody.toString("latin1");
+  const parts = raw.split(delimiter);
   const fields = {};
   const files = {};
 
-  for (let part of sections) {
+  for (let part of parts) {
     if (!part || part === "--" || part === "--\r\n") continue;
     if (part.startsWith("\r\n")) part = part.slice(2);
     if (part.endsWith("\r\n")) part = part.slice(0, -2);
     if (part.endsWith("--")) part = part.slice(0, -2);
 
-    const headerEnd = part.indexOf("\r\n\r\n");
-    if (headerEnd === -1) continue;
+    const sep = part.indexOf("\r\n\r\n");
+    if (sep < 0) continue;
 
-    const rawHeaders = part.slice(0, headerEnd);
-    let content = part.slice(headerEnd + 4);
+    const headers = part.slice(0, sep);
+    let content = part.slice(sep + 4);
     if (content.endsWith("\r\n")) content = content.slice(0, -2);
 
-    const disp = rawHeaders.match(/content-disposition:\s*form-data;([^\n\r]+)/i)?.[1] || "";
+    const disp = headers.match(/content-disposition:\s*form-data;([^\n\r]+)/i)?.[1] || "";
     const name = disp.match(/name="([^"]+)"/i)?.[1];
     if (!name) continue;
 
     const filename = disp.match(/filename="([^"]*)"/i)?.[1];
-    const mimeType = rawHeaders.match(/content-type:\s*([^\n\r]+)/i)?.[1]?.trim() || "application/octet-stream";
+    const mimeType = headers.match(/content-type:\s*([^\n\r]+)/i)?.[1]?.trim() || "application/octet-stream";
 
     if (filename != null && filename !== "") {
-      files[name] = {
-        filename,
-        mimeType,
-        buffer: Buffer.from(content, "latin1"),
-      };
+      files[name] = { filename, mimeType, buffer: Buffer.from(content, "latin1") };
     } else {
       fields[name] = content;
     }
@@ -84,8 +88,15 @@ function parseMultipart(req, body) {
   return { fields, files };
 }
 
-async function getGoogleAccessToken(sa, scopes) {
+function b64url(input) {
+  const b = Buffer.isBuffer(input) ? input : Buffer.from(String(input));
+  return b.toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+
+async function getAccessToken(scopes) {
+  const sa = getGoogleServiceAccount();
   const now = Math.floor(Date.now() / 1000);
+
   const header = { alg: "RS256", typ: "JWT" };
   const payload = {
     iss: sa.client_email,
@@ -94,43 +105,42 @@ async function getGoogleAccessToken(sa, scopes) {
     exp: now + 3600,
     iat: now,
   };
-   const signingInput = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
-  const signer = createSign("RSA-SHA256");
-  signer.update(signingInput);
-  signer.end();
-  const signature = signer.sign(sa.private_key);
-  const assertion = `${signingInput}.${b64url(signature)}`;
 
-  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+  const msg = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
+  const signer = createSign("RSA-SHA256");
+  signer.update(msg);
+  signer.end();
+  const jwt = `${msg}.${b64url(signer.sign(sa.private_key))}`;
+
+  const resp = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion,
+      assertion: jwt,
     }),
   });
 
-  const data = await tokenRes.json().catch(() => ({}));
-  if (!tokenRes.ok || !data.access_token) {
-    throw new Error(`Google token exchange failed (${tokenRes.status})`);
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || !data.access_token) {
+    throw new Error(`Google token exchange failed (${resp.status})`);
   }
-
   return data.access_token;
 }
 
-async function uploadToDrive({ accessToken, folderId, file }) {
+async function uploadFileToDrive(accessToken, folderId, file) {
   const boundary = `zomorod_${Date.now()}`;
-  const meta = { name: file.filename, parents: [folderId] };
+  const metadata = { name: file.filename, parents: [folderId] };
 
   const pre = Buffer.from(
-    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n` +
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
       `--${boundary}\r\nContent-Type: ${file.mimeType || "application/octet-stream"}\r\n\r\n`,
     "utf8"
   );
   const post = Buffer.from(`\r\n--${boundary}--`, "utf8");
   const body = Buffer.concat([pre, file.buffer, post]);
 
-  const uploadRes = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink", {
+  const upload = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -139,12 +149,10 @@ async function uploadToDrive({ accessToken, folderId, file }) {
     body,
   });
 
-  const uploaded = await uploadRes.json().catch(() => ({}));
-  if (!uploadRes.ok || !uploaded.id) {
-    throw new Error(`Drive upload failed (${uploadRes.status})`);
-  }
+  const data = await upload.json().catch(() => ({}));
+  if (!upload.ok || !data.id) throw new Error(`Drive upload failed (${upload.status})`);
 
-  await fetch(`https://www.googleapis.com/drive/v3/files/${uploaded.id}/permissions`, {
+  await fetch(`https://www.googleapis.com/drive/v3/files/${data.id}/permissions`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -154,12 +162,12 @@ async function uploadToDrive({ accessToken, folderId, file }) {
   });
 
   return {
-    fileId: uploaded.id,
-    webViewLink: uploaded.webViewLink || `https://drive.google.com/file/d/${uploaded.id}/view`,
+    fileId: data.id,
+    webViewLink: data.webViewLink || `https://drive.google.com/file/d/${data.id}/view`,
   };
 }
 
-async function appendToSheet({ accessToken, spreadsheetId, values }) {
+async function appendSheet(accessToken, spreadsheetId, values) {
   if (!spreadsheetId) return;
   const range = encodeURIComponent("Sheet1!A:K");
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED`;
@@ -172,80 +180,59 @@ async function appendToSheet({ accessToken, spreadsheetId, values }) {
     },
     body: JSON.stringify({ values: [values] }),
   });
-  
+
   if (!r.ok) throw new Error(`Sheets append failed (${r.status})`);
 }
 
-async function readJson(req) {
-  let body = req.body;
-  if (typeof body === "string") {
-    try {
-      return JSON.parse(body || "{}");
-    } catch {
-      throw new Error("Invalid JSON body");
-    }
-  }
-  if (body && typeof body === "object") return body;
-
-  const bodyBuf = await readBodyBuffer(req);
-  if (!bodyBuf.length) return {};
-  try {
-    return JSON.parse(bodyBuf.toString("utf8"));
-  } catch {
-    throw new Error("Invalid JSON body");
-  }
+async function requireMain(req, res) {
+  const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
+  return !!auth;
 }
 
 export default async function recruitmentHandler(req, res) {
-    try {
+  try {
     const sql = getSql();
-    const q = parseQuery(req);
-    const method = req.method;
-    const resource = String(q.get("resource") || "").toLowerCase();
+    const { resource, params } = getResource(req);
 
-    if (method === "GET" && resource === "jobs") {
-
+    if (req.method === "GET" && resource === "jobs") {
       const rows = await sql`
         SELECT id, title, department, location_country, location_city, employment_type,
                job_description_html, is_published, published_at, created_at, updated_at
         FROM jobs
         WHERE is_published = true
         ORDER BY published_at DESC NULLS LAST, id DESC
-                LIMIT 100
+        LIMIT 100
       `;
       return send(res, 200, { ok: true, jobs: rows });
     }
 
-
-    if (method === "GET" && resource === "jobs_admin") {
-      const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
-      if (!auth) return;
+    if (req.method === "GET" && resource === "jobs_admin") {
+      if (!(await requireMain(req, res))) return;
       const rows = await sql`
         SELECT id, title, department, location_country, location_city, employment_type,
                job_description_html, is_published, published_at, created_at, updated_at
         FROM jobs
         ORDER BY created_at DESC, id DESC
         LIMIT 200
-              `;
+      `;
       return send(res, 200, { ok: true, jobs: rows });
     }
 
-    if (method === "POST" && resource === "jobs") {
-      const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
-      if (!auth) return;
-const body = await readJson(req);
+    if (req.method === "POST" && resource === "jobs") {
+      if (!(await requireMain(req, res))) return;
+      const body = await readJson(req);
 
-      const title = s(body.title);
-      const jobDescriptionHtml = s(body.jobDescriptionHtml);
-      const department = s(body.department) || null;
-      const locationCountry = s(body.locationCountry) || null;
-      const locationCity = s(body.locationCity) || null;
-      const employmentType = s(body.employmentType) || null;
-      const isPublished = body.isPublished === true;
-
+      const title = toStr(body.title);
+      const jobDescriptionHtml = toStr(body.jobDescriptionHtml);
       if (!title || !jobDescriptionHtml) {
         return send(res, 400, { ok: false, error: "title and jobDescriptionHtml are required" });
       }
+
+      const department = toStr(body.department) || null;
+      const locationCountry = toStr(body.locationCountry) || null;
+      const locationCity = toStr(body.locationCity) || null;
+      const employmentType = toStr(body.employmentType) || null;
+      const isPublished = body.isPublished === true;
 
       const ins = await sql`
         INSERT INTO jobs
@@ -258,105 +245,95 @@ const body = await readJson(req);
       `;
 
       return send(res, 201, { ok: true, id: ins[0].id });
-        }
+    }
 
-
-    // ---------------------------
-    if (method === "PATCH" && resource === "jobs") {
-      const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
-      if (!auth) return;
-            const body = await readJson(req);
-      const id = n(body.id);
+    if (req.method === "PATCH" && resource === "jobs") {
+      if (!(await requireMain(req, res))) return;
+      const body = await readJson(req);
+      const id = toNum(body.id);
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
-      const title = s(body.title);
-      const jobDescriptionHtml = s(body.jobDescriptionHtml);
-      const department = s(body.department) || null;
-      const locationCountry = s(body.locationCountry) || null;
-      const locationCity = s(body.locationCity) || null;
-      const employmentType = s(body.employmentType) || null;
-      const isPublished = body.isPublished === true;
-
+      const title = toStr(body.title);
+      const jobDescriptionHtml = toStr(body.jobDescriptionHtml);
       if (!title || !jobDescriptionHtml) {
         return send(res, 400, { ok: false, error: "title and jobDescriptionHtml are required" });
       }
+
+      const department = toStr(body.department) || null;
+      const locationCountry = toStr(body.locationCountry) || null;
+      const locationCity = toStr(body.locationCity) || null;
+      const employmentType = toStr(body.employmentType) || null;
+      const isPublished = body.isPublished === true;
 
       await sql.begin(async (tx) => {
         const cur = await tx`SELECT id, published_at FROM jobs WHERE id = ${id} LIMIT 1`;
         if (!cur.length) throw new Error("JOB_NOT_FOUND");
         const publishedAt = isPublished && !cur[0].published_at ? tx`now()` : cur[0].published_at;
+
         await tx`
           UPDATE jobs
           SET title = ${title}, department = ${department}, location_country = ${locationCountry},
               location_city = ${locationCity}, employment_type = ${employmentType},
               job_description_html = ${jobDescriptionHtml}, is_published = ${isPublished},
               published_at = ${publishedAt}, updated_at = now()
-              WHERE id = ${id}
+          WHERE id = ${id}
         `;
       });
 
       return send(res, 200, { ok: true });
     }
-    if (method === "DELETE" && resource === "jobs") {
-      const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
-      if (!auth) return;
-      const id = n(q.get("id"));
-      if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
+    if (req.method === "DELETE" && resource === "jobs") {
+      if (!(await requireMain(req, res))) return;
+      const id = toNum(params.get("id"));
+      if (!id) return send(res, 400, { ok: false, error: "id is required" });
       await sql`UPDATE jobs SET is_published = false, updated_at = now() WHERE id = ${id}`;
       return send(res, 200, { ok: true });
     }
 
-    if (method === "POST" && resource === "apply") {
-      const bodyBuf = await readBodyBuffer(req);
-      const { fields, files } = parseMultipart(req, bodyBuf);
-      const jobId = n(fields.jobId);
-      const firstName = s(fields.firstName);
-      const lastName = s(fields.lastName);
-      const educationLevel = s(fields.educationLevel);
-      const country = s(fields.country);
-      const city = s(fields.city);
+    if (req.method === "POST" && resource === "apply") {
+      const body = await readBody(req);
+      const { fields, files } = parseMultipart(req, body);
+
+      const jobId = toNum(fields.jobId);
+      const firstName = toStr(fields.firstName);
+      const lastName = toStr(fields.lastName);
+      const educationLevel = toStr(fields.educationLevel);
+      const country = toStr(fields.country);
+      const city = toStr(fields.city);
 
       if (!jobId || !firstName || !lastName || !educationLevel || !country || !city) {
-        return send(res, 400, { ok: false, error: "jobId, firstName, lastName, educationLevel, country, city are required" });
+        return send(res, 400, {
+          ok: false,
+          error: "jobId, firstName, lastName, educationLevel, country, city are required",
+        });
       }
-      if (!files.cv?.buffer?.length) {
-        return send(res, 400, { ok: false, error: "cv file is required" });
-      }
+      if (!files.cv?.buffer?.length) return send(res, 400, { ok: false, error: "cv file is required" });
 
-      const job = await sql`SELECT id, title FROM jobs WHERE id = ${jobId} AND is_published = true LIMIT 1`;
+      const job = await sql`SELECT id FROM jobs WHERE id = ${jobId} AND is_published = true LIMIT 1`;
       if (!job.length) return send(res, 404, { ok: false, error: "Job not found or unpublished" });
-      const folderId = String(process.env.GOOGLE_DRIVE_FOLDER_ID || "").trim();
+
+      const folderId = toStr(process.env.GOOGLE_DRIVE_FOLDER_ID);
       if (!folderId) return send(res, 500, { ok: false, error: "Missing GOOGLE_DRIVE_FOLDER_ID" });
-      const sa = getGoogleServiceAccount();
-      const accessToken = await getGoogleAccessToken(sa, [
+
+      const accessToken = await getAccessToken([
         "https://www.googleapis.com/auth/drive",
         "https://www.googleapis.com/auth/spreadsheets",
       ]);
 
       const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const safeName = `${firstName}_${lastName}`.replace(/[^\w-]+/g, "_");
+      const safe = `${firstName}_${lastName}`.replace(/[^\w-]+/g, "_");
 
-      const cv = await uploadToDrive({
-        accessToken,
-        folderId,
-        file: {
-          ...files.cv,
-          filename: `CV_${safeName}_${stamp}_${files.cv.filename || "file"}`,
-        },
+      const cv = await uploadFileToDrive(accessToken, folderId, {
+        ...files.cv,
+        filename: `CV_${safe}_${stamp}_${files.cv.filename || "file"}`,
       });
 
       let cover = null;
-
-      let cover = null;
       if (files.cover?.buffer?.length) {
-        cover = await uploadToDrive({
-          accessToken,
-          folderId,
-          file: {
-            ...files.cover,
-            filename: `Cover_${safeName}_${stamp}_${files.cover.filename || "file"}`,
-          },
+        cover = await uploadFileToDrive(accessToken, folderId, {
+          ...files.cover,
+          filename: `Cover_${safe}_${stamp}_${files.cover.filename || "file"}`,
         });
       }
 
@@ -371,35 +348,31 @@ const body = await readJson(req);
            'new', now())
         RETURNING id
       `;
-      const sheetId = String(process.env.GOOGLE_SHEET_ID || "").trim();
+
+      const sheetId = toStr(process.env.GOOGLE_SHEET_ID);
       if (sheetId) {
-        await appendToSheet({
-          accessToken,
-          spreadsheetId: sheetId,
-          values: [
-            ins[0].id,
-            jobId,
-            firstName,
-            lastName,
-            educationLevel,
-            country,
-            city,
-            cv.webViewLink,
-            cover?.webViewLink || "",
-            "new",
-            new Date().toISOString(),
-          ],
-        });
+        await appendSheet(accessToken, sheetId, [
+          ins[0].id,
+          jobId,
+          firstName,
+          lastName,
+          educationLevel,
+          country,
+          city,
+          cv.webViewLink,
+          cover?.webViewLink || "",
+          "new",
+          new Date().toISOString(),
+        ]);
       }
+
       return send(res, 201, { ok: true, applicationId: ins[0].id });
     }
 
+    if (req.method === "GET" && resource === "applications") {
+      if (!(await requireMain(req, res))) return;
+      const jobId = toNum(params.get("jobId")) || null;
 
-    if (method === "GET" && resource === "applications") {
-      const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
-      if (!auth) return;
-
-      const jobId = n(q.get("jobId")) || null;
       const rows = await sql`
         SELECT a.id, a.job_id, j.title AS job_title, a.first_name, a.last_name,
                a.education_level, a.country, a.city, a.cv_drive_link, a.cover_drive_link,
