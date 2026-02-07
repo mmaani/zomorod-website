@@ -1,0 +1,6 @@
+{
+  "forwardPorts": [3002],
+  "portsAttributes": {
+    "3002": { "label": "API", "visibility": "public" }
+  }
+}
