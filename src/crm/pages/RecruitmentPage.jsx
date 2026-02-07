@@ -38,8 +38,21 @@ export default function RecruitmentPage() {
   const [ok, setOk] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+    const [searchTerm, setSearchTerm] = useState("");
 
   const publishedCount = useMemo(() => jobs.filter((j) => j.is_published).length, [jobs]);
+
+    const filteredApplications = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return applications;
+    return applications.filter((a) => {
+      const value = [a.first_name, a.last_name, a.job_title, a.email, a.phone, a.city, a.country]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return value.includes(q);
+    });
+  }, [applications, searchTerm]);
 
   async function loadAll() {
     setLoading(true);
@@ -147,6 +160,21 @@ export default function RecruitmentPage() {
       setError(e?.message || "Failed to unpublish");
     }
   }
+  async function deleteJob(id) {
+    setError("");
+    setOk("");
+    try {
+      const res = await apiFetch(`/recruitment?resource=jobs&id=${id}&mode=hard`, { method: "DELETE" });
+      if (!res) return;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || "Failed to delete vacancy");
+      setOk("Vacancy deleted.");
+      if (editingId === id) resetForm();
+      await loadAll();
+    } catch (e) {
+      setError(e?.message || "Failed to delete vacancy");
+    }
+  }
 
   if (!isMain) {
     return (
@@ -161,8 +189,7 @@ export default function RecruitmentPage() {
     <div className="crm-grid-2col">
       <section className="crm-card">
         <h2>{editingId ? "Edit Vacancy" : "Create Vacancy"}</h2>
-        <p className="muted">Publish professional recruitment announcements and collect applications in CRM.</p>
-
+        <p className="muted">Create, edit, publish, unpublish, and delete vacancy announcements.</p>
         <form className="crm-form-grid" onSubmit={saveJob}>
           <div className="field">
             <label>Job title</label>
@@ -198,8 +225,8 @@ export default function RecruitmentPage() {
 
           <label className="crm-check">
             <input type="checkbox" checked={form.isPublished} onChange={(e) => setForm((s) => ({ ...s, isPublished: e.target.checked }))} />
-            Publish on main website
-          </label>
+            Publish on main website announcement section
+             </label>
 
           <div className="row">
             <button className="crm-btn crm-btn-primary" type="submit" disabled={saving}>{saving ? "Saving..." : (editingId ? "Update vacancy" : "Create vacancy")}</button>
@@ -235,6 +262,7 @@ export default function RecruitmentPage() {
                     <td className="row">
                       <button className="crm-btn crm-btn-outline" onClick={() => startEdit(job)}>Edit</button>
                       {job.is_published ? <button className="crm-btn crm-btn-outline" onClick={() => unpublishJob(job.id)}>Unpublish</button> : null}
+                      <button className="crm-btn crm-btn-outline" onClick={() => deleteJob(job.id)}>Delete</button>
                     </td>
                   </tr>
                 ))}
@@ -246,9 +274,19 @@ export default function RecruitmentPage() {
       </section>
 
       <section className="crm-card crm-span-2">
-        <h2>Applications</h2>
-        <p className="muted">CV and cover files are uploaded to Google Drive and logged in Google Sheets.</p>
-
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <div>
+            <h2>Applications</h2>
+            <p className="muted">CV and cover files are uploaded to Google Drive and logged in Google Sheets.</p>
+          </div>
+          <input
+            className="input"
+            style={{ maxWidth: 320 }}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search candidate, job, phone, city..."
+          />
+        </div>
         <div className="table-wrap" style={{ marginTop: 10 }}>
           <table>
             <thead>
@@ -262,8 +300,8 @@ export default function RecruitmentPage() {
               </tr>
             </thead>
             <tbody>
-              {applications.map((a) => (
-                <tr key={a.id}>
+              {filteredApplications.map((a) => (
+                  <tr key={a.id}>
                   <td>{a.first_name} {a.last_name}</td>
                   <td>{a.job_title}</td>
                   <td>{a.city}, {a.country}</td>
@@ -275,8 +313,8 @@ export default function RecruitmentPage() {
                   </td>
                 </tr>
               ))}
-              {!applications.length ? <tr><td colSpan={6} className="muted">No applications yet.</td></tr> : null}
-            </tbody>
+              {!filteredApplications.length ? <tr><td colSpan={6} className="muted">No applications found.</td></tr> : null}
+              </tbody>
           </table>
         </div>
       </section>

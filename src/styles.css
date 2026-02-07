@@ -243,13 +243,14 @@ tr:hover td{ background: rgba(255,255,255,.04); }
    ================================ */
 
 .mkt-page{
-  width: min(920px, calc(100% - 32px));
+  width: min(1080px, calc(100% - 32px));
   margin: 0 auto;
   padding: 26px 0 46px;
 }
 
 .mkt-hero{
-  padding: 20px;
+  padding: 28px;
+  background: linear-gradient(145deg, rgba(11,29,22,.95), rgba(7,19,15,.92));
 }
 
 .mkt-hero-top{
@@ -290,13 +291,35 @@ tr:hover td{ background: rgba(255,255,255,.04); }
 
 .mkt-cta-row{
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 18px;
 }
 
-@media (max-width: 520px){
+@media (max-width: 760px){
   .mkt-cta-row{ grid-template-columns: 1fr; }
+}
+
+.mkt-hero-metrics{
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mkt-metric{
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  background: rgba(255,255,255,.04);
+  display: grid;
+}
+
+.mkt-metric strong{ font-size: 16px; }
+.mkt-metric span{ color: var(--muted); font-size: 12px; }
+
+@media (max-width: 760px){
+  .mkt-hero-metrics{ grid-template-columns: 1fr; }
 }
 
 .mkt-cta{
@@ -304,8 +327,8 @@ tr:hover td{ background: rgba(255,255,255,.04); }
 }
 
 .mkt-section{
-  padding: 18px;
-  margin-top: 12px;
+  padding: 22px;
+  margin-top: 14px;
 }
 
 .mkt-h2{
@@ -331,8 +354,8 @@ tr:hover td{ background: rgba(255,255,255,.04); }
 .mkt-card{
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: rgba(255,255,255,.05);
-  padding: 14px;
+  background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  padding: 16px;
 }
 
 .mkt-card-title{
@@ -378,6 +401,31 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   letter-spacing: .02em;
   text-transform: uppercase;
 }
+
+
+.mkt-tabs{
+  display:flex;
+  gap:10px;
+  margin-bottom:16px;
+  flex-wrap:wrap;
+}
+
+.mkt-tab{
+  border:1px solid var(--border);
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mkt-tab.is-active{
+  background: linear-gradient(180deg, rgba(14,163,113,.30), rgba(10,127,89,.16));
+  border-color: rgba(14,163,113,.5);
+}
+
+.mkt-tab-panel{ display:grid; gap: 10px; }
 /* ===== Mobile / Dark-theme visibility fixes (ADD AT END OF FILE) ===== */
 
 /* If your nav/text styles use dark colors, force them to use the theme vars */
@@ -442,11 +490,17 @@ tr:hover td{ background: rgba(255,255,255,.04); }
 .mkt-job-card{
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px;
+  padding: 16px;
   background: rgba(255,255,255,.04);
   display: grid;
   gap: 10px;
 }
+.mkt-job-description{
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.mkt-job-description p{ margin: 0 0 8px; }
 .mkt-apply-form{
   margin-top: 12px;
   border-top: 1px solid var(--border);

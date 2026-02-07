@@ -355,9 +355,28 @@ export default async function recruitmentHandler(req, res) {
       if (!(await requireMain(req, res))) return;
       const id = toNum(params.get("id"));
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
+            const mode = toStr(params.get("mode")).toLowerCase();
+
+      if (mode === "hard") {
+        const refs = await sql`
+          SELECT COUNT(*)::int AS count
+          FROM job_applications
+          WHERE job_id = ${id}
+        `;
+        if (Number(refs?.[0]?.count || 0) > 0) {
+          return send(res, 400, {
+            ok: false,
+            error: "Cannot delete a vacancy with applications. Unpublish it instead.",
+          });
+        }
+
+        const del = await sql`DELETE FROM jobs WHERE id = ${id}`;
+        return send(res, 200, { ok: true, deleted: del.count || 0 });
+      }
+
       await sql`UPDATE jobs SET is_published = false, updated_at = now() WHERE id = ${id}`;
-      return send(res, 200, { ok: true });
-    }
+      return send(res, 200, { ok: true, mode: "soft" });
+        }
 
     if (req.method === "POST" && resource === "apply") {
       const body = await readBody(req);
@@ -454,8 +473,8 @@ export default async function recruitmentHandler(req, res) {
       const rows = await sql`
         SELECT a.id, a.job_id, j.title AS job_title, a.first_name, a.last_name,
                a.education_level, a.country, a.city, a.cv_drive_link, a.cover_drive_link,
-               a.email, a.phone, a.education_level, a.country, a.city, a.cv_drive_link, a.cover_drive_link,
-               a.status, a.created_at
+               a.email, a.phone, 
+                       a.status, a.created_at
         FROM job_applications a
         JOIN jobs j ON j.id = a.job_id
         WHERE (${jobId}::int IS NULL OR a.job_id = ${jobId})
