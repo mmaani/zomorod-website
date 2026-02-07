@@ -351,6 +351,13 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   .mkt-grid{ grid-template-columns: 1fr; }
 }
 
+.mkt-grid-compact{
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 900px){
+  .mkt-grid-compact{ grid-template-columns: 1fr; }
+}
+
 .mkt-card{
   border: 1px solid var(--border);
   border-radius: var(--radius);
