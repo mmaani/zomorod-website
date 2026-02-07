@@ -63,7 +63,6 @@ async function ensureRecruitmentSchema(sql) {
     status TEXT NOT NULL DEFAULT 'new',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
-
   await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS job_id BIGINT`;
   await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS first_name TEXT`;
   await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS last_name TEXT`;
@@ -504,5 +503,3 @@ export default async function recruitmentHandler(req, res) {
   }
   
   }
-
-
