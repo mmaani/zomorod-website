@@ -111,44 +111,39 @@ function b64url(input) {
     .replace(/\//g, "_");
 }
 
+function mustEnv(name) {
+  const v = String(process.env[name] || "").trim();
+  if (!v) throw new Error(`Missing ${name}`);
+  return v;
+}
+
 async function getAccessToken(scopes) {
-  const sa = getGoogleServiceAccount();
-  const now = Math.floor(Date.now() / 1000);
+  // scopes param kept for compatibility; Google decides scopes from the refresh token grant.
+  // You can optionally validate scopes here if you want.
+  void scopes;
 
-  const header = { alg: "RS256", typ: "JWT" };
-  const payload = {
-    iss: sa.client_email,
-    scope: scopes.join(" "),
-    aud: "https://oauth2.googleapis.com/token",
-    exp: now + 3600,
-    iat: now,
-  };
-
-  const msg = `${b64url(JSON.stringify(header))}.${b64url(
-    JSON.stringify(payload)
-  )}`;
-  const signer = createSign("RSA-SHA256");
-  signer.update(msg);
-  signer.end();
-  const jwt = `${msg}.${b64url(signer.sign(sa.private_key))}`;
+  const clientId = mustEnv("GOOGLE_OAUTH_CLIENT_ID");
+  const clientSecret = mustEnv("GOOGLE_OAUTH_CLIENT_SECRET");
+  const refreshToken = mustEnv("GOOGLE_OAUTH_REFRESH_TOKEN");
 
   const resp = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: jwt,
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
     }),
   });
 
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok || !data.access_token) {
-    const detail =
-      data?.error_description || data?.error || JSON.stringify(data);
-    throw new Error(`Google token exchange failed (${resp.status}): ${detail}`);
+    throw new Error(`Google refresh_token exchange failed (${resp.status}): ${JSON.stringify(data)}`);
   }
   return data.access_token;
 }
+
 
 async function uploadFileToDrive(accessToken, folderId, file) {
   const boundary = `zomorod_${Date.now()}`;
