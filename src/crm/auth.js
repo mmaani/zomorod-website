@@ -186,10 +186,9 @@ export async function fetchMe() {
 }
 
 export async function forgotPassword(email) {
-  const res = await fetch("/api/forgot-password", {
+    const res = await apiFetch("/login?action=forgot-password", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
+    body: { email, action: "forgot-password" },
   });
 
   const data = await res.json().catch(() => ({}));
