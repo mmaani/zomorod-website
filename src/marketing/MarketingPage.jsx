@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 const COPY = {
@@ -34,6 +34,13 @@ const COPY = {
             body: "Selected devices and supporting items chosen for reliability, safety, and practical field use.",
           },
         ],
+      },
+        careers: {
+        title: "Career Opportunities",
+        subtitle: "Join our team. Apply directly and your CV is securely logged in our recruitment CRM.",
+        apply: "Apply now",
+        cv: "CV (required)",
+        cover: "Cover letter (optional)",
       },
       operate: {
         title: "Where We Operate",
@@ -92,6 +99,13 @@ const COPY = {
           },
         ],
       },
+      careers: {
+        title: "الوظائف المتاحة",
+        subtitle: "انضم إلى فريقنا. التقديم يتم مباشرة ويتم حفظ السيرة الذاتية في نظام التوظيف لدينا.",
+        apply: "قدّم الآن",
+        cv: "السيرة الذاتية (مطلوب)",
+        cover: "رسالة تغطية (اختياري)",
+      },
       operate: {
         title: "أين نعمل",
         p1: `يقع مقرنا في عمّان، ونخدم المستشفيات والعيادات والمختبرات والموزعين في مختلف محافظات الأردن وسوريا.
@@ -119,7 +133,56 @@ const COPY = {
 
 export default function MarketingPage() {
   const [lang, setLang] = useState("en");
+  const [jobs, setJobs] = useState([]);
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [selectedJobId, setSelectedJobId] = useState("");
+  const [applyMsg, setApplyMsg] = useState("");
+  const [applyErr, setApplyErr] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const t = useMemo(() => COPY[lang], [lang]);
+useEffect(() => {
+    (async () => {
+      setJobsLoading(true);
+      try {
+        const res = await fetch("/api/recruitment?resource=jobs");
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          setJobs(Array.isArray(data.jobs) ? data.jobs : []);
+          if (!selectedJobId && data.jobs?.length) setSelectedJobId(String(data.jobs[0].id));
+        }
+      } finally {
+        setJobsLoading(false);
+      }
+    })();
+  }, []);
+
+  async function onApply(e) {
+    e.preventDefault();
+    setApplyErr("");
+    setApplyMsg("");
+
+    const form = new FormData(e.currentTarget);
+    if (!form.get("jobId") || !form.get("firstName") || !form.get("lastName") || !form.get("email") || !form.get("phone") || !form.get("educationLevel") || !form.get("country") || !form.get("city")) {
+      setApplyErr(lang === "ar" ? "يرجى تعبئة جميع الحقول المطلوبة." : "Please fill all required fields.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/recruitment?resource=apply", {
+        method: "POST",
+        body: form,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || "Failed to submit application");
+      setApplyMsg(lang === "ar" ? "تم إرسال طلبك بنجاح." : "Your application has been submitted successfully.");
+      e.currentTarget.reset();
+    } catch (err) {
+      setApplyErr(err?.message || "Failed to submit application");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <main className="mkt-page" dir={t.dir}>
@@ -171,6 +234,46 @@ export default function MarketingPage() {
             </div>
           ))}
         </div>
+      </section>
+      <section className="mkt-section card">
+        <h2 className="mkt-h2">{t.sections.careers.title}</h2>
+        <p className="mkt-p">{t.sections.careers.subtitle}</p>
+
+        {jobsLoading ? <p className="mkt-p">Loading jobs...</p> : (
+          <div className="mkt-jobs-list">
+            {jobs.map((job) => (
+              <article key={job.id} className="mkt-job-card">
+                <div className="mkt-card-title">{job.title}</div>
+                <p className="mkt-card-body">{[job.department, job.location_city, job.location_country, job.employment_type].filter(Boolean).join(" • ")}</p>
+                <div dangerouslySetInnerHTML={{ __html: job.job_description_html }} />
+                <button className="btn btn-primary" type="button" onClick={() => setSelectedJobId(String(job.id))}>{t.sections.careers.apply}</button>
+              </article>
+            ))}
+            {!jobs.length ? <p className="mkt-p">No openings announced at the moment.</p> : null}
+          </div>
+        )}
+
+        {jobs.length ? (
+          <form className="mkt-apply-form" onSubmit={onApply}>
+            <input type="hidden" name="jobId" value={selectedJobId || ""} />
+            <div className="grid grid-2">
+              <input className="input" name="firstName" placeholder={lang === "ar" ? "الاسم الأول" : "First name"} required />
+              <input className="input" name="lastName" placeholder={lang === "ar" ? "اسم العائلة" : "Last name"} required />
+              <input className="input" type="email" name="email" placeholder="Email" required />
+              <input className="input" name="phone" placeholder={lang === "ar" ? "رقم الهاتف" : "Phone number"} required />
+              <input className="input" name="educationLevel" placeholder={lang === "ar" ? "المؤهل العلمي" : "Education level"} required />
+              <input className="input" name="country" placeholder={lang === "ar" ? "الدولة" : "Country"} required />
+              <input className="input" name="city" placeholder={lang === "ar" ? "المدينة" : "City"} required />
+            </div>
+            <div className="grid grid-2" style={{ marginTop: 10 }}>
+              <label>{t.sections.careers.cv}<input className="input" name="cv" type="file" required /></label>
+              <label>{t.sections.careers.cover}<input className="input" name="cover" type="file" /></label>
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? "Submitting..." : t.sections.careers.apply}</button>
+            {applyErr ? <div className="banner">{applyErr}</div> : null}
+            {applyMsg ? <div className="mkt-success">{applyMsg}</div> : null}
+          </form>
+        ) : null}
       </section>
 
       <section className="mkt-section card">

@@ -225,7 +225,7 @@ async function uploadFileToDrive(accessToken, folderId, file) {
 
 async function appendSheet(accessToken, spreadsheetId, values) {
   if (!spreadsheetId) return;
-  const range = encodeURIComponent("Sheet1!A:L");
+  const range = encodeURIComponent("Sheet1!A:M");
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED`;
 
   const r = await fetch(url, {
@@ -367,14 +367,15 @@ export default async function recruitmentHandler(req, res) {
       const firstName = toStr(fields.firstName);
       const lastName = toStr(fields.lastName);
       const email = toStr(fields.email);
+      const phone = toStr(fields.phone);
       const educationLevel = toStr(fields.educationLevel);
       const country = toStr(fields.country);
       const city = toStr(fields.city);
 
-      if (!jobId || !firstName || !lastName || !email || !educationLevel || !country || !city) {
+      if (!jobId || !firstName || !lastName || !email || !phone || !educationLevel || !country || !city) {
         return send(res, 400, {
           ok: false,
-          error: "jobId, firstName, lastName, email, educationLevel, country, city are required",
+          error: "jobId, firstName, lastName, email, phone, educationLevel, country, city are required",
         });
       }
 
@@ -414,11 +415,11 @@ export default async function recruitmentHandler(req, res) {
 
       const ins = await sql`
         INSERT INTO job_applications
-          (job_id, first_name, last_name, email, education_level, country, city,
+          (job_id, first_name, last_name, email, phone, education_level, country, city,
           cv_drive_file_id, cv_drive_link, cover_drive_file_id, cover_drive_link,
           status, created_at)
         VALUES
-          (${jobId}, ${firstName}, ${lastName}, ${email}, ${educationLevel}, ${country}, ${city},
+          (${jobId}, ${firstName}, ${lastName}, ${email}, ${phone}, ${educationLevel}, ${country}, ${city},
           ${cv.fileId}, ${cv.webViewLink}, ${cover?.fileId || null}, ${cover?.webViewLink || null},
           'new', now())
         RETURNING id
@@ -431,7 +432,8 @@ export default async function recruitmentHandler(req, res) {
           jobId,
           firstName,
           lastName,
-          email,               
+          email,       
+          phone,       
           educationLevel,
           country,
           city,
@@ -452,6 +454,7 @@ export default async function recruitmentHandler(req, res) {
       const rows = await sql`
         SELECT a.id, a.job_id, j.title AS job_title, a.first_name, a.last_name,
                a.education_level, a.country, a.city, a.cv_drive_link, a.cover_drive_link,
+               a.email, a.phone, a.education_level, a.country, a.city, a.cv_drive_link, a.cover_drive_link,
                a.status, a.created_at
         FROM job_applications a
         JOIN jobs j ON j.id = a.job_id

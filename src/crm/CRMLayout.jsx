@@ -35,6 +35,7 @@ export default function CRMLayout() {
             <NavLink to="/crm/suppliers" className={navLinkClass}>Suppliers</NavLink>
             <NavLink to="/crm/clients" className={navLinkClass}>Clients</NavLink>
             <NavLink to="/crm/sales" className={navLinkClass}>Sales</NavLink>
+            {isMain ? <NavLink to="/crm/recruitment" className={navLinkClass}>Recruitment</NavLink> : null}
             {isMain ? <NavLink to="/crm/users" className={navLinkClass}>Users</NavLink> : null}
           </nav>
 

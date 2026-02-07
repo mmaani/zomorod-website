@@ -225,3 +225,41 @@ CREATE TABLE IF NOT EXISTS payment_schedule (
   amount_jod NUMERIC(12,3) NOT NULL,
   status TEXT NOT NULL DEFAULT 'PENDING' -- PENDING/PAID
 );
+-- Recruitment
+CREATE TABLE IF NOT EXISTS jobs (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  department TEXT,
+  location_country TEXT,
+  location_city TEXT,
+  employment_type TEXT,
+  job_description_html TEXT NOT NULL,
+  is_published BOOLEAN NOT NULL DEFAULT FALSE,
+  published_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS jobs_published_idx
+  ON jobs (is_published, published_at DESC, id DESC);
+
+CREATE TABLE IF NOT EXISTS job_applications (
+  id SERIAL PRIMARY KEY,
+  job_id INT NOT NULL REFERENCES jobs(id) ON DELETE RESTRICT,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  education_level TEXT NOT NULL,
+  country TEXT NOT NULL,
+  city TEXT NOT NULL,
+  cv_drive_file_id TEXT NOT NULL,
+  cv_drive_link TEXT NOT NULL,
+  cover_drive_file_id TEXT,
+  cover_drive_link TEXT,
+  status TEXT NOT NULL DEFAULT 'new',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS job_applications_job_created_idx
+  ON job_applications (job_id, created_at DESC);
