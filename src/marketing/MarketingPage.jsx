@@ -1,5 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+const PUBLIC_API_BASE = (import.meta.env.VITE_API_BASE || "/api").replace(/\/$/, "");
+
+function publicApiPath(path) {
+  if (/^https?:\/\//i.test(path)) return path;
+  const p = path.startsWith("/") ? path : `/${path}`;
+  if (p.startsWith("/api/")) return p;
+  return `${PUBLIC_API_BASE}${p}`;
+}
 
 const COPY = {
   en: {
