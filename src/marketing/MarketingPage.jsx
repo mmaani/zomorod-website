@@ -42,6 +42,7 @@ const COPY = {
     readLess: "Show less",
     educationPlaceholder: "Education level",
     cv: "CV (required)",
+    cover: "cover letter (optional)",
     contactTitle: "Contact",
     contactEmail: "Email",
     contactPhone: "Phone",
