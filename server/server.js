@@ -1,15 +1,24 @@
 import { googleOAuthStart, googleOAuthCallback } from "./routesGoogleOAuth.js";
 import express from "express";
-import dotenv from "dotenv";
 import busboy from "busboy";
 import { google } from "googleapis";
 import { Readable } from "stream";
 import cookieParser from "cookie-parser";
 import crypto from "crypto";
-import path from "path";
-import { fileURLToPath } from "url";
 import recruitmentHandler from "./recruitment.js";
 import loginHandler from "../api/login.js";
+
+import path from "path";
+import { fileURLToPath } from "url";
+import dotenv from "dotenv";
+
+// ---- paths (must be before dotenv.config) ----
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.resolve(__dirname, ".."); // repo root
+
+// ---- load .env explicitly from repo root ----
+dotenv.config({ path: path.join(ROOT_DIR, ".env") });
 
 dotenv.config();
 
