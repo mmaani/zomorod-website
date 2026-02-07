@@ -85,6 +85,7 @@ async function ensureRecruitmentSchema(sql) {
 
   recruitmentSchemaReady = true;
 }
+
 function getResource(req) {
   const raw = typeof req.originalUrl === "string"
     ? req.originalUrl
@@ -251,7 +252,7 @@ async function uploadFileToDrive(accessToken, folderId, file) {
 
 async function appendSheet(accessToken, spreadsheetId, values) {
   if (!spreadsheetId) return;
-  const range = encodeURIComponent("Sheet1!A:M");
+  const sheetRange = toStr(process.env.GOOGLE_SHEET_RANGE) || "A:M";
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED`;
 
   const r = await fetch(url, {
@@ -446,7 +447,8 @@ export default async function recruitmentHandler(req, res) {
       `;
 
       const sheetId = toStr(process.env.GOOGLE_SHEET_ID);
-      if (sheetId) {
+        let sheetSyncError = "";
+        if (sheetId) {
         try {
           await appendSheet(accessToken, sheetId, [
             ins[0].id,
@@ -463,8 +465,9 @@ export default async function recruitmentHandler(req, res) {
             "new",
             new Date().toISOString(),
           ]);
-        } catch (err) {
-          console.warn("Sheets append failed, application remains saved", err);
+          } catch (err) {
+            sheetSyncError = String(err?.message || err);
+            console.warn("Sheets append failed, application remains saved", err);
         }
       }
 
@@ -499,4 +502,7 @@ export default async function recruitmentHandler(req, res) {
   }
   return send(res, 500, { ok: false, error: "Server error", detail: message });
   }
+  
   }
+
+

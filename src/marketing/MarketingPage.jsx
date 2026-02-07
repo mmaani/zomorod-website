@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+
 import { Link } from "react-router-dom";
 
 const COPY = {
@@ -140,6 +141,7 @@ export default function MarketingPage() {
   const [applyErr, setApplyErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [expandedJobs, setExpandedJobs] = useState({});
+  const applyFormRef = useRef(null);
   const t = useMemo(() => COPY[lang], [lang]);
 
   useEffect(() => {
@@ -176,7 +178,7 @@ export default function MarketingPage() {
       if (!res.ok || !data.ok) throw new Error(data.error || data.detail || "Failed to submit application");
       setApplyMsg(t.applySuccess);
       e.currentTarget.reset();
-    } catch (err) {
+ } catch (err) {
       setApplyErr(err?.message || "Failed to submit application");
     } finally {
       setSubmitting(false);
@@ -271,10 +273,9 @@ export default function MarketingPage() {
                 {!jobs.length ? <p className="mkt-p">{t.jobsEmpty}</p> : null}
               </div>
             )}
-
-            {jobs.length ? (
-              <form className="mkt-apply-form" onSubmit={onApply}>
-                <input type="hidden" name="jobId" value={selectedJobId || ""} />
+                      {jobs.length ? (
+                    <form ref={applyFormRef} className="mkt-apply-form" onSubmit={onApply}>
+                      <input type="hidden" name="jobId" value={selectedJobId || ""} />
                 <div className="grid grid-2">
                   <input className="input" name="firstName" placeholder={lang === "ar" ? "الاسم الأول" : "First name"} required />
                   <input className="input" name="lastName" placeholder={lang === "ar" ? "اسم العائلة" : "Last name"} required />
