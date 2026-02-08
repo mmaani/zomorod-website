@@ -167,20 +167,23 @@ export default function MarketingPage() {
     e.preventDefault();
     setApplyErr("");
     setApplyMsg("");
-    const form = new FormData(e.currentTarget);
-    if (!["jobId", "firstName", "lastName", "email", "phone", "educationLevel", "country", "city"].every((k) => form.get(k))) {
+    const formEl = e.currentTarget;
+    const form = new FormData(formEl);
+      if (!["jobId", "firstName", "lastName", "email", "phone", "educationLevel", "country", "city"].every((k) => form.get(k))) {
       setApplyErr(t.applyError);
       return;
     }
- 
-          setSubmitting(true);
+    setSubmitting(true);
     try {
       const res = await fetch("/api/recruitment?resource=apply", { method: "POST", body: form });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || data.detail || "Failed to submit application");
+      if (!res.ok || !data.ok) throw new Error(data.detail || data.error || "Failed to submit application");
+      if (data?.sheetSync?.ok === false) {
+        throw new Error(data?.sheetSync?.error || "Application saved, but Google Sheet sync failed");
+      }
       setApplyMsg(t.applySuccess);
-      e.currentTarget.reset();
- } catch (err) {
+      formEl?.reset();
+    } catch (err) {
       setApplyErr(err?.message || "Failed to submit application");
     } finally {
       setSubmitting(false);
