@@ -1,5 +1,6 @@
 import { getSql } from "../lib/db.js";
 import { requireUserFromReq } from "../lib/requireAuth.js";
+import busboy from "busboy";
 
 function send(res, status, payload) {
   res.statusCode = status;
@@ -17,7 +18,6 @@ const toNum = (v) => {
 };
 
 const toStr = (v) => String(v ?? "").trim();
-
 let recruitmentSchemaReady = false;
 
 async function ensureRecruitmentSchema(sql) {
@@ -155,9 +155,7 @@ async function readBody(req, maxBytes = 12 * 1024 * 1024) {
 }
 
 async function readJson(req) {
-  if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) {
-    return req.body;
-  }
+  if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
   const body = await readBody(req);
   if (!body.length) return {};
   try {
@@ -167,54 +165,61 @@ async function readJson(req) {
   }
 }
 
-function parseMultipart(req, rawBody) {
-  const ct = String(req.headers["content-type"] || "");
-  const boundaryMatch = ct.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
-  if (!boundaryMatch) throw new Error("Missing multipart boundary");
-  const boundary = boundaryMatch[1] || boundaryMatch[2];
+async function parseMultipart(req, rawBody) {
+  return new Promise((resolve, reject) => {
+    const fields = {};
+    const files = {};
 
-  const delimiter = `--${boundary}`;
-  const raw = rawBody.toString("latin1");
-  const parts = raw.split(delimiter);
-
-  const fields = {};
-  const files = {};
-
-  for (let part of parts) {
-    if (!part || part === "--" || part === "--\r\n") continue;
-    if (part.startsWith("\r\n")) part = part.slice(2);
-    if (part.endsWith("\r\n")) part = part.slice(0, -2);
-    if (part.endsWith("--")) part = part.slice(0, -2);
-
-    const sep = part.indexOf("\r\n\r\n");
-    if (sep < 0) continue;
-
-    const headers = part.slice(0, sep);
-    let content = part.slice(sep + 4);
-    if (content.endsWith("\r\n")) content = content.slice(0, -2);
-
-    const disp =
-      headers.match(/content-disposition:\s*form-data;([^\n\r]+)/i)?.[1] || "";
-    const name = disp.match(/name="([^"]+)"/i)?.[1];
-    if (!name) continue;
-
-    const filename = disp.match(/filename="([^"]*)"/i)?.[1];
-    const mimeType =
-      headers.match(/content-type:\s*([^\n\r]+)/i)?.[1]?.trim() ||
-      "application/octet-stream";
-
-    if (filename != null && filename !== "") {
-      files[name] = {
-        filename,
-        mimeType,
-        buffer: Buffer.from(content, "latin1"),
-      };
-    } else {
-      fields[name] = content;
+    let bb;
+    try {
+      bb = busboy({
+        headers: req.headers,
+        limits: { files: 2, fileSize: MAX_UPLOAD_FILE_BYTES, fields: 32 },
+      });
+    } catch {
+      reject(new Error("Missing multipart boundary"));
+      return;
     }
-  }
 
-  return { fields, files };
+    bb.on("field", (name, val) => {
+      fields[name] = toStr(val);
+    });
+
+    bb.on("file", (name, file, info) => {
+      const chunks = [];
+      let total = 0;
+      let exceeded = false;
+
+      file.on("limit", () => {
+        exceeded = true;
+      });
+
+      file.on("data", (chunk) => {
+        total += chunk.length;
+        chunks.push(chunk);
+      });
+
+      file.on("end", () => {
+        if (exceeded || total > MAX_UPLOAD_FILE_BYTES) {
+          reject(new Error(`${name} must be 15 MB or less`));
+          return;
+        }
+
+        files[name] = {
+          filename: info?.filename || "",
+          mimeType: info?.mimeType || "application/octet-stream",
+          buffer: Buffer.concat(chunks),
+        };
+      });
+
+      file.on("error", reject);
+    });
+
+    bb.on("error", reject);
+    bb.on("finish", () => resolve({ fields, files }));
+
+    bb.end(rawBody);
+  });
 }
 
 const MAX_UPLOAD_FILE_BYTES = 15 * 1024 * 1024;
@@ -241,14 +246,12 @@ const ALLOWED_UPLOAD_EXTENSIONS = new Set([
 function isAllowedUpload(file) {
   const mime = toStr(file?.mimeType).toLowerCase();
   const filename = toStr(file?.filename).toLowerCase();
-  const ext =
-    filename.lastIndexOf(".") >= 0 ? filename.slice(filename.lastIndexOf(".")) : "";
+  const ext = filename.lastIndexOf(".") >= 0 ? filename.slice(filename.lastIndexOf(".")) : "";
 
   const isAllowedMime =
     ALLOWED_UPLOAD_MIMES.has(mime) ||
     ALLOWED_UPLOAD_MIME_PREFIXES.some((p) => mime.startsWith(p));
   const isAllowedExt = ALLOWED_UPLOAD_EXTENSIONS.has(ext);
-
   return isAllowedMime || isAllowedExt;
 }
 
@@ -301,9 +304,7 @@ async function getAccessToken() {
 
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok || !data.access_token) {
-    throw new Error(
-      `Google refresh_token exchange failed (${resp.status}): ${JSON.stringify(data)}`
-    );
+    throw new Error(`Google refresh_token exchange failed (${resp.status}): ${JSON.stringify(data)}`);
   }
 
   return data.access_token;
@@ -313,7 +314,6 @@ async function uploadFileToDrive(accessToken, folderId, file) {
   const boundary = `zomorod_${Date.now()}`;
 
   const metadata = { name: file.filename, parents: [folderId] };
-
   const pre = Buffer.from(
     `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
       `--${boundary}\r\nContent-Type: ${file.mimeType || "application/octet-stream"}\r\n\r\n`,
@@ -397,11 +397,9 @@ async function verifySheetConfiguration(accessToken, spreadsheetId, configuredRa
 
   const metaUrl = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`);
   metaUrl.searchParams.set("fields", "properties.title,spreadsheetId");
-
   const metaResp = await fetch(metaUrl, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-
   const metaBody = await metaResp.text().catch(() => "");
   if (!metaResp.ok) {
     result.message = `Unable to open spreadsheet (${metaResp.status}): ${metaBody}`;
@@ -418,12 +416,9 @@ async function verifySheetConfiguration(accessToken, spreadsheetId, configuredRa
 
   const normalizedRange = toStr(configuredRange) || "A:M";
   const rangeUrl = new URL(
-    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(
-      normalizedRange
-    )}`
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(normalizedRange)}`
   );
   rangeUrl.searchParams.set("majorDimension", "ROWS");
-
   const rangeResp = await fetch(rangeUrl, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
@@ -464,7 +459,6 @@ export default async function recruitmentHandler(req, res) {
 
     if (req.method === "GET" && resource === "jobs_admin") {
       if (!(await requireMain(req, res))) return;
-
       const rows = await sql`
         SELECT id, title, department, location_country, location_city, employment_type,
                job_description_html, is_published, published_at, created_at, updated_at
@@ -477,16 +471,12 @@ export default async function recruitmentHandler(req, res) {
 
     if (req.method === "POST" && resource === "jobs") {
       if (!(await requireMain(req, res))) return;
-
       const body = await readJson(req);
+
       const title = toStr(body.title);
       const jobDescriptionHtml = toStr(body.jobDescriptionHtml);
-
       if (!title || !jobDescriptionHtml) {
-        return send(res, 400, {
-          ok: false,
-          error: "title and jobDescriptionHtml are required",
-        });
+        return send(res, 400, { ok: false, error: "title and jobDescriptionHtml are required" });
       }
 
       const department = toStr(body.department) || null;
@@ -510,19 +500,14 @@ export default async function recruitmentHandler(req, res) {
 
     if (req.method === "PATCH" && resource === "jobs") {
       if (!(await requireMain(req, res))) return;
-
       const body = await readJson(req);
       const id = toNum(body.id);
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
       const title = toStr(body.title);
       const jobDescriptionHtml = toStr(body.jobDescriptionHtml);
-
       if (!title || !jobDescriptionHtml) {
-        return send(res, 400, {
-          ok: false,
-          error: "title and jobDescriptionHtml are required",
-        });
+        return send(res, 400, { ok: false, error: "title and jobDescriptionHtml are required" });
       }
 
       const department = toStr(body.department) || null;
@@ -534,7 +519,6 @@ export default async function recruitmentHandler(req, res) {
       await sql.begin(async (tx) => {
         const cur = await tx`SELECT id, published_at FROM jobs WHERE id = ${id} LIMIT 1`;
         if (!cur.length) throw new Error("JOB_NOT_FOUND");
-
         const publishedAt = isPublished && !cur[0].published_at ? tx`now()` : cur[0].published_at;
 
         await tx`
@@ -552,7 +536,6 @@ export default async function recruitmentHandler(req, res) {
 
     if (req.method === "DELETE" && resource === "jobs") {
       if (!(await requireMain(req, res))) return;
-
       const id = toNum(params.get("id"));
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
@@ -579,14 +562,11 @@ export default async function recruitmentHandler(req, res) {
       try {
         const contentType = String(req.headers["content-type"] || "").toLowerCase();
         if (!contentType.includes("multipart/form-data")) {
-          return send(res, 400, {
-            ok: false,
-            error: "Content-Type must be multipart/form-data",
-          });
+          return send(res, 400, { ok: false, error: "Content-Type must be multipart/form-data" });
         }
 
         const body = await readBody(req, 35 * 1024 * 1024);
-        const { fields, files } = parseMultipart(req, body);
+        const { fields, files } = await parseMultipart(req, body);
 
         const jobId = toNum(fields.jobId);
         const firstName = toStr(fields.firstName);
@@ -597,20 +577,10 @@ export default async function recruitmentHandler(req, res) {
         const country = toStr(fields.country);
         const city = toStr(fields.city);
 
-        if (
-          !jobId ||
-          !firstName ||
-          !lastName ||
-          !email ||
-          !phone ||
-          !educationLevel ||
-          !country ||
-          !city
-        ) {
+        if (!jobId || !firstName || !lastName || !email || !phone || !educationLevel || !country || !city) {
           return send(res, 400, {
             ok: false,
-            error:
-              "jobId, firstName, lastName, email, phone, educationLevel, country, city are required",
+            error: "jobId, firstName, lastName, email, phone, educationLevel, country, city are required",
           });
         }
 
@@ -623,9 +593,7 @@ export default async function recruitmentHandler(req, res) {
         }
 
         const job = await sql`SELECT id FROM jobs WHERE id = ${jobId} AND is_published = true LIMIT 1`;
-        if (!job.length) {
-          return send(res, 404, { ok: false, error: "Job not found or unpublished" });
-        }
+        if (!job.length) return send(res, 404, { ok: false, error: "Job not found or unpublished" });
 
         const folderId = toStr(process.env.GOOGLE_DRIVE_FOLDER_ID);
         if (!folderId) throw new Error("Missing GOOGLE_DRIVE_FOLDER_ID");
@@ -653,13 +621,13 @@ export default async function recruitmentHandler(req, res) {
 
         const ins = await sql`
           INSERT INTO job_applications
-            (job_id, first_name, last_name, email, phone, education_level, country, city,
-             cv_drive_file_id, cv_drive_link, cover_drive_file_id, cover_drive_link,
-             status, created_at)
+          (job_id, first_name, last_name, email, phone, education_level, country, city,
+            cv_drive_file_id, cv_drive_link, cover_drive_file_id, cover_drive_link,
+            status, created_at)
           VALUES
             (${jobId}, ${firstName}, ${lastName}, ${email}, ${phone}, ${educationLevel}, ${country}, ${city},
-             ${cv.fileId}, ${cv.webViewLink}, ${cover?.fileId || null}, ${cover?.webViewLink || null},
-             'new', now())
+            ${cv.fileId}, ${cv.webViewLink}, ${cover?.fileId || null}, ${cover?.webViewLink || null},
+            'new', now())
           RETURNING id
         `;
 
@@ -700,7 +668,7 @@ export default async function recruitmentHandler(req, res) {
         if (isSafeClientError(message)) {
           return send(res, 400, { ok: false, error: message });
         }
-        return send(res, 500, { ok: false, error: "Apply failed", detail: message });
+        return send(res, 500, { ok: false, error: message || "Apply failed", detail: message });
       }
     }
 
@@ -731,7 +699,6 @@ export default async function recruitmentHandler(req, res) {
 
     if (req.method === "GET" && resource === "applications") {
       if (!(await requireMain(req, res))) return;
-
       const jobId = toNum(params.get("jobId")) || null;
 
       const rows = await sql`
@@ -751,9 +718,7 @@ export default async function recruitmentHandler(req, res) {
     return send(res, 400, { ok: false, error: "Unknown route. Use ?resource=..." });
   } catch (err) {
     const message = String(err?.message || err);
-    if (message === "JOB_NOT_FOUND") {
-      return send(res, 404, { ok: false, error: "Job not found" });
-    }
+    if (message === "JOB_NOT_FOUND") return send(res, 404, { ok: false, error: "Job not found" });
 
     recruitmentSchemaReady = false;
 
