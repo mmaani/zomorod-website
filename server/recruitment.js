@@ -4,7 +4,11 @@ import { requireUserFromReq } from "../lib/requireAuth.js";
 function send(res, status, payload) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json");
-  res.end(JSON.stringify(payload));
+  res.end(
+    JSON.stringify(payload, (_key, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    )
+  );
 }
 
 const toNum = (v) => {
@@ -145,7 +149,7 @@ function parseMultipart(req, rawBody) {
     let content = part.slice(sep + 4);
     if (content.endsWith("\r\n")) content = content.slice(0, -2);
 
-    const disp =
+const disp =
       headers.match(/content-disposition:\s*form-data;([^\n\r]+)/i)?.[1] || "";
     const name = disp.match(/name="([^"]+)"/i)?.[1];
     if (!name) continue;
@@ -505,6 +509,11 @@ export default async function recruitmentHandler(req, res) {
         }
 
     if (req.method === "POST" && resource === "apply") {
+      const contentType = String(req.headers["content-type"] || "").toLowerCase();
+      if (!contentType.includes("multipart/form-data")) {
+        return send(res, 400, { ok: false, error: "Content-Type must be multipart/form-data" });
+      }
+
       const body = await readBody(req, 35 * 1024 * 1024);
       const { fields, files } = parseMultipart(req, body);
 
@@ -520,7 +529,6 @@ export default async function recruitmentHandler(req, res) {
       if (!jobId || !firstName || !lastName || !email || !phone || !educationLevel || !country || !city) {
         return send(res, 400, { ok: false, error: "jobId, firstName, lastName, email, phone, educationLevel, country, city are required" });
       }
-     
       const cvError = validateUploadFile(files.cv, "cv");
       if (cvError) return send(res, 400, { ok: false, error: cvError });
 
@@ -570,7 +578,7 @@ export default async function recruitmentHandler(req, res) {
       if (sheetId) {
         try {
           await appendSheet(accessToken, sheetId, [
-            ins[0].id,
+            String(ins[0].id),
             jobId,
             firstName,
             lastName,
@@ -648,4 +656,4 @@ return send(res, 201, {
   }
   return send(res, 500, { ok: false, error: "Server error", detail: message });
   }
-    }
+  }
