@@ -214,7 +214,7 @@ export default function MarketingPage() {
         throw new Error(data?.sheetSync?.error || "Application saved, but Google Sheet sync failed");
       }
       setApplyMsg(t.applySuccess);
-      formEl?.reset(); // keeps selectedJobId (good)
+      formEl?.reset(); // keeps selectedJobId
     } catch (err) {
       setApplyErr(err?.message || "Failed to submit application");
     } finally {
