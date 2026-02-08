@@ -103,7 +103,7 @@ function getResource(req) {
 }
 
 async function readBody(req, maxBytes = 12 * 1024 * 1024) {
-    if (Buffer.isBuffer(req?.body)) {
+  if (Buffer.isBuffer(req?.body)) {
     if (req.body.length > maxBytes) throw new Error("Request body too large");
     return req.body;
   }
@@ -185,7 +185,7 @@ function parseMultipart(req, rawBody) {
     let content = part.slice(sep + 4);
     if (content.endsWith("\r\n")) content = content.slice(0, -2);
 
-const disp =
+    const disp =
       headers.match(/content-disposition:\s*form-data;([^\n\r]+)/i)?.[1] || "";
     const name = disp.match(/name="([^"]+)"/i)?.[1];
     if (!name) continue;
@@ -208,6 +208,8 @@ const disp =
 
   return { fields, files };
 }
+
+
 
 const MAX_UPLOAD_FILE_BYTES = 15 * 1024 * 1024;
 const ALLOWED_UPLOAD_MIME_PREFIXES = ["image/"];
@@ -273,7 +275,9 @@ function isSafeClientError(message) {
     message.includes("fetch failed") ||
     message.includes("ECONNREFUSED") ||
     message.includes("ENOTFOUND") ||
-    message.includes("ETIMEDOUT")
+    message.includes("ETIMEDOUT") ||
+    message.includes("stream is not readable") ||
+    message.includes("Unexpected end of form")
   );
 }
 async function getAccessToken() {
@@ -356,6 +360,7 @@ async function appendSheet(accessToken, spreadsheetId, values) {
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}:append`
   );
   url.searchParams.set("valueInputOption", "USER_ENTERED");
+
   const r = await fetch(url, {
     method: "POST",
     headers: {
@@ -370,6 +375,7 @@ async function appendSheet(accessToken, spreadsheetId, values) {
     throw new Error(`Sheets append failed (${r.status}): ${detail}`);
   }
 }
+
 async function verifySheetConfiguration(accessToken, spreadsheetId, configuredRange) {
   const result = {
     spreadsheetIdProvided: !!spreadsheetId,
@@ -545,14 +551,15 @@ export default async function recruitmentHandler(req, res) {
         }
 
     if (req.method === "POST" && resource === "apply") {
-        try {
+      try {
         const contentType = String(req.headers["content-type"] || "").toLowerCase();
         if (!contentType.includes("multipart/form-data")) {
           return send(res, 400, { ok: false, error: "Content-Type must be multipart/form-data" });
         }
 
-      const body = await readBody(req, 35 * 1024 * 1024);
-      const { fields, files } = parseMultipart(req, body);
+        const body = await readBody(req, 35 * 1024 * 1024);
+        const { fields, files } = parseMultipart(req, body);
+
       const jobId = toNum(fields.jobId);
       const firstName = toStr(fields.firstName);
       const lastName = toStr(fields.lastName);
@@ -565,6 +572,7 @@ export default async function recruitmentHandler(req, res) {
       if (!jobId || !firstName || !lastName || !email || !phone || !educationLevel || !country || !city) {
         return send(res, 400, { ok: false, error: "jobId, firstName, lastName, email, phone, educationLevel, country, city are required" });
       }
+     
       const cvError = validateUploadFile(files.cv, "cv");
       if (cvError) return send(res, 400, { ok: false, error: cvError });
 
@@ -634,7 +642,8 @@ export default async function recruitmentHandler(req, res) {
           console.warn("Sheets append failed, application remains saved", err);
         }
       }
-return send(res, 201, {
+
+        return send(res, 201, {
           ok: true,
           applicationId: String(ins[0].id),
           sheetSync: sheetSyncError ? { ok: false, error: sheetSyncError } : { ok: true },
@@ -700,5 +709,5 @@ return send(res, 201, {
   }
   return send(res, 500, { ok: false, error: "Server error", detail: message });
   }
-    }
   
+  }
