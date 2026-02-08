@@ -542,7 +542,7 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   border-radius: 10px;
   padding: 10px;
 }
-/* --- Marketing page enhancements (trust strip, MD card, selection badge) --- */
+/* --- Marketing page enhancements (trust strip, buyer selector, MD card, selection badge) --- */
 .mkt-trust-strip{
   display:flex;
   flex-wrap:wrap;
@@ -599,4 +599,37 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   border: 1px solid var(--border);
   background: rgba(255,255,255,.06);
   white-space: nowrap;
+}
+
+/* NEW: Quote buyer selector */
+.mkt-quote-picker{
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255,255,255,.03);
+}
+.mkt-quote-picker-head{
+  display:flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.mkt-quote-help{
+  font-size: 12px;
+  color: var(--muted);
+}
+.mkt-quote-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 10px;
+}
+
+.mkt-toggle{
+  border: 1px solid var(--border);
+}
+.mkt-toggle.is-on{
+  border-color: rgba(255,255,255,.35);
+  background: rgba(255,255,255,.10);
 }

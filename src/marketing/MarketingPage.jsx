@@ -8,7 +8,6 @@ const COPY = {
     brandName: "Zomorod Medical Supplies LLC",
     tagline:
       "Reliable supply and consistent specifications for professional healthcare buyers in Jordan and Syria.",
-    // Best-practice CTA for B2B distributors is “Request a Quote”
     ctaPrimary: "Request a Quote",
     ctaStaff: "Staff Login",
     ctaCall: "Call",
@@ -39,6 +38,13 @@ const COPY = {
     mdBody:
       "Managing Director with 12+ years of experience across private sector and international operations. Focused on disciplined sourcing, partner coordination, and reliable fulfillment for professional buyers.",
     mdLinkedInLabel: "LinkedIn profile",
+
+    // Quote selector
+    quoteBuyerTitle: "Buyer type",
+    quoteBuyerHelp: "Choose your buyer type to prefill the message.",
+    buyerPharmacy: "Pharmacy / Retail",
+    buyerReseller: "Reseller / Distributor",
+
     servicesTitle: "Our services",
     services: [
       "Medical consumables procurement and supply planning",
@@ -106,6 +112,13 @@ const COPY = {
     mdBody:
       "مدير عام بخبرة تزيد عن 12 عامًا في القطاع الخاص والعمليات الدولية. يركز على انضباط التوريد، تنسيق الشركاء، وتنفيذ موثوق للمشترين المهنيين.",
     mdLinkedInLabel: "حساب لينكدإن",
+
+    // Quote selector
+    quoteBuyerTitle: "نوع الجهة",
+    quoteBuyerHelp: "اختر نوع الجهة لتعبئة الرسالة تلقائياً.",
+    buyerPharmacy: "صيدلية / تجزئة",
+    buyerReseller: "موزع / تاجر",
+
     servicesTitle: "خدماتنا",
     services: [
       "توريد المستهلكات الطبية وتخطيط احتياجات الإمداد",
@@ -191,6 +204,9 @@ export default function MarketingPage() {
   const [jobs, setJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(true);
 
+  // Quote buyer-type selector (NEW)
+  const [buyerType, setBuyerType] = useState("pharmacy"); // "pharmacy" | "reseller"
+
   // User must explicitly pick a job before applying
   const [selectedJobId, setSelectedJobId] = useState("");
   const [applyMsg, setApplyMsg] = useState("");
@@ -207,27 +223,36 @@ export default function MarketingPage() {
   );
 
   const quoteMessage = useMemo(() => {
+    const buyerLabel =
+      buyerType === "reseller"
+        ? (lang === "ar" ? "موزع / تاجر" : "Reseller / Distributor")
+        : (lang === "ar" ? "صيدلية / تجزئة" : "Pharmacy / Retail");
+
     if (lang === "ar") {
       return [
         "مرحباً، أود طلب عرض سعر.",
-        "نوع الجهة: (صيدلية / موزع)",
+        `نوع الجهة: ${buyerLabel}`,
         "فئة المنتج: ",
         "المواصفات/التعبئة: ",
         "الكمية: ",
         "مدينة التسليم: (الأردن / سوريا)",
       ].join("\n");
     }
+
     return [
       "Hello, I'd like to request a quote.",
-      "Buyer type: (Pharmacy / Reseller)",
+      `Buyer type: ${buyerLabel}`,
       "Product category:",
       "Specification / pack size:",
       "Quantity:",
       "Delivery city (Jordan / Syria):",
     ].join("\n");
-  }, [lang]);
+  }, [lang, buyerType]);
 
-  const whatsappQuoteUrl = useMemo(() => makeWhatsAppLink("962791752686", quoteMessage), [quoteMessage]);
+  const whatsappQuoteUrl = useMemo(
+    () => makeWhatsAppLink("962791752686", quoteMessage),
+    [quoteMessage]
+  );
 
   useEffect(() => {
     (async () => {
@@ -259,7 +284,7 @@ export default function MarketingPage() {
     const formEl = e.currentTarget;
     const form = new FormData(formEl);
 
-    // Ensure jobId is exactly the selected job (ignore any stale hidden input)
+    // Ensure jobId is exactly the selected job
     form.set("jobId", selectedJobId);
 
     const requiredKeys = ["jobId", "firstName", "lastName", "email", "phone", "educationLevel", "country", "city", "cv"];
@@ -294,7 +319,11 @@ export default function MarketingPage() {
       <header className="mkt-hero card">
         <div className="mkt-hero-top">
           <img className="mkt-logo" src="/logo.png" alt="Zomorod logo" />
-          <button type="button" className="btn btn-ghost mkt-lang" onClick={() => setLang((s) => (s === "en" ? "ar" : "en"))}>
+          <button
+            type="button"
+            className="btn btn-ghost mkt-lang"
+            onClick={() => setLang((s) => (s === "en" ? "ar" : "en"))}
+          >
             {t.langLabel}
           </button>
         </div>
@@ -306,6 +335,30 @@ export default function MarketingPage() {
           <span className="mkt-pill">{t.responseTime}</span>
           <span className="mkt-pill">{lang === "ar" ? "الأردن أولاً، سوريا ثانياً" : "Jordan first, Syria second"}</span>
           <span className="mkt-pill">{lang === "ar" ? "توريد يركز على ثبات المواصفات" : "Consistency-first sourcing"}</span>
+        </div>
+
+        {/* NEW: buyer type selector that updates WhatsApp message */}
+        <div className="mkt-quote-picker" aria-label="Quote preferences">
+          <div className="mkt-quote-picker-head">
+            <strong>{t.quoteBuyerTitle}</strong>
+            <span className="mkt-quote-help">{t.quoteBuyerHelp}</span>
+          </div>
+          <div className="mkt-quote-actions" role="group" aria-label={t.quoteBuyerTitle}>
+            <button
+              type="button"
+              className={`btn btn-ghost mkt-toggle ${buyerType === "pharmacy" ? "is-on" : ""}`}
+              onClick={() => setBuyerType("pharmacy")}
+            >
+              {t.buyerPharmacy}
+            </button>
+            <button
+              type="button"
+              className={`btn btn-ghost mkt-toggle ${buyerType === "reseller" ? "is-on" : ""}`}
+              onClick={() => setBuyerType("reseller")}
+            >
+              {t.buyerReseller}
+            </button>
+          </div>
         </div>
 
         <div className="mkt-cta-row">
