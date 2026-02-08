@@ -542,3 +542,61 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   border-radius: 10px;
   padding: 10px;
 }
+/* --- Marketing page enhancements (trust strip, MD card, selection badge) --- */
+.mkt-trust-strip{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top: 14px;
+}
+.mkt-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.mkt-hero-mini{
+  margin-top: 10px;
+  display:flex;
+  flex-wrap:wrap;
+  gap: 12px;
+}
+.mkt-mini-link{
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+}
+.mkt-mini-link:hover{ text-decoration: underline; }
+
+.mkt-split{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+@media (max-width: 760px){
+  .mkt-split{ grid-template-columns: 1fr; }
+}
+
+.mkt-job-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.mkt-selected-badge{
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.06);
+  white-space: nowrap;
+}

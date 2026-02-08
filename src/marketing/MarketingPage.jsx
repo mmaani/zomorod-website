@@ -7,19 +7,38 @@ const COPY = {
     langLabel: "عربي",
     brandName: "Zomorod Medical Supplies LLC",
     tagline:
-      "A trusted distribution partner for compliant medical consumables and dependable supply operations in Jordan and Syria.",
+      "Reliable supply and consistent specifications for professional healthcare buyers in Jordan and Syria.",
+    // Best-practice CTA for B2B distributors is “Request a Quote”
+    ctaPrimary: "Request a Quote",
     ctaStaff: "Staff Login",
-    ctaWhatsapp: "Message us on WhatsApp",
+    ctaCall: "Call",
+    ctaEmail: "Email",
+    responseTime: "We respond within 48 business hours.",
     metrics: [
       { value: "Jordan & Syria", label: "Coverage" },
-      { value: "Hospitals to retail", label: "Client segments" },
-      { value: "Quality-focused", label: "Sourcing approach" },
+      { value: "Pharmacies & resellers", label: "Primary buyers" },
+      { value: "Consistency-first", label: "Operating approach" },
     ],
     tabs: { about: "Company", products: "Products", careers: "Careers" },
     aboutTitle: "Professional medical supply solutions",
     aboutText:
-      "Based in Amman, Zomorod supports hospitals, clinics, laboratories, and distributors with quality-focused sourcing and documented compliance.",
-    aboutPoints: ["Regulatory-ready documentation", "Traceable sourcing", "Responsive local support"],
+      "Based in Amman, Zomorod supports pharmacies, clinics, laboratories, and resellers with disciplined sourcing, clear lead times, and compliance-aware documentation guidance (as applicable).",
+    aboutPoints: [
+      "Reliable supply and consistent specifications",
+      "Documentation guidance as applicable",
+      "Traceability when available from suppliers",
+    ],
+    trustTitle: "Trust & operating principles",
+    trustPoints: [
+      "Clear lead times and proactive buyer communication",
+      "Quality-focused sourcing with consistency checks",
+      "Regulatory requirements vary by destination and product category",
+      "We serve professional buyers — not medical advice",
+    ],
+    mdTitle: "Managing Director — Mohammad Maani (MBA)",
+    mdBody:
+      "Managing Director with 12+ years of experience across private sector and international operations. Focused on disciplined sourcing, partner coordination, and reliable fulfillment for professional buyers.",
+    mdLinkedInLabel: "LinkedIn profile",
     servicesTitle: "Our services",
     services: [
       "Medical consumables procurement and supply planning",
@@ -27,9 +46,11 @@ const COPY = {
       "Order fulfillment coordination and after-sales follow-up",
       "Product and document traceability for compliance workflows",
     ],
-    productsTitle: "Our product lines",
+    productsTitle: "Our product categories",
+    productsSubtitle:
+      "We publish categories (not a full SKU catalog). Specific items depend on your request, quantities, and destination requirements.",
     sectorsTitle: "Who we serve",
-    sectors: ["Hospitals", "Clinics", "Laboratories", "Pharmacies & distributors"],
+    sectors: ["Pharmacies", "Clinics", "Laboratories", "Resellers / distributors"],
     careersTitle: "Recruitment announcements",
     careersSubtitle: "Open vacancies published from CRM. Apply directly below.",
     jobsLoading: "Loading opportunities...",
@@ -58,20 +79,33 @@ const COPY = {
     dir: "rtl",
     langLabel: "EN",
     brandName: "شركة زمرد للمستلزمات الطبية ذ.م.م",
-    tagline:
-      "شريك موثوق لتوريد المستلزمات الطبية المتوافقة مع المتطلبات التشغيلية والتنظيمية في الأردن وسوريا.",
+    tagline: "توريد موثوق ومواصفات ثابتة للمشترين المهنيين في الأردن وسوريا.",
+    ctaPrimary: "طلب عرض سعر",
     ctaStaff: "دخول الموظفين",
-    ctaWhatsapp: "تواصل معنا على واتساب",
+    ctaCall: "اتصال",
+    ctaEmail: "البريد",
+    responseTime: "نرد خلال 48 ساعة عمل.",
     metrics: [
       { value: "الأردن وسوريا", label: "نطاق التغطية" },
-      { value: "من المستشفيات إلى التجزئة", label: "شرائح العملاء" },
-      { value: "تركيز على الجودة", label: "منهجية التوريد" },
+      { value: "الصيدليات والموزعون", label: "العملاء الأساسيون" },
+      { value: "ثبات المواصفات", label: "نهج العمل" },
     ],
     tabs: { about: "الشركة", products: "المنتجات", careers: "الوظائف" },
     aboutTitle: "حلول احترافية للمستلزمات الطبية",
     aboutText:
-      "من مقرّنا في عمّان، ندعم المستشفيات والعيادات والمختبرات والموزعين عبر توريد موثوق ونهج يركز على الجودة والامتثال.",
-    aboutPoints: ["وثائق جاهزة للمتطلبات التنظيمية", "توريد قابل للتتبع", "دعم محلي سريع"],
+      "من مقرّنا في عمّان، ندعم الصيدليات والعيادات والمختبرات والموزعين عبر توريد منضبط، وضوح وقت التوريد، وإرشادات مستندات تنظيمية (عند الاقتضاء).",
+    aboutPoints: ["توريد موثوق ومواصفات ثابتة", "إرشادات مستندات عند الاقتضاء", "تتبع عند توفره من المورد"],
+    trustTitle: "الثقة ومبادئ التشغيل",
+    trustPoints: [
+      "وضوح وقت التوريد وتواصل استباقي مع العميل",
+      "توريد يركز على الجودة مع فحص ثبات المواصفات",
+      "المتطلبات التنظيمية تختلف حسب الوجهة وفئة المنتج",
+      "نخدم المشترين المهنيين — ليس نصيحة طبية",
+    ],
+    mdTitle: "المدير العام — محمد المعاني (MBA)",
+    mdBody:
+      "مدير عام بخبرة تزيد عن 12 عامًا في القطاع الخاص والعمليات الدولية. يركز على انضباط التوريد، تنسيق الشركاء، وتنفيذ موثوق للمشترين المهنيين.",
+    mdLinkedInLabel: "حساب لينكدإن",
     servicesTitle: "خدماتنا",
     services: [
       "توريد المستهلكات الطبية وتخطيط احتياجات الإمداد",
@@ -79,9 +113,11 @@ const COPY = {
       "تنسيق تنفيذ الطلبات والمتابعة بعد البيع",
       "إتاحة تتبع المنتجات والوثائق ضمن مسارات الامتثال",
     ],
-    productsTitle: "خطوط منتجاتنا",
+    productsTitle: "فئات منتجاتنا",
+    productsSubtitle:
+      "نعرض فئات وليس كتالوج SKU كامل. الأصناف تعتمد على الطلب والكميات ومتطلبات الوجهة.",
     sectorsTitle: "الجهات التي نخدمها",
-    sectors: ["المستشفيات", "العيادات", "المختبرات", "الصيدليات والموزعون"],
+    sectors: ["الصيدليات", "العيادات", "المختبرات", "الموزعون"],
     careersTitle: "إعلانات التوظيف",
     careersSubtitle: "الوظائف المفتوحة المنشورة من CRM. يمكن التقديم مباشرة.",
     jobsLoading: "جاري تحميل الفرص...",
@@ -110,20 +146,22 @@ const COPY = {
 
 const PRODUCT_CARDS = {
   en: [
-    { title: "PPE", body: "Masks, gloves, gowns, and essential protective equipment for clinical environments." },
-    { title: "Medical Consumables", body: "Daily sterile supplies, procedure kits, infusion and wound-care consumables." },
-    { title: "Devices & Accessories", body: "Selected medical devices and accessories for reliable daily operation." },
-    { title: "Laboratory Supplies", body: "Routine lab disposables and supporting products for testing workflows." },
-    { title: "Infection Control", body: "Products that support hygiene, disinfection, and safer patient environments." },
-    { title: "Custom Sourcing", body: "Need a specific item? We support institutional and project-based sourcing requests." },
+    { title: "Baby care", body: "Feeding bottles, silicone pacifiers, and selected baby-care items." },
+    { title: "Oral care", body: "Toothpaste, toothbrushes, and selected oral-care items on request." },
+    { title: "PPE (selected)", body: "Selected protective items for clinical and operational environments." },
+    { title: "Hygiene & infection control", body: "Selected hygiene and infection-prevention items." },
+    { title: "Clinic consumables", body: "Routine clinic consumables and exam-room essentials (selected)." },
+    { title: "Lab consumables (selected)", body: "Selected lab consumables on request with spec matching support." },
+    { title: "Custom sourcing", body: "Request-based sourcing for institutional and reseller needs." },
   ],
   ar: [
-    { title: "معدات الوقاية", body: "كمامات وقفازات وأرواب ومستلزمات الوقاية الأساسية للبيئات الطبية." },
-    { title: "المستهلكات الطبية", body: "مستلزمات معقمة يومية وأطقم إجراءات ومستلزمات التسريب والعناية بالجروح." },
-    { title: "الأجهزة والملحقات", body: "أجهزة وملحقات طبية مختارة للاستخدام العملي اليومي." },
-    { title: "مستلزمات المختبر", body: "مستهلكات مخبرية روتينية ومنتجات داعمة لسير العمل التحليلي." },
-    { title: "مكافحة العدوى", body: "منتجات تدعم النظافة والتعقيم وبيئة رعاية أكثر أماناً." },
-    { title: "توريد حسب الطلب", body: "هل تحتاج منتجاً محدداً؟ نوفر دعماً لطلبات التوريد المؤسسي والمشاريع." },
+    { title: "عناية بالأطفال", body: "رضّاعات ولهايات سيليكون وأصناف مختارة للعناية بالأطفال." },
+    { title: "عناية فموية", body: "معجون وفرش أسنان وأصناف عناية فموية مختارة عند الطلب." },
+    { title: "معدات وقاية (مختارة)", body: "مستلزمات وقاية مختارة للبيئات الطبية والتشغيلية." },
+    { title: "نظافة ومكافحة العدوى", body: "أصناف نظافة ووقاية من العدوى مختارة." },
+    { title: "مستهلكات العيادات", body: "مستهلكات عيادات روتينية وأصناف فحص أساسية (مختارة)." },
+    { title: "مستهلكات المختبر (مختارة)", body: "أصناف مختبر مختارة عند الطلب مع دعم مطابقة المواصفات." },
+    { title: "توريد حسب الطلب", body: "توريد حسب الطلب لاحتياجات المؤسسات والموزعين." },
   ],
 };
 
@@ -142,24 +180,54 @@ function truncateWords(text, maxWords) {
   return `${words.slice(0, maxWords).join(" ")}...`;
 }
 
+function makeWhatsAppLink(phoneE164DigitsOnly, text) {
+  const msg = encodeURIComponent(String(text || ""));
+  return `https://wa.me/${phoneE164DigitsOnly}?text=${msg}`;
+}
+
 export default function MarketingPage() {
   const [lang, setLang] = useState("en");
   const [activeTab, setActiveTab] = useState("about");
   const [jobs, setJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(true);
-  const [selectedJobId, setSelectedJobId] = useState(""); // user must explicitly pick
+
+  // User must explicitly pick a job before applying
+  const [selectedJobId, setSelectedJobId] = useState("");
   const [applyMsg, setApplyMsg] = useState("");
   const [applyErr, setApplyErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [expandedJobs, setExpandedJobs] = useState({});
   const applyFormRef = useRef(null);
+
   const t = useMemo(() => COPY[lang], [lang]);
 
-  const selectedJob = useMemo(() => {
-    const idNum = Number(selectedJobId);
-    if (!idNum) return null;
-    return jobs.find((j) => Number(j.id) === idNum) || null;
-  }, [jobs, selectedJobId]);
+  const selectedJob = useMemo(
+    () => jobs.find((j) => String(j.id) === String(selectedJobId)) || null,
+    [jobs, selectedJobId]
+  );
+
+  const quoteMessage = useMemo(() => {
+    if (lang === "ar") {
+      return [
+        "مرحباً، أود طلب عرض سعر.",
+        "نوع الجهة: (صيدلية / موزع)",
+        "فئة المنتج: ",
+        "المواصفات/التعبئة: ",
+        "الكمية: ",
+        "مدينة التسليم: (الأردن / سوريا)",
+      ].join("\n");
+    }
+    return [
+      "Hello, I'd like to request a quote.",
+      "Buyer type: (Pharmacy / Reseller)",
+      "Product category:",
+      "Specification / pack size:",
+      "Quantity:",
+      "Delivery city (Jordan / Syria):",
+    ].join("\n");
+  }, [lang]);
+
+  const whatsappQuoteUrl = useMemo(() => makeWhatsAppLink("962791752686", quoteMessage), [quoteMessage]);
 
   useEffect(() => {
     (async () => {
@@ -170,13 +238,11 @@ export default function MarketingPage() {
         if (res.ok && data.ok) {
           const items = Array.isArray(data.jobs) ? data.jobs : [];
           setJobs(items);
-          // IMPORTANT: do NOT auto-select a job
         }
       } finally {
         setJobsLoading(false);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function onApply(e) {
@@ -193,7 +259,7 @@ export default function MarketingPage() {
     const formEl = e.currentTarget;
     const form = new FormData(formEl);
 
-    // Ensure jobId is exactly the selected job
+    // Ensure jobId is exactly the selected job (ignore any stale hidden input)
     form.set("jobId", selectedJobId);
 
     const requiredKeys = ["jobId", "firstName", "lastName", "email", "phone", "educationLevel", "country", "city", "cv"];
@@ -214,7 +280,8 @@ export default function MarketingPage() {
         throw new Error(data?.sheetSync?.error || "Application saved, but Google Sheet sync failed");
       }
       setApplyMsg(t.applySuccess);
-      formEl?.reset(); // keeps selectedJobId
+      formEl?.reset();
+      setSelectedJobId("");
     } catch (err) {
       setApplyErr(err?.message || "Failed to submit application");
     } finally {
@@ -227,29 +294,38 @@ export default function MarketingPage() {
       <header className="mkt-hero card">
         <div className="mkt-hero-top">
           <img className="mkt-logo" src="/logo.png" alt="Zomorod logo" />
-          <button
-            type="button"
-            className="btn btn-ghost mkt-lang"
-            onClick={() => setLang((s) => (s === "en" ? "ar" : "en"))}
-          >
+          <button type="button" className="btn btn-ghost mkt-lang" onClick={() => setLang((s) => (s === "en" ? "ar" : "en"))}>
             {t.langLabel}
           </button>
         </div>
+
         <h1 className="mkt-title">{t.brandName}</h1>
         <p className="mkt-tagline">{t.tagline}</p>
+
+        <div className="mkt-trust-strip" aria-label="Service promise">
+          <span className="mkt-pill">{t.responseTime}</span>
+          <span className="mkt-pill">{lang === "ar" ? "الأردن أولاً، سوريا ثانياً" : "Jordan first, Syria second"}</span>
+          <span className="mkt-pill">{lang === "ar" ? "توريد يركز على ثبات المواصفات" : "Consistency-first sourcing"}</span>
+        </div>
+
         <div className="mkt-cta-row">
-          <a
-            className="btn mkt-cta"
-            href="https://api.whatsapp.com/send?phone=962791752686"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t.ctaWhatsapp}
+          <a className="btn btn-primary mkt-cta" href={whatsappQuoteUrl} target="_blank" rel="noopener noreferrer">
+            {t.ctaPrimary}
           </a>
-          <Link to="/login" className="btn btn-primary mkt-cta">
+          <Link to="/login" className="btn mkt-cta">
             {t.ctaStaff}
           </Link>
         </div>
+
+        <div className="mkt-hero-mini">
+          <a className="mkt-mini-link" href="tel:+962791752686">
+            {t.ctaCall}: +962 79 175 2686
+          </a>
+          <a className="mkt-mini-link" href="mailto:info@zomorodmedical.com">
+            {t.ctaEmail}: info@zomorodmedical.com
+          </a>
+        </div>
+
         <div className="mkt-hero-metrics">
           {t.metrics.map((m) => (
             <div className="mkt-metric" key={m.label}>
@@ -285,12 +361,32 @@ export default function MarketingPage() {
                 <li key={point}>{point}</li>
               ))}
             </ul>
+
+            <div className="mkt-split">
+              <article className="mkt-card">
+                <div className="mkt-card-title">{t.trustTitle}</div>
+                <ul className="mkt-list">
+                  {t.trustPoints.map((p) => (
+                    <li key={p}>{p}</li>
+                  ))}
+                </ul>
+              </article>
+
+              <article className="mkt-card">
+                <div className="mkt-card-title">{t.mdTitle}</div>
+                <p className="mkt-card-body">{t.mdBody}</p>
+                <a className="mkt-inline-btn" href="https://www.linkedin.com/in/mohammadamaani/" target="_blank" rel="noopener noreferrer">
+                  {t.mdLinkedInLabel}
+                </a>
+              </article>
+            </div>
           </div>
         ) : null}
 
         {activeTab === "products" ? (
           <div className="mkt-tab-panel">
             <h2 className="mkt-h2">{t.productsTitle}</h2>
+            <p className="mkt-p">{t.productsSubtitle}</p>
             <div className="mkt-grid">
               {PRODUCT_CARDS[lang].map((card) => (
                 <article className="mkt-card" key={card.title}>
@@ -311,73 +407,55 @@ export default function MarketingPage() {
               <p className="mkt-p">{t.jobsLoading}</p>
             ) : (
               <div className="mkt-jobs-list">
-                {jobs.map((job) => {
-                  const isSelected = String(job.id) === String(selectedJobId);
-                  return (
-                    <article
-                      key={job.id}
-                      className={`mkt-job-card ${isSelected ? "is-selected" : ""}`}
-                      aria-selected={isSelected ? "true" : "false"}
+                {jobs.map((job) => (
+                  <article key={job.id} className="mkt-job-card">
+                    <div className="mkt-job-head">
+                      <div className="mkt-card-title">{job.title}</div>
+                      {selectedJobId === String(job.id) ? <span className="mkt-selected-badge">{t.selected}</span> : null}
+                    </div>
+
+                    <p className="mkt-card-body">
+                      {[job.department, job.location_city, job.location_country, job.employment_type].filter(Boolean).join(" • ")}
+                    </p>
+
+                    {(() => {
+                      const fullText = stripHtml(job.job_description_html);
+                      const isLong = fullText.split(/\s+/).filter(Boolean).length > 50;
+                      const isExpanded = !!expandedJobs[job.id];
+                      return (
+                        <>
+                          <div className="mkt-job-description">
+                            {isLong && !isExpanded ? (
+                              <p>{truncateWords(fullText, 50)}</p>
+                            ) : (
+                              <div dangerouslySetInnerHTML={{ __html: job.job_description_html }} />
+                            )}
+                          </div>
+                          {isLong ? (
+                            <button
+                              type="button"
+                              className="mkt-inline-btn"
+                              onClick={() => setExpandedJobs((prev) => ({ ...prev, [job.id]: !prev[job.id] }))}
+                            >
+                              {isExpanded ? t.readLess : t.readMore}
+                            </button>
+                          ) : null}
+                        </>
+                      );
+                    })()}
+
+                    <button
+                      className="btn btn-primary"
+                      type="button"
+                      onClick={() => {
+                        setSelectedJobId(String(job.id));
+                        setTimeout(() => applyFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+                      }}
                     >
-                      <div className="mkt-card-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span>{job.title}</span>
-                        {isSelected ? (
-                          <span className="badge badge-strong" aria-label={t.selected}>
-                            {t.selected}
-                          </span>
-                        ) : null}
-                      </div>
-
-                      <p className="mkt-card-body">
-                        {[job.department, job.location_city, job.location_country, job.employment_type]
-                          .filter(Boolean)
-                          .join(" • ")}
-                      </p>
-
-                      {(() => {
-                        const fullText = stripHtml(job.job_description_html);
-                        const isLong = fullText.split(/\s+/).filter(Boolean).length > 50;
-                        const isExpanded = !!expandedJobs[job.id];
-                        return (
-                          <>
-                            <div className="mkt-job-description">
-                              {isLong && !isExpanded ? (
-                                <p>{truncateWords(fullText, 50)}</p>
-                              ) : (
-                                <div dangerouslySetInnerHTML={{ __html: job.job_description_html }} />
-                              )}
-                            </div>
-                            {isLong ? (
-                              <button
-                                type="button"
-                                className="mkt-inline-btn"
-                                onClick={() => setExpandedJobs((prev) => ({ ...prev, [job.id]: !prev[job.id] }))}
-                              >
-                                {isExpanded ? t.readLess : t.readMore}
-                              </button>
-                            ) : null}
-                          </>
-                        );
-                      })()}
-
-                      <button
-                        className="btn btn-primary"
-                        type="button"
-                        onClick={() => {
-                          setSelectedJobId(String(job.id));
-                          setApplyErr("");
-                          setApplyMsg("");
-                          setTimeout(
-                            () => applyFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
-                            50
-                          );
-                        }}
-                      >
-                        {t.selectJob}
-                      </button>
-                    </article>
-                  );
-                })}
+                      {t.selectJob}
+                    </button>
+                  </article>
+                ))}
                 {!jobs.length ? <p className="mkt-p">{t.jobsEmpty}</p> : null}
               </div>
             )}
@@ -399,25 +477,10 @@ export default function MarketingPage() {
 
                 <fieldset disabled={!selectedJobId || submitting} style={{ border: 0, padding: 0, margin: 0 }}>
                   <div className="grid grid-2">
-                    <input
-                      className="input"
-                      name="firstName"
-                      placeholder={lang === "ar" ? "الاسم الأول" : "First name"}
-                      required
-                    />
-                    <input
-                      className="input"
-                      name="lastName"
-                      placeholder={lang === "ar" ? "اسم العائلة" : "Last name"}
-                      required
-                    />
+                    <input className="input" name="firstName" placeholder={lang === "ar" ? "الاسم الأول" : "First name"} required />
+                    <input className="input" name="lastName" placeholder={lang === "ar" ? "اسم العائلة" : "Last name"} required />
                     <input className="input" type="email" name="email" placeholder="Email" required />
-                    <input
-                      className="input"
-                      name="phone"
-                      placeholder={lang === "ar" ? "رقم الهاتف" : "Phone number"}
-                      required
-                    />
+                    <input className="input" name="phone" placeholder={lang === "ar" ? "رقم الهاتف" : "Phone number"} required />
                     <select className="input" name="educationLevel" defaultValue="" required>
                       <option value="" disabled>
                         {t.educationPlaceholder}
@@ -443,13 +506,13 @@ export default function MarketingPage() {
                     </label>
                   </div>
 
-                  <button type="submit" className="btn btn-primary" disabled={!selectedJobId || submitting}>
+                  <button type="submit" className="btn btn-primary" disabled={submitting}>
                     {submitting ? t.submitting : t.apply}
                   </button>
-                </fieldset>
 
-                {applyErr ? <div className="banner">{applyErr}</div> : null}
-                {applyMsg ? <div className="mkt-success">{applyMsg}</div> : null}
+                  {applyErr ? <div className="banner">{applyErr}</div> : null}
+                  {applyMsg ? <div className="mkt-success">{applyMsg}</div> : null}
+                </fieldset>
               </form>
             ) : null}
           </div>
@@ -460,7 +523,11 @@ export default function MarketingPage() {
         <div className="grid grid-2">
           <article>
             <h2 className="mkt-h2">{t.servicesTitle}</h2>
-            <ul className="mkt-list">{t.services.map((service) => <li key={service}>{service}</li>)}</ul>
+            <ul className="mkt-list">
+              {t.services.map((service) => (
+                <li key={service}>{service}</li>
+              ))}
+            </ul>
           </article>
           <article>
             <h2 className="mkt-h2">{t.sectorsTitle}</h2>
@@ -489,6 +556,20 @@ export default function MarketingPage() {
           <div className="mkt-contact-row">
             <span className="mkt-contact-label">{t.contactAddress}</span>
             <span>{t.addressValue}</span>
+          </div>
+
+          <div className="mkt-contact-row">
+            <span className="mkt-contact-label">{lang === "ar" ? "عرض سعر" : "Quote"}</span>
+            <a href={whatsappQuoteUrl} target="_blank" rel="noopener noreferrer">
+              {lang === "ar" ? "افتح واتساب برسالة جاهزة" : "Open WhatsApp with a prefilled request"}
+            </a>
+          </div>
+
+          <div className="mkt-contact-row">
+            <span className="mkt-contact-label">{lang === "ar" ? "لينكدإن" : "LinkedIn"}</span>
+            <a href="https://www.linkedin.com/in/mohammadamaani/" target="_blank" rel="noopener noreferrer">
+              Mohammad Maani
+            </a>
           </div>
         </div>
       </section>
