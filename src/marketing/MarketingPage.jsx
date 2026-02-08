@@ -1,154 +1,193 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
+const WHATSAPP_NUMBER = "962791752686";
+
+function buildWhatsAppLink(message) {
+  const text = encodeURIComponent(String(message || ""));
+  // Official "Click to Chat" supports prefilled text via ?text=...
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`;
+}
+
 const COPY = {
   en: {
     dir: "ltr",
     langLabel: "عربي",
     brandName: "Zomorod Medical Supplies LLC",
     tagline:
-      "Reliable supply and consistent specifications for professional healthcare buyers in Jordan and Syria.",
-    ctaPrimary: "Request a Quote",
+      "Reliable supply and consistent specifications for pharmacies and resellers — Jordan & Syria.",
+    responseSla: "Quote response within 48 business hours.",
+
     ctaStaff: "Staff Login",
+    ctaQuote: "Request a Quote",
+    ctaWhatsapp: "WhatsApp",
     ctaCall: "Call",
-    ctaEmail: "Email",
-    responseTime: "We respond within 48 business hours.",
+
     metrics: [
       { value: "Jordan & Syria", label: "Coverage" },
       { value: "Pharmacies & resellers", label: "Primary buyers" },
-      { value: "Consistency-first", label: "Operating approach" },
+      { value: "Consistency-first", label: "Supply approach" },
     ],
+
     tabs: { about: "Company", products: "Products", careers: "Careers" },
+
     aboutTitle: "Professional medical supply solutions",
     aboutText:
-      "Based in Amman, Zomorod supports pharmacies, clinics, laboratories, and resellers with disciplined sourcing, clear lead times, and compliance-aware documentation guidance (as applicable).",
+      "Based in Amman, Zomorod supports pharmacies, clinics, laboratories, and resellers with documented, compliance-aware sourcing and dependable supply execution.",
     aboutPoints: [
-      "Reliable supply and consistent specifications",
-      "Documentation guidance as applicable",
-      "Traceability when available from suppliers",
+      "Reliable supply with consistent specs",
+      "Clear lead times and practical communication",
+      "Documentation guidance as applicable (requirements vary by destination)",
     ],
-    trustTitle: "Trust & operating principles",
-    trustPoints: [
-      "Clear lead times and proactive buyer communication",
-      "Quality-focused sourcing with consistency checks",
-      "Regulatory requirements vary by destination and product category",
-      "We serve professional buyers — not medical advice",
-    ],
-    mdTitle: "Managing Director — Mohammad Maani (MBA)",
-    mdBody:
-      "Managing Director with 12+ years of experience across private sector and international operations. Focused on disciplined sourcing, partner coordination, and reliable fulfillment for professional buyers.",
-    mdLinkedInLabel: "LinkedIn profile",
 
-    // Quote selector
-    quoteBuyerTitle: "Buyer type",
-    quoteBuyerHelp: "Choose your buyer type to prefill the message.",
-    buyerPharmacy: "Pharmacy / Retail",
-    buyerReseller: "Reseller / Distributor",
+    trustTitle: "Trust & operating standards",
+    trustPoints: [
+      { k: "Buyer fit", v: "Built for professional buyers (pharmacies, resellers, clinics, labs)." },
+      { k: "Consistency", v: "We prioritize consistency of specs and packaging across repeat orders." },
+      { k: "Traceability", v: "Traceability when available from suppliers (e.g., lot/batch details)." },
+      { k: "Compliance note", v: "Regulatory and import requirements vary by destination; we advise accordingly." },
+    ],
+
+    mdTitle: "Managing Director",
+    mdName: "Mohammad Maani",
+    mdRole: "Managing Director (MBA) • 12+ years of operational leadership",
+    mdBody:
+      "Leads sourcing discipline, partner coordination, and delivery execution across Jordan and regional markets.",
+    mdLinkedInLabel: "LinkedIn profile",
 
     servicesTitle: "Our services",
     services: [
       "Medical consumables procurement and supply planning",
-      "Support for tenders and institutional sourcing requirements",
+      "Availability checks and volume-based quotations",
+      "Documentation guidance (as applicable) and basic traceability",
       "Order fulfillment coordination and after-sales follow-up",
-      "Product and document traceability for compliance workflows",
     ],
-    productsTitle: "Our product categories",
-    productsSubtitle:
-      "We publish categories (not a full SKU catalog). Specific items depend on your request, quantities, and destination requirements.",
+
+    productsTitle: "Our product lines (category-level)",
+    productsNote:
+      "We publish categories (not a full SKU catalog). Availability and documentation requirements vary by destination.",
     sectorsTitle: "Who we serve",
-    sectors: ["Pharmacies", "Clinics", "Laboratories", "Resellers / distributors"],
+    sectors: ["Pharmacies", "Resellers / distributors", "Clinics", "Laboratories"],
+
     careersTitle: "Recruitment announcements",
     careersSubtitle: "Open vacancies published from CRM. Apply directly below.",
     jobsLoading: "Loading opportunities...",
     jobsEmpty: "No openings announced at the moment.",
     selectJob: "Select this job",
-    selected: "Selected",
+    selectedJobLabel: "Selected job",
     apply: "Apply now",
     submitting: "Submitting...",
     applySuccess: "Your application has been submitted successfully.",
-    applyError: "Please fill all required fields.",
-    selectJobFirst: "Please select a job first.",
-    applyingFor: "You are applying for:",
-    chooseAbove: "Please select a job from the list above before filling the form.",
+    applyError: "Please select a job and fill all required fields before submitting.",
     readMore: "Read more",
     readLess: "Show less",
     educationPlaceholder: "Education level",
     cv: "CV (required)",
-    cover: "cover letter (optional)",
+    cover: "Cover letter (optional)",
+
+    quoteTitle: "Request a Quote",
+    quoteSubtitle:
+      "Fastest way: WhatsApp your request with category, specification, quantity, and delivery city.",
+    quoteChecklistTitle: "Include in your message",
+    quoteChecklist: [
+      "Buyer type (pharmacy or reseller)",
+      "Product category + specification (size/material/pack)",
+      "Quantity",
+      "Delivery city + destination (Jordan or Syria)",
+      "Preferred brands (optional)",
+    ],
+
     contactTitle: "Contact",
     contactEmail: "Email",
     contactPhone: "Phone",
     contactAddress: "Address",
     addressValue: "Amman, Jordan",
   },
+
   ar: {
     dir: "rtl",
     langLabel: "EN",
     brandName: "شركة زمرد للمستلزمات الطبية ذ.م.م",
-    tagline: "توريد موثوق ومواصفات ثابتة للمشترين المهنيين في الأردن وسوريا.",
-    ctaPrimary: "طلب عرض سعر",
+    tagline: "توريد موثوق ومواصفات ثابتة للصيدليات والموزعين — الأردن وسوريا.",
+    responseSla: "الرد على عروض الأسعار خلال 48 ساعة عمل.",
+
     ctaStaff: "دخول الموظفين",
+    ctaQuote: "طلب عرض سعر",
+    ctaWhatsapp: "واتساب",
     ctaCall: "اتصال",
-    ctaEmail: "البريد",
-    responseTime: "نرد خلال 48 ساعة عمل.",
+
     metrics: [
-      { value: "الأردن وسوريا", label: "نطاق التغطية" },
-      { value: "الصيدليات والموزعون", label: "العملاء الأساسيون" },
-      { value: "ثبات المواصفات", label: "نهج العمل" },
+      { value: "الأردن وسوريا", label: "نطاق الخدمة" },
+      { value: "الصيدليات والموزعون", label: "الجهات الأساسية" },
+      { value: "ثبات المواصفات", label: "نهج التوريد" },
     ],
+
     tabs: { about: "الشركة", products: "المنتجات", careers: "الوظائف" },
+
     aboutTitle: "حلول احترافية للمستلزمات الطبية",
     aboutText:
-      "من مقرّنا في عمّان، ندعم الصيدليات والعيادات والمختبرات والموزعين عبر توريد منضبط، وضوح وقت التوريد، وإرشادات مستندات تنظيمية (عند الاقتضاء).",
-    aboutPoints: ["توريد موثوق ومواصفات ثابتة", "إرشادات مستندات عند الاقتضاء", "تتبع عند توفره من المورد"],
-    trustTitle: "الثقة ومبادئ التشغيل",
-    trustPoints: [
-      "وضوح وقت التوريد وتواصل استباقي مع العميل",
-      "توريد يركز على الجودة مع فحص ثبات المواصفات",
-      "المتطلبات التنظيمية تختلف حسب الوجهة وفئة المنتج",
-      "نخدم المشترين المهنيين — ليس نصيحة طبية",
+      "من مقرّنا في عمّان، ندعم الصيدليات والعيادات والمختبرات والموزعين عبر توريد قابل للتتبع ونهج يركز على الجودة والامتثال.",
+    aboutPoints: [
+      "توريد موثوق مع ثبات في المواصفات",
+      "وضوح في أوقات التوريد وتواصل عملي",
+      "إرشادات المستندات عند الاقتضاء (المتطلبات تختلف حسب الوجهة)",
     ],
-    mdTitle: "المدير العام — محمد المعاني (MBA)",
-    mdBody:
-      "مدير عام بخبرة تزيد عن 12 عامًا في القطاع الخاص والعمليات الدولية. يركز على انضباط التوريد، تنسيق الشركاء، وتنفيذ موثوق للمشترين المهنيين.",
-    mdLinkedInLabel: "حساب لينكدإن",
 
-    // Quote selector
-    quoteBuyerTitle: "نوع الجهة",
-    quoteBuyerHelp: "اختر نوع الجهة لتعبئة الرسالة تلقائياً.",
-    buyerPharmacy: "صيدلية / تجزئة",
-    buyerReseller: "موزع / تاجر",
+    trustTitle: "الثقة ومعايير التشغيل",
+    trustPoints: [
+      { k: "الفئة المستهدفة", v: "مخصص للمشترين المهنيين (صيدليات، موزعون، عيادات، مختبرات)." },
+      { k: "ثبات المواصفات", v: "نركز على ثبات المواصفات والتعبئة في الطلبات المتكررة." },
+      { k: "التتبع", v: "تتبع عند توفره من الموردين (مثل رقم التشغيلة/الدفعة)." },
+      { k: "ملاحظة تنظيمية", v: "المتطلبات التنظيمية تختلف حسب الوجهة؛ نقدم الإرشاد وفقاً لطلبك." },
+    ],
+
+    mdTitle: "المدير العام",
+    mdName: "Mohammad Maani",
+    mdRole: "المدير العام (MBA) • خبرة 12+ سنة في الإدارة التشغيلية",
+    mdBody:
+      "يقود الانضباط في التوريد وتنسيق الشركاء وتنفيذ التسليم داخل الأردن والأسواق الإقليمية.",
+    mdLinkedInLabel: "حساب لينكدإن",
 
     servicesTitle: "خدماتنا",
     services: [
       "توريد المستهلكات الطبية وتخطيط احتياجات الإمداد",
-      "دعم المناقصات ومتطلبات الشراء المؤسسي",
+      "تأكيد التوفر وتقديم عروض حسب الكميات",
+      "إرشادات المستندات (عند الاقتضاء) وتتبع أساسي",
       "تنسيق تنفيذ الطلبات والمتابعة بعد البيع",
-      "إتاحة تتبع المنتجات والوثائق ضمن مسارات الامتثال",
     ],
-    productsTitle: "فئات منتجاتنا",
-    productsSubtitle:
-      "نعرض فئات وليس كتالوج SKU كامل. الأصناف تعتمد على الطلب والكميات ومتطلبات الوجهة.",
+
+    productsTitle: "خطوط المنتجات (حسب الفئات)",
+    productsNote: "نعرض فئات وليس قائمة أصناف كاملة. التوفر ومتطلبات المستندات تختلف حسب الوجهة.",
     sectorsTitle: "الجهات التي نخدمها",
-    sectors: ["الصيدليات", "العيادات", "المختبرات", "الموزعون"],
+    sectors: ["الصيدليات", "الموزعون/الموردون", "العيادات", "المختبرات"],
+
     careersTitle: "إعلانات التوظيف",
     careersSubtitle: "الوظائف المفتوحة المنشورة من CRM. يمكن التقديم مباشرة.",
     jobsLoading: "جاري تحميل الفرص...",
     jobsEmpty: "لا توجد وظائف معلنة حالياً.",
     selectJob: "اختيار هذه الوظيفة",
-    selected: "تم الاختيار",
+    selectedJobLabel: "الوظيفة المختارة",
     apply: "قدّم الآن",
     submitting: "جاري الإرسال...",
     applySuccess: "تم إرسال طلبك بنجاح.",
-    applyError: "يرجى تعبئة جميع الحقول المطلوبة.",
-    selectJobFirst: "يرجى اختيار الوظيفة أولاً.",
-    applyingFor: "أنت تتقدم لوظيفة:",
-    chooseAbove: "يرجى اختيار وظيفة من القائمة أعلاه قبل تعبئة الطلب.",
+    applyError: "يرجى اختيار وظيفة ثم تعبئة جميع الحقول المطلوبة.",
     readMore: "اقرأ المزيد",
     readLess: "عرض أقل",
     educationPlaceholder: "المؤهل العلمي",
     cv: "السيرة الذاتية (مطلوب)",
     cover: "رسالة تغطية (اختياري)",
+
+    quoteTitle: "طلب عرض سعر",
+    quoteSubtitle: "الأسرع: أرسل طلبك عبر واتساب مع الفئة والمواصفات والكمية ومدينة التسليم.",
+    quoteChecklistTitle: "يرجى تضمين التالي",
+    quoteChecklist: [
+      "نوع الجهة (صيدلية أو موزع)",
+      "فئة المنتج + المواصفات (حجم/مادة/تعبئة)",
+      "الكمية",
+      "مدينة التسليم + الوجهة (الأردن أو سوريا)",
+      "العلامات المفضلة (اختياري)",
+    ],
+
     contactTitle: "التواصل",
     contactEmail: "البريد الإلكتروني",
     contactPhone: "الهاتف",
@@ -159,22 +198,22 @@ const COPY = {
 
 const PRODUCT_CARDS = {
   en: [
-    { title: "Baby care", body: "Feeding bottles, silicone pacifiers, and selected baby-care items." },
-    { title: "Oral care", body: "Toothpaste, toothbrushes, and selected oral-care items on request." },
-    { title: "PPE (selected)", body: "Selected protective items for clinical and operational environments." },
-    { title: "Hygiene & infection control", body: "Selected hygiene and infection-prevention items." },
-    { title: "Clinic consumables", body: "Routine clinic consumables and exam-room essentials (selected)." },
-    { title: "Lab consumables (selected)", body: "Selected lab consumables on request with spec matching support." },
-    { title: "Custom sourcing", body: "Request-based sourcing for institutional and reseller needs." },
+    { title: "Baby Care", body: "Silicone feeding bottles, pacifiers, and selected baby accessories." },
+    { title: "Oral Care", body: "Toothpaste, toothbrushes, and selected oral-care items." },
+    { title: "PPE (selected)", body: "Request-based PPE options aligned to your need and destination." },
+    { title: "Hygiene & Infection Control", body: "Selected hygiene and infection-prevention items (request-based)." },
+    { title: "Clinic Consumables", body: "Routine clinic consumables and procedure support items (selected)." },
+    { title: "Lab Consumables (selected)", body: "Selected lab disposables on request, with pack/size matching." },
+    { title: "Custom Sourcing", body: "Specification-based sourcing for recurring or volume demand." },
   ],
   ar: [
-    { title: "عناية بالأطفال", body: "رضّاعات ولهايات سيليكون وأصناف مختارة للعناية بالأطفال." },
-    { title: "عناية فموية", body: "معجون وفرش أسنان وأصناف عناية فموية مختارة عند الطلب." },
-    { title: "معدات وقاية (مختارة)", body: "مستلزمات وقاية مختارة للبيئات الطبية والتشغيلية." },
-    { title: "نظافة ومكافحة العدوى", body: "أصناف نظافة ووقاية من العدوى مختارة." },
-    { title: "مستهلكات العيادات", body: "مستهلكات عيادات روتينية وأصناف فحص أساسية (مختارة)." },
-    { title: "مستهلكات المختبر (مختارة)", body: "أصناف مختبر مختارة عند الطلب مع دعم مطابقة المواصفات." },
-    { title: "توريد حسب الطلب", body: "توريد حسب الطلب لاحتياجات المؤسسات والموزعين." },
+    { title: "عناية بالأطفال", body: "رضّاعات سيليكون، لهايات، ومستلزمات أطفال مختارة." },
+    { title: "عناية فموية", body: "معجون وفرش أسنان وأصناف عناية فموية مختارة." },
+    { title: "معدات وقاية (مختارة)", body: "خيارات وقاية حسب الطلب بما يتناسب مع الحاجة والوجهة." },
+    { title: "نظافة ومكافحة العدوى", body: "أصناف نظافة ووقاية من العدوى مختارة (حسب الطلب)." },
+    { title: "مستهلكات العيادات", body: "مستهلكات عيادات روتينية وأصناف دعم الإجراءات (مختارة)." },
+    { title: "مستلزمات مختبر (مختارة)", body: "مستهلكات مخبرية مختارة عند الطلب مع مطابقة التعبئة/الحجم." },
+    { title: "توريد حسب الطلب", body: "توريد حسب المواصفات للطلبات الدورية أو الكميات الكبيرة." },
   ],
 };
 
@@ -193,66 +232,28 @@ function truncateWords(text, maxWords) {
   return `${words.slice(0, maxWords).join(" ")}...`;
 }
 
-function makeWhatsAppLink(phoneE164DigitsOnly, text) {
-  const msg = encodeURIComponent(String(text || ""));
-  return `https://wa.me/${phoneE164DigitsOnly}?text=${msg}`;
-}
-
 export default function MarketingPage() {
   const [lang, setLang] = useState("en");
   const [activeTab, setActiveTab] = useState("about");
   const [jobs, setJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(true);
 
-  // Quote buyer-type selector (NEW)
-  const [buyerType, setBuyerType] = useState("pharmacy"); // "pharmacy" | "reseller"
-
-  // User must explicitly pick a job before applying
+  // IMPORTANT: do NOT auto-select. User must explicitly choose the job.
   const [selectedJobId, setSelectedJobId] = useState("");
+
   const [applyMsg, setApplyMsg] = useState("");
   const [applyErr, setApplyErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [expandedJobs, setExpandedJobs] = useState({});
   const applyFormRef = useRef(null);
-
   const t = useMemo(() => COPY[lang], [lang]);
 
-  const selectedJob = useMemo(
-    () => jobs.find((j) => String(j.id) === String(selectedJobId)) || null,
-    [jobs, selectedJobId]
-  );
+  const selectedJob = useMemo(() => {
+    const id = Number(selectedJobId || 0);
+    return jobs.find((j) => Number(j.id) === id) || null;
+  }, [jobs, selectedJobId]);
 
-  const quoteMessage = useMemo(() => {
-    const buyerLabel =
-      buyerType === "reseller"
-        ? (lang === "ar" ? "موزع / تاجر" : "Reseller / Distributor")
-        : (lang === "ar" ? "صيدلية / تجزئة" : "Pharmacy / Retail");
-
-    if (lang === "ar") {
-      return [
-        "مرحباً، أود طلب عرض سعر.",
-        `نوع الجهة: ${buyerLabel}`,
-        "فئة المنتج: ",
-        "المواصفات/التعبئة: ",
-        "الكمية: ",
-        "مدينة التسليم: (الأردن / سوريا)",
-      ].join("\n");
-    }
-
-    return [
-      "Hello, I'd like to request a quote.",
-      `Buyer type: ${buyerLabel}`,
-      "Product category:",
-      "Specification / pack size:",
-      "Quantity:",
-      "Delivery city (Jordan / Syria):",
-    ].join("\n");
-  }, [lang, buyerType]);
-
-  const whatsappQuoteUrl = useMemo(
-    () => makeWhatsAppLink("962791752686", quoteMessage),
-    [quoteMessage]
-  );
+  const quoteRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -261,8 +262,7 @@ export default function MarketingPage() {
         const res = await fetch("/api/recruitment?resource=jobs");
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
-          const items = Array.isArray(data.jobs) ? data.jobs : [];
-          setJobs(items);
+          setJobs(Array.isArray(data.jobs) ? data.jobs : []);
         }
       } finally {
         setJobsLoading(false);
@@ -270,43 +270,56 @@ export default function MarketingPage() {
     })();
   }, []);
 
+  function scrollToQuote() {
+    const el = quoteRef.current || document.getElementById("mkt-quote");
+    if (el && typeof el.scrollIntoView === "function") {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  function handleSelectJob(jobId) {
+    setSelectedJobId(String(jobId));
+    setApplyErr("");
+    setApplyMsg("");
+    const el = applyFormRef.current;
+    if (el && typeof el.scrollIntoView === "function") {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
   async function onApply(e) {
     e.preventDefault();
     setApplyErr("");
     setApplyMsg("");
 
-    if (!selectedJobId) {
-      setApplyErr(t.selectJobFirst);
-      applyFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
-    }
-
     const formEl = e.currentTarget;
     const form = new FormData(formEl);
 
-    // Ensure jobId is exactly the selected job
+    if (!selectedJobId) {
+      setApplyErr(t.applyError);
+      return;
+    }
+
+    // Force hidden field to match selected state (prevents tampering / empty value).
     form.set("jobId", selectedJobId);
 
-    const requiredKeys = ["jobId", "firstName", "lastName", "email", "phone", "educationLevel", "country", "city", "cv"];
-    for (const k of requiredKeys) {
-      const v = form.get(k);
-      if (!v || (typeof v === "string" && !v.trim())) {
-        setApplyErr(t.applyError);
-        return;
-      }
+    const requiredKeys = ["jobId", "firstName", "lastName", "email", "phone", "educationLevel", "country", "city"];
+    if (!requiredKeys.every((k) => form.get(k))) {
+      setApplyErr(t.applyError);
+      return;
     }
 
     setSubmitting(true);
     try {
       const res = await fetch("/api/recruitment?resource=apply", { method: "POST", body: form });
       const data = await res.json().catch(() => ({}));
+
       if (!res.ok || !data.ok) throw new Error(data.detail || data.error || "Failed to submit application");
-      if (data?.sheetSync?.ok === false) {
-        throw new Error(data?.sheetSync?.error || "Application saved, but Google Sheet sync failed");
-      }
+      if (data?.sheetSync?.ok === false) throw new Error(data?.sheetSync?.error || "Saved, but Google Sheet sync failed");
+
       setApplyMsg(t.applySuccess);
       formEl?.reset();
-      setSelectedJobId("");
+      // Keep selected job visible (so they know what they applied for).
     } catch (err) {
       setApplyErr(err?.message || "Failed to submit application");
     } finally {
@@ -314,16 +327,23 @@ export default function MarketingPage() {
     }
   }
 
+  const quoteMessage = useMemo(() => {
+    const buyer = lang === "ar" ? "الجهة: صيدلية/موزع" : "Buyer type: Pharmacy/Reseller";
+    const header = lang === "ar" ? "طلب عرض سعر — زمرد" : "Quote request — Zomorod";
+    const line1 = lang === "ar" ? "الفئة + المواصفات:" : "Category + specification:";
+    const line2 = lang === "ar" ? "الكمية:" : "Quantity:";
+    const line3 = lang === "ar" ? "مدينة التسليم + الوجهة:" : "Delivery city + destination (Jordan/Syria):";
+    return `${header}\n${buyer}\n${line1}\n${line2}\n${line3}`;
+  }, [lang]);
+
+  const whatsappQuoteHref = buildWhatsAppLink(quoteMessage);
+
   return (
     <main className="mkt-page" dir={t.dir}>
       <header className="mkt-hero card">
         <div className="mkt-hero-top">
           <img className="mkt-logo" src="/logo.png" alt="Zomorod logo" />
-          <button
-            type="button"
-            className="btn btn-ghost mkt-lang"
-            onClick={() => setLang((s) => (s === "en" ? "ar" : "en"))}
-          >
+          <button type="button" className="btn btn-ghost mkt-lang" onClick={() => setLang((s) => (s === "en" ? "ar" : "en"))}>
             {t.langLabel}
           </button>
         </div>
@@ -331,52 +351,23 @@ export default function MarketingPage() {
         <h1 className="mkt-title">{t.brandName}</h1>
         <p className="mkt-tagline">{t.tagline}</p>
 
-        <div className="mkt-trust-strip" aria-label="Service promise">
-          <span className="mkt-pill">{t.responseTime}</span>
-          <span className="mkt-pill">{lang === "ar" ? "الأردن أولاً، سوريا ثانياً" : "Jordan first, Syria second"}</span>
-          <span className="mkt-pill">{lang === "ar" ? "توريد يركز على ثبات المواصفات" : "Consistency-first sourcing"}</span>
-        </div>
-
-        {/* NEW: buyer type selector that updates WhatsApp message */}
-        <div className="mkt-quote-picker" aria-label="Quote preferences">
-          <div className="mkt-quote-picker-head">
-            <strong>{t.quoteBuyerTitle}</strong>
-            <span className="mkt-quote-help">{t.quoteBuyerHelp}</span>
-          </div>
-          <div className="mkt-quote-actions" role="group" aria-label={t.quoteBuyerTitle}>
-            <button
-              type="button"
-              className={`btn btn-ghost mkt-toggle ${buyerType === "pharmacy" ? "is-on" : ""}`}
-              onClick={() => setBuyerType("pharmacy")}
-            >
-              {t.buyerPharmacy}
-            </button>
-            <button
-              type="button"
-              className={`btn btn-ghost mkt-toggle ${buyerType === "reseller" ? "is-on" : ""}`}
-              onClick={() => setBuyerType("reseller")}
-            >
-              {t.buyerReseller}
-            </button>
-          </div>
+        <div className="mkt-trust-row">
+          <span className="mkt-pill">{t.responseSla}</span>
         </div>
 
         <div className="mkt-cta-row">
-          <a className="btn btn-primary mkt-cta" href={whatsappQuoteUrl} target="_blank" rel="noopener noreferrer">
-            {t.ctaPrimary}
+          <button type="button" className="btn btn-primary mkt-cta" onClick={scrollToQuote}>
+            {t.ctaQuote}
+          </button>
+          <a className="btn mkt-cta" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+            {t.ctaWhatsapp}
           </a>
-          <Link to="/login" className="btn mkt-cta">
+          <a className="btn btn-ghost mkt-cta" href="tel:+962791752686">
+            {t.ctaCall}
+          </a>
+          <Link to="/login" className="btn btn-ghost mkt-cta">
             {t.ctaStaff}
           </Link>
-        </div>
-
-        <div className="mkt-hero-mini">
-          <a className="mkt-mini-link" href="tel:+962791752686">
-            {t.ctaCall}: +962 79 175 2686
-          </a>
-          <a className="mkt-mini-link" href="mailto:info@zomorodmedical.com">
-            {t.ctaEmail}: info@zomorodmedical.com
-          </a>
         </div>
 
         <div className="mkt-hero-metrics">
@@ -409,26 +400,27 @@ export default function MarketingPage() {
           <div className="mkt-tab-panel">
             <h2 className="mkt-h2">{t.aboutTitle}</h2>
             <p className="mkt-p">{t.aboutText}</p>
-            <ul className="mkt-list">
-              {t.aboutPoints.map((point) => (
-                <li key={point}>{point}</li>
-              ))}
-            </ul>
+            <ul className="mkt-list">{t.aboutPoints.map((point) => <li key={point}>{point}</li>)}</ul>
 
             <div className="mkt-split">
-              <article className="mkt-card">
-                <div className="mkt-card-title">{t.trustTitle}</div>
-                <ul className="mkt-list">
-                  {t.trustPoints.map((p) => (
-                    <li key={p}>{p}</li>
+              <article className="mkt-trust card-soft">
+                <h3 className="mkt-h3">{t.trustTitle}</h3>
+                <div className="mkt-kv">
+                  {t.trustPoints.map((row) => (
+                    <div className="mkt-kv-row" key={row.k}>
+                      <div className="mkt-k">{row.k}</div>
+                      <div className="mkt-v">{row.v}</div>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </article>
 
-              <article className="mkt-card">
-                <div className="mkt-card-title">{t.mdTitle}</div>
-                <p className="mkt-card-body">{t.mdBody}</p>
-                <a className="mkt-inline-btn" href="https://www.linkedin.com/in/mohammadamaani/" target="_blank" rel="noopener noreferrer">
+              <article className="mkt-md card-soft">
+                <h3 className="mkt-h3">{t.mdTitle}</h3>
+                <div className="mkt-md-name">{t.mdName}</div>
+                <div className="mkt-md-role">{t.mdRole}</div>
+                <p className="mkt-p">{t.mdBody}</p>
+                <a className="mkt-link" href="https://www.linkedin.com/in/mohammadamaani/" target="_blank" rel="noopener noreferrer">
                   {t.mdLinkedInLabel}
                 </a>
               </article>
@@ -439,7 +431,7 @@ export default function MarketingPage() {
         {activeTab === "products" ? (
           <div className="mkt-tab-panel">
             <h2 className="mkt-h2">{t.productsTitle}</h2>
-            <p className="mkt-p">{t.productsSubtitle}</p>
+            <p className="mkt-p">{t.productsNote}</p>
             <div className="mkt-grid">
               {PRODUCT_CARDS[lang].map((card) => (
                 <article className="mkt-card" key={card.title}>
@@ -462,11 +454,7 @@ export default function MarketingPage() {
               <div className="mkt-jobs-list">
                 {jobs.map((job) => (
                   <article key={job.id} className="mkt-job-card">
-                    <div className="mkt-job-head">
-                      <div className="mkt-card-title">{job.title}</div>
-                      {selectedJobId === String(job.id) ? <span className="mkt-selected-badge">{t.selected}</span> : null}
-                    </div>
-
+                    <div className="mkt-card-title">{job.title}</div>
                     <p className="mkt-card-body">
                       {[job.department, job.location_city, job.location_country, job.employment_type].filter(Boolean).join(" • ")}
                     </p>
@@ -497,14 +485,7 @@ export default function MarketingPage() {
                       );
                     })()}
 
-                    <button
-                      className="btn btn-primary"
-                      type="button"
-                      onClick={() => {
-                        setSelectedJobId(String(job.id));
-                        setTimeout(() => applyFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
-                      }}
-                    >
+                    <button className="btn btn-primary" type="button" onClick={() => handleSelectJob(job.id)}>
                       {t.selectJob}
                     </button>
                   </article>
@@ -515,57 +496,41 @@ export default function MarketingPage() {
 
             {jobs.length ? (
               <form ref={applyFormRef} className="mkt-apply-form" onSubmit={onApply}>
-                <div className="banner" style={{ marginBottom: 12 }}>
-                  {selectedJob ? (
-                    <>
-                      <strong style={{ marginInlineEnd: 8 }}>{t.applyingFor}</strong>
-                      <span>{selectedJob.title}</span>
-                    </>
-                  ) : (
-                    <span>{t.chooseAbove}</span>
-                  )}
-                </div>
-
                 <input type="hidden" name="jobId" value={selectedJobId || ""} />
 
-                <fieldset disabled={!selectedJobId || submitting} style={{ border: 0, padding: 0, margin: 0 }}>
-                  <div className="grid grid-2">
-                    <input className="input" name="firstName" placeholder={lang === "ar" ? "الاسم الأول" : "First name"} required />
-                    <input className="input" name="lastName" placeholder={lang === "ar" ? "اسم العائلة" : "Last name"} required />
-                    <input className="input" type="email" name="email" placeholder="Email" required />
-                    <input className="input" name="phone" placeholder={lang === "ar" ? "رقم الهاتف" : "Phone number"} required />
-                    <select className="input" name="educationLevel" defaultValue="" required>
-                      <option value="" disabled>
-                        {t.educationPlaceholder}
-                      </option>
-                      {EDUCATION_LEVEL_OPTIONS[lang].map((level) => (
-                        <option key={level} value={level}>
-                          {level}
-                        </option>
-                      ))}
-                    </select>
-                    <input className="input" name="country" placeholder={lang === "ar" ? "الدولة" : "Country"} required />
-                    <input className="input" name="city" placeholder={lang === "ar" ? "المدينة" : "City"} required />
-                  </div>
+                <div className="mkt-selected-job">
+                  <span className="mkt-selected-job-label">{t.selectedJobLabel}:</span>
+                  <span className="mkt-selected-job-value">
+                    {selectedJob ? selectedJob.title : (lang === "ar" ? "يرجى اختيار وظيفة أعلاه" : "Please select a job above")}
+                  </span>
+                </div>
 
-                  <div className="grid grid-2" style={{ marginTop: 10 }}>
-                    <label>
-                      {t.cv}
-                      <input className="input" name="cv" type="file" required />
-                    </label>
-                    <label>
-                      {t.cover}
-                      <input className="input" name="cover" type="file" />
-                    </label>
-                  </div>
+                <div className="grid grid-2">
+                  <input className="input" name="firstName" placeholder={lang === "ar" ? "الاسم الأول" : "First name"} required />
+                  <input className="input" name="lastName" placeholder={lang === "ar" ? "اسم العائلة" : "Last name"} required />
+                  <input className="input" type="email" name="email" placeholder="Email" required />
+                  <input className="input" name="phone" placeholder={lang === "ar" ? "رقم الهاتف" : "Phone number"} required />
+                  <select className="input" name="educationLevel" defaultValue="" required>
+                    <option value="" disabled>{t.educationPlaceholder}</option>
+                    {EDUCATION_LEVEL_OPTIONS[lang].map((level) => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </select>
+                  <input className="input" name="country" placeholder={lang === "ar" ? "الدولة" : "Country"} required />
+                  <input className="input" name="city" placeholder={lang === "ar" ? "المدينة" : "City"} required />
+                </div>
 
-                  <button type="submit" className="btn btn-primary" disabled={submitting}>
-                    {submitting ? t.submitting : t.apply}
-                  </button>
+                <div className="grid grid-2" style={{ marginTop: 10 }}>
+                  <label>{t.cv}<input className="input" name="cv" type="file" required /></label>
+                  <label>{t.cover}<input className="input" name="cover" type="file" /></label>
+                </div>
 
-                  {applyErr ? <div className="banner">{applyErr}</div> : null}
-                  {applyMsg ? <div className="mkt-success">{applyMsg}</div> : null}
-                </fieldset>
+                <button type="submit" className="btn btn-primary" disabled={submitting || !selectedJobId}>
+                  {submitting ? t.submitting : t.apply}
+                </button>
+
+                {applyErr ? <div className="banner">{applyErr}</div> : null}
+                {applyMsg ? <div className="mkt-success">{applyMsg}</div> : null}
               </form>
             ) : null}
           </div>
@@ -576,22 +541,36 @@ export default function MarketingPage() {
         <div className="grid grid-2">
           <article>
             <h2 className="mkt-h2">{t.servicesTitle}</h2>
-            <ul className="mkt-list">
-              {t.services.map((service) => (
-                <li key={service}>{service}</li>
-              ))}
-            </ul>
+            <ul className="mkt-list">{t.services.map((service) => <li key={service}>{service}</li>)}</ul>
           </article>
           <article>
             <h2 className="mkt-h2">{t.sectorsTitle}</h2>
             <div className="mkt-grid mkt-grid-compact">
               {t.sectors.map((sector) => (
-                <div key={sector} className="mkt-card">
-                  <div className="mkt-card-title">{sector}</div>
-                </div>
+                <div key={sector} className="mkt-card"><div className="mkt-card-title">{sector}</div></div>
               ))}
             </div>
           </article>
+        </div>
+      </section>
+
+      <section className="mkt-section card" id="mkt-quote" ref={quoteRef}>
+        <h2 className="mkt-h2">{t.quoteTitle}</h2>
+        <p className="mkt-p">{t.quoteSubtitle}</p>
+
+        <div className="mkt-quote-grid">
+          <div>
+            <h3 className="mkt-h3">{t.quoteChecklistTitle}</h3>
+            <ul className="mkt-list">{t.quoteChecklist.map((it) => <li key={it}>{it}</li>)}</ul>
+          </div>
+
+          <div className="mkt-quote-actions">
+            <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+              {t.ctaWhatsapp}
+            </a>
+            <a className="btn" href="mailto:info@zomorodmedical.com">{t.contactEmail}</a>
+            <a className="btn btn-ghost" href="tel:+962791752686">{t.ctaCall}</a>
+          </div>
         </div>
       </section>
 
@@ -609,20 +588,6 @@ export default function MarketingPage() {
           <div className="mkt-contact-row">
             <span className="mkt-contact-label">{t.contactAddress}</span>
             <span>{t.addressValue}</span>
-          </div>
-
-          <div className="mkt-contact-row">
-            <span className="mkt-contact-label">{lang === "ar" ? "عرض سعر" : "Quote"}</span>
-            <a href={whatsappQuoteUrl} target="_blank" rel="noopener noreferrer">
-              {lang === "ar" ? "افتح واتساب برسالة جاهزة" : "Open WhatsApp with a prefilled request"}
-            </a>
-          </div>
-
-          <div className="mkt-contact-row">
-            <span className="mkt-contact-label">{lang === "ar" ? "لينكدإن" : "LinkedIn"}</span>
-            <a href="https://www.linkedin.com/in/mohammadamaani/" target="_blank" rel="noopener noreferrer">
-              Mohammad Maani
-            </a>
           </div>
         </div>
       </section>
