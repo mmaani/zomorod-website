@@ -103,13 +103,49 @@ function getResource(req) {
 }
 
 async function readBody(req, maxBytes = 12 * 1024 * 1024) {
+    if (Buffer.isBuffer(req?.body)) {
+    if (req.body.length > maxBytes) throw new Error("Request body too large");
+    return req.body;
+  }
+
+  if (typeof req?.body === "string") {
+    const buf = Buffer.from(req.body, "utf8");
+    if (buf.length > maxBytes) throw new Error("Request body too large");
+    return buf;
+  }
+
+  if (Buffer.isBuffer(req?.rawBody)) {
+    if (req.rawBody.length > maxBytes) throw new Error("Request body too large");
+    return req.rawBody;
+  }
+
   const chunks = [];
   let total = 0;
-  for await (const chunk of req) {
-    total += chunk.length;
-    if (total > maxBytes) throw new Error("Request body too large");
-    chunks.push(chunk);
+
+  if (req && typeof req[Symbol.asyncIterator] === "function") {
+    for await (const chunk of req) {
+      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      total += buf.length;
+      if (total > maxBytes) throw new Error("Request body too large");
+      chunks.push(buf);
+    }
+    return Buffer.concat(chunks);
   }
+
+  await new Promise((resolve, reject) => {
+    req.on("data", (chunk) => {
+      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      total += buf.length;
+      if (total > maxBytes) {
+        reject(new Error("Request body too large"));
+        return;
+      }
+      chunks.push(buf);
+    });
+    req.on("end", resolve);
+    req.on("error", reject);
+  });
+
   return Buffer.concat(chunks);
 }
 
@@ -509,14 +545,14 @@ export default async function recruitmentHandler(req, res) {
         }
 
     if (req.method === "POST" && resource === "apply") {
-      const contentType = String(req.headers["content-type"] || "").toLowerCase();
-      if (!contentType.includes("multipart/form-data")) {
-        return send(res, 400, { ok: false, error: "Content-Type must be multipart/form-data" });
-      }
+        try {
+        const contentType = String(req.headers["content-type"] || "").toLowerCase();
+        if (!contentType.includes("multipart/form-data")) {
+          return send(res, 400, { ok: false, error: "Content-Type must be multipart/form-data" });
+        }
 
       const body = await readBody(req, 35 * 1024 * 1024);
       const { fields, files } = parseMultipart(req, body);
-
       const jobId = toNum(fields.jobId);
       const firstName = toStr(fields.firstName);
       const lastName = toStr(fields.lastName);
@@ -536,6 +572,7 @@ export default async function recruitmentHandler(req, res) {
         const coverError = validateUploadFile(files.cover, "cover");
         if (coverError) return send(res, 400, { ok: false, error: coverError });
       }
+
       const job = await sql`SELECT id FROM jobs WHERE id = ${jobId} AND is_published = true LIMIT 1`;
       if (!job.length) return send(res, 404, { ok: false, error: "Job not found or unpublished" });
 
@@ -592,17 +629,24 @@ export default async function recruitmentHandler(req, res) {
             "new",
             new Date().toISOString(),
           ]);
-          } catch (err) {
-            sheetSyncError = String(err?.message || err);
-            console.warn("Sheets append failed, application remains saved", err);
+        } catch (err) {
+          sheetSyncError = String(err?.message || err);
+          console.warn("Sheets append failed, application remains saved", err);
         }
       }
-
 return send(res, 201, {
-        ok: true,
-        applicationId: ins[0].id,
-        sheetSync: sheetSyncError ? { ok: false, error: sheetSyncError } : { ok: true },
-      });
+          ok: true,
+          applicationId: String(ins[0].id),
+          sheetSync: sheetSyncError ? { ok: false, error: sheetSyncError } : { ok: true },
+        });
+      } catch (err) {
+        const message = String(err?.message || err);
+        console.error("Recruitment apply failed", { message, stack: err?.stack });
+        if (isSafeClientError(message)) {
+          return send(res, 400, { ok: false, error: message });
+        }
+        return send(res, 500, { ok: false, error: "Apply failed", detail: message });
+      }
     }
 
     if (req.method === "GET" && resource === "sheet_config_check") {
@@ -626,7 +670,7 @@ return send(res, 201, {
           "Ensure your deployment environment variables are updated and the server was restarted/redeployed",
         ],
       });
-        }
+    }
 
     if (req.method === "GET" && resource === "applications") {
       if (!(await requireMain(req, res))) return;
@@ -656,4 +700,6 @@ return send(res, 201, {
   }
   return send(res, 500, { ok: false, error: "Server error", detail: message });
   }
+  
   }
+  
