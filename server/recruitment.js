@@ -251,9 +251,24 @@ async function uploadFileToDrive(accessToken, folderId, file) {
 
 async function appendSheet(accessToken, spreadsheetId, values) {
   if (!spreadsheetId) return;
-  const sheetRange = toStr(process.env.GOOGLE_SHEET_RANGE) || "A:M";
-  const encodedRange = encodeURIComponent(sheetRange);
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}:append?valueInputOption=USER_ENTERED`;
+
+  const configuredRange = toStr(process.env.GOOGLE_SHEET_RANGE) || "A:M";
+  let normalizedRange = configuredRange;
+
+  // Some deployments store GOOGLE_SHEET_RANGE already URL-encoded.
+  // Decode once (when possible) so we do not accidentally double-encode.
+  if (configuredRange.includes("%")) {
+    try {
+      normalizedRange = decodeURIComponent(configuredRange);
+    } catch {
+      normalizedRange = configuredRange;
+    }
+  }
+
+  const encodedRange = encodeURIComponent(normalizedRange);
+  const url = new URL(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}:append`
+  );
   const r = await fetch(url, {
     method: "POST",
     headers: {
