@@ -700,6 +700,5 @@ return send(res, 201, {
   }
   return send(res, 500, { ok: false, error: "Server error", detail: message });
   }
-  
-  }
+    }
   
