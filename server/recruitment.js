@@ -252,8 +252,8 @@ async function uploadFileToDrive(accessToken, folderId, file) {
 async function appendSheet(accessToken, spreadsheetId, values) {
   if (!spreadsheetId) return;
   const sheetRange = toStr(process.env.GOOGLE_SHEET_RANGE) || "A:M";
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED`;
-
+  const encodedRange = encodeURIComponent(sheetRange);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}:append?valueInputOption=USER_ENTERED`;
   const r = await fetch(url, {
     method: "POST",
     headers: {
