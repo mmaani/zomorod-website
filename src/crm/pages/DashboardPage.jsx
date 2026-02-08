@@ -159,7 +159,9 @@ export default function DashboardPage() {
           </div>
 
           <div className="badges">
+          <a href="https://www.zomorodmedical.com">
             <span className="badge badge-strong">ZOMOROD</span>
+          </a>
             <span className="badge badge-soft">CRM</span>
           </div>
         </div>
