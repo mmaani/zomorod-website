@@ -169,6 +169,52 @@ function parseMultipart(req, rawBody) {
   return { fields, files };
 }
 
+const MAX_UPLOAD_FILE_BYTES = 15 * 1024 * 1024;
+const ALLOWED_UPLOAD_MIME_PREFIXES = ["image/"];
+const ALLOWED_UPLOAD_MIMES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]);
+const ALLOWED_UPLOAD_EXTENSIONS = new Set([
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".webp",
+  ".bmp",
+  ".tif",
+  ".tiff",
+]);
+
+function isAllowedUpload(file) {
+  const mime = toStr(file?.mimeType).toLowerCase();
+  const filename = toStr(file?.filename).toLowerCase();
+  const ext = filename.lastIndexOf(".") >= 0 ? filename.slice(filename.lastIndexOf(".")) : "";
+
+  const isAllowedMime = ALLOWED_UPLOAD_MIMES.has(mime) || ALLOWED_UPLOAD_MIME_PREFIXES.some((p) => mime.startsWith(p));
+  const isAllowedExt = ALLOWED_UPLOAD_EXTENSIONS.has(ext);
+  return isAllowedMime || isAllowedExt;
+}
+
+function validateUploadFile(file, label) {
+  if (!file?.buffer?.length) {
+    return `${label} file is required`;
+  }
+
+  if (file.buffer.length > MAX_UPLOAD_FILE_BYTES) {
+    return `${label} must be 15 MB or less`;
+  }
+
+  if (!isAllowedUpload(file)) {
+    return `${label} must be a PDF, Word document, or image file`;
+  }
+
+  return "";
+}
 
 function mustEnv(name) {
   const v = String(process.env[name] || "").trim();
@@ -264,11 +310,11 @@ async function appendSheet(accessToken, spreadsheetId, values) {
       normalizedRange = configuredRange;
     }
   }
-
-  const encodedRange = encodeURIComponent(normalizedRange);
+  const encodedRange = encodeURI(normalizedRange);
   const url = new URL(
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}:append`
   );
+  url.searchParams.set("valueInputOption", "USER_ENTERED");
   const r = await fetch(url, {
     method: "POST",
     headers: {
@@ -421,8 +467,13 @@ export default async function recruitmentHandler(req, res) {
         return send(res, 400, { ok: false, error: "jobId, firstName, lastName, email, phone, educationLevel, country, city are required" });
       }
      
-      if (!files.cv?.buffer?.length) return send(res, 400, { ok: false, error: "cv file is required" });
+      const cvError = validateUploadFile(files.cv, "cv");
+      if (cvError) return send(res, 400, { ok: false, error: cvError });
 
+      if (files.cover?.buffer?.length) {
+        const coverError = validateUploadFile(files.cover, "cover");
+        if (coverError) return send(res, 400, { ok: false, error: coverError });
+      }
       const job = await sql`SELECT id FROM jobs WHERE id = ${jobId} AND is_published = true LIMIT 1`;
       if (!job.length) return send(res, 404, { ok: false, error: "Job not found or unpublished" });
 
