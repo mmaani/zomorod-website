@@ -17,6 +17,7 @@ const toNum = (v) => {
 };
 
 const toStr = (v) => String(v ?? "").trim();
+
 let recruitmentSchemaReady = false;
 
 async function ensureRecruitmentSchema(sql) {
@@ -67,6 +68,7 @@ async function ensureRecruitmentSchema(sql) {
     status TEXT NOT NULL DEFAULT 'new',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
+
   await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS job_id BIGINT`;
   await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS first_name TEXT`;
   await sql`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS last_name TEXT`;
@@ -90,9 +92,12 @@ async function ensureRecruitmentSchema(sql) {
 }
 
 function getResource(req) {
-  const raw = typeof req.originalUrl === "string"
-    ? req.originalUrl
-    : (typeof req.url === "string" ? req.url : "");
+  const raw =
+    typeof req.originalUrl === "string"
+      ? req.originalUrl
+      : typeof req.url === "string"
+        ? req.url
+        : "";
 
   const url = new URL(raw.startsWith("/") ? raw : `/${raw}`, "http://127.0.0.1");
 
@@ -150,7 +155,9 @@ async function readBody(req, maxBytes = 12 * 1024 * 1024) {
 }
 
 async function readJson(req) {
-  if (req.body && typeof req.body === "object") return req.body;
+  if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) {
+    return req.body;
+  }
   const body = await readBody(req);
   if (!body.length) return {};
   try {
@@ -169,6 +176,7 @@ function parseMultipart(req, rawBody) {
   const delimiter = `--${boundary}`;
   const raw = rawBody.toString("latin1");
   const parts = raw.split(delimiter);
+
   const fields = {};
   const files = {};
 
@@ -209,8 +217,6 @@ function parseMultipart(req, rawBody) {
   return { fields, files };
 }
 
-
-
 const MAX_UPLOAD_FILE_BYTES = 15 * 1024 * 1024;
 const ALLOWED_UPLOAD_MIME_PREFIXES = ["image/"];
 const ALLOWED_UPLOAD_MIMES = new Set([
@@ -235,26 +241,21 @@ const ALLOWED_UPLOAD_EXTENSIONS = new Set([
 function isAllowedUpload(file) {
   const mime = toStr(file?.mimeType).toLowerCase();
   const filename = toStr(file?.filename).toLowerCase();
-  const ext = filename.lastIndexOf(".") >= 0 ? filename.slice(filename.lastIndexOf(".")) : "";
+  const ext =
+    filename.lastIndexOf(".") >= 0 ? filename.slice(filename.lastIndexOf(".")) : "";
 
-  const isAllowedMime = ALLOWED_UPLOAD_MIMES.has(mime) || ALLOWED_UPLOAD_MIME_PREFIXES.some((p) => mime.startsWith(p));
+  const isAllowedMime =
+    ALLOWED_UPLOAD_MIMES.has(mime) ||
+    ALLOWED_UPLOAD_MIME_PREFIXES.some((p) => mime.startsWith(p));
   const isAllowedExt = ALLOWED_UPLOAD_EXTENSIONS.has(ext);
+
   return isAllowedMime || isAllowedExt;
 }
 
 function validateUploadFile(file, label) {
-  if (!file?.buffer?.length) {
-    return `${label} file is required`;
-  }
-
-  if (file.buffer.length > MAX_UPLOAD_FILE_BYTES) {
-    return `${label} must be 15 MB or less`;
-  }
-
-  if (!isAllowedUpload(file)) {
-    return `${label} must be a PDF, Word document, or image file`;
-  }
-
+  if (!file?.buffer?.length) return `${label} file is required`;
+  if (file.buffer.length > MAX_UPLOAD_FILE_BYTES) return `${label} must be 15 MB or less`;
+  if (!isAllowedUpload(file)) return `${label} must be a PDF, Word document, or image file`;
   return "";
 }
 
@@ -263,6 +264,7 @@ function mustEnv(name) {
   if (!v) throw new Error(`Missing ${name}`);
   return v;
 }
+
 function isSafeClientError(message) {
   return (
     message.startsWith("Missing ") ||
@@ -280,11 +282,12 @@ function isSafeClientError(message) {
     message.includes("Unexpected end of form")
   );
 }
-async function getAccessToken() {
 
+async function getAccessToken() {
   const clientId = mustEnv("GOOGLE_OAUTH_CLIENT_ID");
   const clientSecret = mustEnv("GOOGLE_OAUTH_CLIENT_SECRET");
   const refreshToken = mustEnv("GOOGLE_OAUTH_REFRESH_TOKEN");
+
   const resp = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -298,16 +301,19 @@ async function getAccessToken() {
 
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok || !data.access_token) {
-    throw new Error(`Google refresh_token exchange failed (${resp.status}): ${JSON.stringify(data)}`);
+    throw new Error(
+      `Google refresh_token exchange failed (${resp.status}): ${JSON.stringify(data)}`
+    );
   }
+
   return data.access_token;
 }
-
 
 async function uploadFileToDrive(accessToken, folderId, file) {
   const boundary = `zomorod_${Date.now()}`;
 
   const metadata = { name: file.filename, parents: [folderId] };
+
   const pre = Buffer.from(
     `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
       `--${boundary}\r\nContent-Type: ${file.mimeType || "application/octet-stream"}\r\n\r\n`,
@@ -316,13 +322,13 @@ async function uploadFileToDrive(accessToken, folderId, file) {
   const post = Buffer.from(`\r\n--${boundary}--`, "utf8");
   const body = Buffer.concat([pre, file.buffer, post]);
 
-   const upload = await fetch(
+  const upload = await fetch(
     "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink&supportsAllDrives=true",
     {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
-          "Content-Type": `multipart/related; boundary=${boundary}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`,
       },
       body,
     }
@@ -345,8 +351,6 @@ async function appendSheet(accessToken, spreadsheetId, values) {
   const configuredRange = toStr(process.env.GOOGLE_SHEET_RANGE) || "A:M";
   let normalizedRange = configuredRange;
 
-  // Some deployments store GOOGLE_SHEET_RANGE already URL-encoded.
-  // Decode once (when possible) so we do not accidentally double-encode.
   if (configuredRange.includes("%")) {
     try {
       normalizedRange = decodeURIComponent(configuredRange);
@@ -393,9 +397,11 @@ async function verifySheetConfiguration(accessToken, spreadsheetId, configuredRa
 
   const metaUrl = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`);
   metaUrl.searchParams.set("fields", "properties.title,spreadsheetId");
+
   const metaResp = await fetch(metaUrl, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+
   const metaBody = await metaResp.text().catch(() => "");
   if (!metaResp.ok) {
     result.message = `Unable to open spreadsheet (${metaResp.status}): ${metaBody}`;
@@ -412,9 +418,12 @@ async function verifySheetConfiguration(accessToken, spreadsheetId, configuredRa
 
   const normalizedRange = toStr(configuredRange) || "A:M";
   const rangeUrl = new URL(
-    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(normalizedRange)}`
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(
+      normalizedRange
+    )}`
   );
   rangeUrl.searchParams.set("majorDimension", "ROWS");
+
   const rangeResp = await fetch(rangeUrl, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
@@ -455,6 +464,7 @@ export default async function recruitmentHandler(req, res) {
 
     if (req.method === "GET" && resource === "jobs_admin") {
       if (!(await requireMain(req, res))) return;
+
       const rows = await sql`
         SELECT id, title, department, location_country, location_city, employment_type,
                job_description_html, is_published, published_at, created_at, updated_at
@@ -467,12 +477,16 @@ export default async function recruitmentHandler(req, res) {
 
     if (req.method === "POST" && resource === "jobs") {
       if (!(await requireMain(req, res))) return;
-      const body = await readJson(req);
 
+      const body = await readJson(req);
       const title = toStr(body.title);
       const jobDescriptionHtml = toStr(body.jobDescriptionHtml);
+
       if (!title || !jobDescriptionHtml) {
-        return send(res, 400, { ok: false, error: "title and jobDescriptionHtml are required" });
+        return send(res, 400, {
+          ok: false,
+          error: "title and jobDescriptionHtml are required",
+        });
       }
 
       const department = toStr(body.department) || null;
@@ -496,14 +510,19 @@ export default async function recruitmentHandler(req, res) {
 
     if (req.method === "PATCH" && resource === "jobs") {
       if (!(await requireMain(req, res))) return;
+
       const body = await readJson(req);
       const id = toNum(body.id);
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
       const title = toStr(body.title);
       const jobDescriptionHtml = toStr(body.jobDescriptionHtml);
+
       if (!title || !jobDescriptionHtml) {
-        return send(res, 400, { ok: false, error: "title and jobDescriptionHtml are required" });
+        return send(res, 400, {
+          ok: false,
+          error: "title and jobDescriptionHtml are required",
+        });
       }
 
       const department = toStr(body.department) || null;
@@ -515,6 +534,7 @@ export default async function recruitmentHandler(req, res) {
       await sql.begin(async (tx) => {
         const cur = await tx`SELECT id, published_at FROM jobs WHERE id = ${id} LIMIT 1`;
         if (!cur.length) throw new Error("JOB_NOT_FOUND");
+
         const publishedAt = isPublished && !cur[0].published_at ? tx`now()` : cur[0].published_at;
 
         await tx`
@@ -532,14 +552,19 @@ export default async function recruitmentHandler(req, res) {
 
     if (req.method === "DELETE" && resource === "jobs") {
       if (!(await requireMain(req, res))) return;
+
       const id = toNum(params.get("id"));
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
-            const mode = toStr(params.get("mode")).toLowerCase();
+
+      const mode = toStr(params.get("mode")).toLowerCase();
 
       if (mode === "hard") {
         const refs = await sql`SELECT COUNT(*)::int AS count FROM job_applications WHERE job_id = ${id}`;
         if (Number(refs?.[0]?.count || 0) > 0) {
-          return send(res, 400, { ok: false, error: "Cannot delete a vacancy with applications. Unpublish it instead." });
+          return send(res, 400, {
+            ok: false,
+            error: "Cannot delete a vacancy with applications. Unpublish it instead.",
+          });
         }
 
         const del = await sql`DELETE FROM jobs WHERE id = ${id}`;
@@ -548,100 +573,121 @@ export default async function recruitmentHandler(req, res) {
 
       await sql`UPDATE jobs SET is_published = false, updated_at = now() WHERE id = ${id}`;
       return send(res, 200, { ok: true, mode: "soft" });
-        }
+    }
 
     if (req.method === "POST" && resource === "apply") {
       try {
         const contentType = String(req.headers["content-type"] || "").toLowerCase();
         if (!contentType.includes("multipart/form-data")) {
-          return send(res, 400, { ok: false, error: "Content-Type must be multipart/form-data" });
+          return send(res, 400, {
+            ok: false,
+            error: "Content-Type must be multipart/form-data",
+          });
         }
 
         const body = await readBody(req, 35 * 1024 * 1024);
         const { fields, files } = parseMultipart(req, body);
 
-      const jobId = toNum(fields.jobId);
-      const firstName = toStr(fields.firstName);
-      const lastName = toStr(fields.lastName);
-      const email = toStr(fields.email);
-      const phone = toStr(fields.phone);
-      const educationLevel = toStr(fields.educationLevel);
-      const country = toStr(fields.country);
-      const city = toStr(fields.city);
+        const jobId = toNum(fields.jobId);
+        const firstName = toStr(fields.firstName);
+        const lastName = toStr(fields.lastName);
+        const email = toStr(fields.email);
+        const phone = toStr(fields.phone);
+        const educationLevel = toStr(fields.educationLevel);
+        const country = toStr(fields.country);
+        const city = toStr(fields.city);
 
-      if (!jobId || !firstName || !lastName || !email || !phone || !educationLevel || !country || !city) {
-        return send(res, 400, { ok: false, error: "jobId, firstName, lastName, email, phone, educationLevel, country, city are required" });
-      }
-     
-      const cvError = validateUploadFile(files.cv, "cv");
-      if (cvError) return send(res, 400, { ok: false, error: cvError });
-
-      if (files.cover?.buffer?.length) {
-        const coverError = validateUploadFile(files.cover, "cover");
-        if (coverError) return send(res, 400, { ok: false, error: coverError });
-      }
-
-      const job = await sql`SELECT id FROM jobs WHERE id = ${jobId} AND is_published = true LIMIT 1`;
-      if (!job.length) return send(res, 404, { ok: false, error: "Job not found or unpublished" });
-
-      const folderId = toStr(process.env.GOOGLE_DRIVE_FOLDER_ID);
-      if (!folderId) throw new Error("Missing GOOGLE_DRIVE_FOLDER_ID");
-      const accessToken = await getAccessToken();
-      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const safe = `${firstName}_${lastName}`.replace(/[^\w-]+/g, "_");
-      const cv = await uploadFileToDrive(accessToken, folderId, {
-        ...files.cv,
-        filename: `CV_${safe}_${stamp}_${files.cv.filename || "file"}`,
-      });
-
-      let cover = null;
-      if (files.cover?.buffer?.length) {
-          try {
-                cover = await uploadFileToDrive(accessToken, folderId, {
-                  ...files.cover,
-                  filename: `Cover_${safe}_${stamp}_${files.cover.filename || "file"}`,
-                });
-              } catch (err) {
-                console.warn("Cover upload failed, continuing without cover link", err);
-              }
-            }
-        
-      const ins = await sql`
-        INSERT INTO job_applications
-        (job_id, first_name, last_name, email, phone, education_level, country, city,
-          cv_drive_file_id, cv_drive_link, cover_drive_file_id, cover_drive_link,
-          status, created_at)
-        VALUES
-          (${jobId}, ${firstName}, ${lastName}, ${email}, ${phone}, ${educationLevel}, ${country}, ${city},
-          ${cv.fileId}, ${cv.webViewLink}, ${cover?.fileId || null}, ${cover?.webViewLink || null},
-          'new', now())
-        RETURNING id
-      `;
-
-      const sheetId = toStr(process.env.GOOGLE_SHEET_ID);
-      let sheetSyncError = "";
-      if (sheetId) {
-        try {
-          await appendSheet(accessToken, sheetId, [
-            String(ins[0].id),
-            jobId,
-            firstName,
-            lastName,
-            email,
-            phone,
-            educationLevel,
-            country,
-            city,
-            cv.webViewLink,
-            cover?.webViewLink || "",
-            "new",
-            new Date().toISOString(),
-          ]);
-        } catch (err) {
-          sheetSyncError = String(err?.message || err);
-          console.warn("Sheets append failed, application remains saved", err);
+        if (
+          !jobId ||
+          !firstName ||
+          !lastName ||
+          !email ||
+          !phone ||
+          !educationLevel ||
+          !country ||
+          !city
+        ) {
+          return send(res, 400, {
+            ok: false,
+            error:
+              "jobId, firstName, lastName, email, phone, educationLevel, country, city are required",
+          });
         }
-      }
+
+        const cvError = validateUploadFile(files.cv, "cv");
+        if (cvError) return send(res, 400, { ok: false, error: cvError });
+
+        if (files.cover?.buffer?.length) {
+          const coverError = validateUploadFile(files.cover, "cover");
+          if (coverError) return send(res, 400, { ok: false, error: coverError });
+        }
+
+        const job = await sql`SELECT id FROM jobs WHERE id = ${jobId} AND is_published = true LIMIT 1`;
+        if (!job.length) {
+          return send(res, 404, { ok: false, error: "Job not found or unpublished" });
+        }
+
+        const folderId = toStr(process.env.GOOGLE_DRIVE_FOLDER_ID);
+        if (!folderId) throw new Error("Missing GOOGLE_DRIVE_FOLDER_ID");
+
+        const accessToken = await getAccessToken();
+        const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const safe = `${firstName}_${lastName}`.replace(/[^\w-]+/g, "_");
+
+        const cv = await uploadFileToDrive(accessToken, folderId, {
+          ...files.cv,
+          filename: `CV_${safe}_${stamp}_${files.cv.filename || "file"}`,
+        });
+
+        let cover = null;
+        if (files.cover?.buffer?.length) {
+          try {
+            cover = await uploadFileToDrive(accessToken, folderId, {
+              ...files.cover,
+              filename: `Cover_${safe}_${stamp}_${files.cover.filename || "file"}`,
+            });
+          } catch (err) {
+            console.warn("Cover upload failed, continuing without cover link", err);
+          }
+        }
+
+        const ins = await sql`
+          INSERT INTO job_applications
+            (job_id, first_name, last_name, email, phone, education_level, country, city,
+             cv_drive_file_id, cv_drive_link, cover_drive_file_id, cover_drive_link,
+             status, created_at)
+          VALUES
+            (${jobId}, ${firstName}, ${lastName}, ${email}, ${phone}, ${educationLevel}, ${country}, ${city},
+             ${cv.fileId}, ${cv.webViewLink}, ${cover?.fileId || null}, ${cover?.webViewLink || null},
+             'new', now())
+          RETURNING id
+        `;
+
+        const sheetId = toStr(process.env.GOOGLE_SHEET_ID);
+        let sheetSyncError = "";
+
+        if (sheetId) {
+          try {
+            await appendSheet(accessToken, sheetId, [
+              String(ins[0].id),
+              jobId,
+              firstName,
+              lastName,
+              email,
+              phone,
+              educationLevel,
+              country,
+              city,
+              cv.webViewLink,
+              cover?.webViewLink || "",
+              "new",
+              new Date().toISOString(),
+            ]);
+          } catch (err) {
+            sheetSyncError = String(err?.message || err);
+            console.warn("Sheets append failed, application remains saved", err);
+          }
+        }
 
         return send(res, 201, {
           ok: true,
@@ -660,10 +706,12 @@ export default async function recruitmentHandler(req, res) {
 
     if (req.method === "GET" && resource === "sheet_config_check") {
       if (!(await requireMain(req, res))) return;
+
       const spreadsheetId = toStr(process.env.GOOGLE_SHEET_ID);
       const configuredRange = toStr(process.env.GOOGLE_SHEET_RANGE) || "A:M";
       const accessToken = await getAccessToken();
       const check = await verifySheetConfiguration(accessToken, spreadsheetId, configuredRange);
+
       return send(res, 200, {
         ok: true,
         env: {
@@ -683,6 +731,7 @@ export default async function recruitmentHandler(req, res) {
 
     if (req.method === "GET" && resource === "applications") {
       if (!(await requireMain(req, res))) return;
+
       const jobId = toNum(params.get("jobId")) || null;
 
       const rows = await sql`
@@ -701,13 +750,17 @@ export default async function recruitmentHandler(req, res) {
 
     return send(res, 400, { ok: false, error: "Unknown route. Use ?resource=..." });
   } catch (err) {
-  const message = String(err?.message || err);
-  if (message === "JOB_NOT_FOUND") return send(res, 404, { ok: false, error: "Job not found" });
-  recruitmentSchemaReady = false;
-  if (isSafeClientError(message)) {
-    return send(res, 400, { ok: false, error: message });
+    const message = String(err?.message || err);
+    if (message === "JOB_NOT_FOUND") {
+      return send(res, 404, { ok: false, error: "Job not found" });
+    }
+
+    recruitmentSchemaReady = false;
+
+    if (isSafeClientError(message)) {
+      return send(res, 400, { ok: false, error: message });
+    }
+
+    return send(res, 500, { ok: false, error: "Server error", detail: message });
   }
-  return send(res, 500, { ok: false, error: "Server error", detail: message });
-  }
-  
-  }
+}
