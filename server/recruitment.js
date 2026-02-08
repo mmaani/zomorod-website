@@ -310,7 +310,8 @@ async function appendSheet(accessToken, spreadsheetId, values) {
       normalizedRange = configuredRange;
     }
   }
-  const encodedRange = encodeURI(normalizedRange);
+
+  const encodedRange = encodeURIComponent(normalizedRange);
   const url = new URL(
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}:append`
   );
@@ -328,6 +329,59 @@ async function appendSheet(accessToken, spreadsheetId, values) {
     const detail = await r.text().catch(() => "");
     throw new Error(`Sheets append failed (${r.status}): ${detail}`);
   }
+}
+async function verifySheetConfiguration(accessToken, spreadsheetId, configuredRange) {
+  const result = {
+    spreadsheetIdProvided: !!spreadsheetId,
+    rangeProvided: !!configuredRange,
+    spreadsheetReachable: false,
+    rangeReadable: false,
+    spreadsheetTitle: "",
+    message: "",
+  };
+
+  if (!spreadsheetId) {
+    result.message = "Missing GOOGLE_SHEET_ID";
+    return result;
+  }
+
+  const metaUrl = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`);
+  metaUrl.searchParams.set("fields", "properties.title,spreadsheetId");
+  const metaResp = await fetch(metaUrl, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const metaBody = await metaResp.text().catch(() => "");
+  if (!metaResp.ok) {
+    result.message = `Unable to open spreadsheet (${metaResp.status}): ${metaBody}`;
+    return result;
+  }
+
+  result.spreadsheetReachable = true;
+  try {
+    const parsed = JSON.parse(metaBody);
+    result.spreadsheetTitle = toStr(parsed?.properties?.title);
+  } catch {
+    result.spreadsheetTitle = "";
+  }
+
+  const normalizedRange = toStr(configuredRange) || "A:M";
+  const rangeUrl = new URL(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(normalizedRange)}`
+  );
+  rangeUrl.searchParams.set("majorDimension", "ROWS");
+  const rangeResp = await fetch(rangeUrl, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!rangeResp.ok) {
+    const rangeBody = await rangeResp.text().catch(() => "");
+    result.message = `Spreadsheet is reachable, but range is invalid/inaccessible (${rangeResp.status}): ${rangeBody}`;
+    return result;
+  }
+
+  result.rangeReadable = true;
+  result.message = "Spreadsheet ID and range are both accessible";
+  return result;
 }
 
 async function requireMain(req, res) {
@@ -451,7 +505,7 @@ export default async function recruitmentHandler(req, res) {
         }
 
     if (req.method === "POST" && resource === "apply") {
-      const body = await readBody(req);
+      const body = await readBody(req, 35 * 1024 * 1024);
       const { fields, files } = parseMultipart(req, body);
 
       const jobId = toNum(fields.jobId);
@@ -512,8 +566,8 @@ export default async function recruitmentHandler(req, res) {
       `;
 
       const sheetId = toStr(process.env.GOOGLE_SHEET_ID);
-        let sheetSyncError = "";
-        if (sheetId) {
+      let sheetSyncError = "";
+      if (sheetId) {
         try {
           await appendSheet(accessToken, sheetId, [
             ins[0].id,
@@ -536,8 +590,35 @@ export default async function recruitmentHandler(req, res) {
         }
       }
 
-      return send(res, 201, { ok: true, applicationId: ins[0].id });
+return send(res, 201, {
+        ok: true,
+        applicationId: ins[0].id,
+        sheetSync: sheetSyncError ? { ok: false, error: sheetSyncError } : { ok: true },
+      });
     }
+
+    if (req.method === "GET" && resource === "sheet_config_check") {
+      if (!(await requireMain(req, res))) return;
+      const spreadsheetId = toStr(process.env.GOOGLE_SHEET_ID);
+      const configuredRange = toStr(process.env.GOOGLE_SHEET_RANGE) || "A:M";
+      const accessToken = await getAccessToken();
+      const check = await verifySheetConfiguration(accessToken, spreadsheetId, configuredRange);
+      return send(res, 200, {
+        ok: true,
+        env: {
+          GOOGLE_SHEET_ID: spreadsheetId,
+          GOOGLE_SHEET_RANGE: configuredRange,
+          GOOGLE_DRIVE_FOLDER_ID: toStr(process.env.GOOGLE_DRIVE_FOLDER_ID),
+        },
+        check,
+        checklist: [
+          "GOOGLE_SHEET_ID must be the long ID between /d/ and /edit in your Google Sheet URL",
+          "The Google account tied to GOOGLE_OAUTH_REFRESH_TOKEN must have Editor access to the spreadsheet",
+          "GOOGLE_SHEET_RANGE should include the tab name when needed, e.g. Applications!A:M",
+          "Ensure your deployment environment variables are updated and the server was restarted/redeployed",
+        ],
+      });
+        }
 
     if (req.method === "GET" && resource === "applications") {
       if (!(await requireMain(req, res))) return;
@@ -567,5 +648,4 @@ export default async function recruitmentHandler(req, res) {
   }
   return send(res, 500, { ok: false, error: "Server error", detail: message });
   }
-  
-  }
+    }
