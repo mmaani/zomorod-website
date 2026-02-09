@@ -5,7 +5,6 @@ const WHATSAPP_NUMBER = "962791752686";
 
 function buildWhatsAppLink(message) {
   const text = encodeURIComponent(String(message || ""));
-  // Official "Click to Chat" supports prefilled text via ?text=...
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`;
 }
 
@@ -19,7 +18,6 @@ const COPY = {
     responseSla: "Quote response within 48 business hours.",
 
     ctaStaff: "Staff Login",
-    ctaQuote: "Request a Quote",
     ctaWhatsapp: "WhatsApp",
 
     metrics: [
@@ -64,7 +62,7 @@ const COPY = {
     mdRole: "Managing Director (MBA) • 12+ years of operational leadership",
     mdBody:
       "Leads sourcing discipline, partner coordination, and delivery execution across Jordan and regional markets.",
-    mdLinkedInLabel: "LinkedIn profile",
+    mdLinkedInLabel: "LinkedIn",
 
     servicesTitle: "Our services",
     services: [
@@ -123,7 +121,6 @@ const COPY = {
     responseSla: "الرد على عروض الأسعار خلال 48 ساعة عمل.",
 
     ctaStaff: "دخول الموظفين",
-    ctaQuote: "طلب عرض سعر",
     ctaWhatsapp: "واتساب",
 
     metrics: [
@@ -145,10 +142,22 @@ const COPY = {
 
     trustTitle: "الثقة ومعايير التشغيل",
     trustPoints: [
-      { k: "الفئة المستهدفة", v: "مخصص للمشترين المهنيين (صيدليات، موزعون، عيادات، مختبرات)." },
-      { k: "ثبات المواصفات", v: "نركز على ثبات المواصفات والتعبئة في الطلبات المتكررة." },
-      { k: "التتبع", v: "تتبع عند توفره من الموردين (مثل رقم التشغيلة/الدفعة)." },
-      { k: "ملاحظة تنظيمية", v: "المتطلبات التنظيمية تختلف حسب الوجهة؛ نقدم الإرشاد وفقاً لطلبك." },
+      {
+        k: "الفئة المستهدفة",
+        v: "مخصص للمشترين المهنيين (صيدليات، موزعون، عيادات، مختبرات).",
+      },
+      {
+        k: "ثبات المواصفات",
+        v: "نركز على ثبات المواصفات والتعبئة في الطلبات المتكررة.",
+      },
+      {
+        k: "التتبع",
+        v: "تتبع عند توفره من الموردين (مثل رقم التشغيلة/الدفعة).",
+      },
+      {
+        k: "ملاحظة تنظيمية",
+        v: "المتطلبات التنظيمية تختلف حسب الوجهة؛ نقدم الإرشاد وفقاً لطلبك.",
+      },
     ],
 
     mdTitle: "المدير العام",
@@ -156,7 +165,7 @@ const COPY = {
     mdRole: "المدير العام (MBA) • خبرة 12+ سنة في الإدارة التشغيلية",
     mdBody:
       "يقود الانضباط في التوريد وتنسيق الشركاء وتنفيذ التسليم داخل الأردن والأسواق الإقليمية.",
-    mdLinkedInLabel: "حساب لينكدإن",
+    mdLinkedInLabel: "لينكدإن",
 
     servicesTitle: "خدماتنا",
     services: [
@@ -167,7 +176,8 @@ const COPY = {
     ],
 
     productsTitle: "خطوط المنتجات (حسب الفئات)",
-    productsNote: "نعرض فئات وليس قائمة أصناف كاملة. التوفر ومتطلبات المستندات تختلف حسب الوجهة.",
+    productsNote:
+      "نعرض فئات وليس قائمة أصناف كاملة. التوفر ومتطلبات المستندات تختلف حسب الوجهة.",
     sectorsTitle: "الجهات التي نخدمها",
     sectors: ["الصيدليات", "الموزعون/الموردون", "العيادات", "المختبرات"],
 
@@ -188,7 +198,8 @@ const COPY = {
     cover: "رسالة تغطية (اختياري)",
 
     quoteTitle: "طلب عرض سعر",
-    quoteSubtitle: "الأسرع: أرسل طلبك عبر واتساب مع الفئة والمواصفات والكمية ومدينة التسليم.",
+    quoteSubtitle:
+      "الأسرع: أرسل طلبك عبر واتساب مع الفئة والمواصفات والكمية ومدينة التسليم.",
     quoteChecklistTitle: "يرجى تضمين التالي",
     quoteChecklist: [
       "نوع الجهة (صيدلية أو موزع)",
@@ -235,11 +246,25 @@ const EDUCATION_LEVEL_OPTIONS = {
 function stripHtml(html) {
   return String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
-
 function truncateWords(text, maxWords) {
   const words = String(text || "").split(/\s+/).filter(Boolean);
   if (words.length <= maxWords) return text;
   return `${words.slice(0, maxWords).join(" ")}...`;
+}
+
+function LinkedInIcon({ title = "LinkedIn" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <title>{title}</title>
+      <path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5ZM.5 8.5H4.5V24H.5V8.5ZM8.5 8.5H12.3V10.6H12.36C12.89 9.6 14.2 8.5 16.2 8.5 20.3 8.5 21 11.1 21 14.5V24H17V15.6C17 13.6 17 11.9 15.2 11.9 13.4 11.9 13.1 13.3 13.1 15.5V24H9.1V8.5H8.5Z" />
+    </svg>
+  );
 }
 
 export default function MarketingPage() {
@@ -280,13 +305,6 @@ export default function MarketingPage() {
     })();
   }, []);
 
-  function scrollToQuote() {
-    const el = quoteRef.current || document.getElementById("mkt-quote");
-    if (el && typeof el.scrollIntoView === "function") {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }
-
   function handleSelectJob(jobId) {
     setSelectedJobId(String(jobId));
     setApplyErr("");
@@ -310,7 +328,6 @@ export default function MarketingPage() {
       return;
     }
 
-    // Force hidden field to match selected state (prevents tampering / empty value).
     form.set("jobId", selectedJobId);
 
     const requiredKeys = ["jobId", "firstName", "lastName", "email", "phone", "educationLevel", "country", "city"];
@@ -368,11 +385,16 @@ export default function MarketingPage() {
           <span className="mkt-pill">{t.responseSla}</span>
         </div>
 
-        {/* HERO CTAs: max 2 */}
+        {/* CTAs: max 2 */}
         <div className="mkt-cta-row">
-          <button type="button" className="btn btn-primary mkt-cta" onClick={scrollToQuote}>
-            {t.ctaQuote}
-          </button>
+          <a
+            className="btn btn-primary mkt-cta"
+            href={whatsappQuoteHref}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {t.ctaWhatsapp}
+          </a>
 
           <Link to="/login" className="btn btn-ghost mkt-cta">
             {t.ctaStaff}
@@ -429,13 +451,16 @@ export default function MarketingPage() {
                 <div className="mkt-md-name">{t.mdName}</div>
                 <div className="mkt-md-role">{t.mdRole}</div>
                 <p className="mkt-p">{t.mdBody}</p>
+
                 <a
-                  className="mkt-link"
+                  className="mkt-icon-link"
                   href="https://www.linkedin.com/in/mohammadamaani/"
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label={t.mdLinkedInLabel}
+                  title={t.mdLinkedInLabel}
                 >
-                  {t.mdLinkedInLabel}
+                  <LinkedInIcon title={t.mdLinkedInLabel} />
                 </a>
               </article>
             </div>
@@ -578,7 +603,7 @@ export default function MarketingPage() {
             <ul className="mkt-list">{t.quoteChecklist.map((it) => <li key={it}>{it}</li>)}</ul>
           </div>
 
-          {/* QUOTE CTAs: max 2 */}
+          {/* CTAs: max 2 */}
           <div className="mkt-quote-actions">
             <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
               {t.ctaWhatsapp}
@@ -595,11 +620,11 @@ export default function MarketingPage() {
         <div className="mkt-contact">
           <div className="mkt-contact-row">
             <span className="mkt-contact-label">{t.contactEmail}</span>
-            <a href="mailto:info@zomorodmedical.com">info@zomorodmedical.com</a>
+            <a href="mailto:info@zomorodmedical.com" className="ltr">info@zomorodmedical.com</a>
           </div>
           <div className="mkt-contact-row">
             <span className="mkt-contact-label">{t.contactPhone}</span>
-            <a href="tel:+962791752686">+962 79 175 2686</a>
+            <a href="tel:+962791752686" className="ltr">+962 79 175 2686</a>
           </div>
           <div className="mkt-contact-row">
             <span className="mkt-contact-label">{t.contactAddress}</span>
