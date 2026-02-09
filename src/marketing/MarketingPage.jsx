@@ -356,20 +356,19 @@ export default function MarketingPage() {
         </div>
 
         <div className="mkt-cta-row">
-          <button type="button" className="btn btn-primary mkt-cta" onClick={scrollToQuote}>
-            {t.ctaQuote}
-          </button>
-          <a className="btn mkt-cta" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+          <a
+            className="btn btn-primary mkt-cta"
+            href={buildWhatsAppQuoteLink()}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {t.ctaWhatsapp}
           </a>
-          <a className="btn btn-ghost mkt-cta" href="tel:+962791752686">
-            {t.ctaCall}
-          </a>
+
           <Link to="/login" className="btn btn-ghost mkt-cta">
             {t.ctaStaff}
           </Link>
         </div>
-
         <div className="mkt-hero-metrics">
           {t.metrics.map((m) => (
             <div className="mkt-metric" key={m.label}>
