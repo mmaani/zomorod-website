@@ -21,7 +21,6 @@ const COPY = {
     ctaStaff: "Staff Login",
     ctaQuote: "Request a Quote",
     ctaWhatsapp: "WhatsApp",
-    ctaCall: "Call",
 
     metrics: [
       { value: "Jordan & Syria", label: "Coverage" },
@@ -42,10 +41,22 @@ const COPY = {
 
     trustTitle: "Trust & operating standards",
     trustPoints: [
-      { k: "Buyer fit", v: "Built for professional buyers (pharmacies, resellers, clinics, labs)." },
-      { k: "Consistency", v: "We prioritize consistency of specs and packaging across repeat orders." },
-      { k: "Traceability", v: "Traceability when available from suppliers (e.g., lot/batch details)." },
-      { k: "Compliance note", v: "Regulatory and import requirements vary by destination; we advise accordingly." },
+      {
+        k: "Buyer fit",
+        v: "Built for professional buyers (pharmacies, resellers, clinics, labs).",
+      },
+      {
+        k: "Consistency",
+        v: "We prioritize consistency of specs and packaging across repeat orders.",
+      },
+      {
+        k: "Traceability",
+        v: "Traceability when available from suppliers (e.g., lot/batch details).",
+      },
+      {
+        k: "Compliance note",
+        v: "Regulatory and import requirements vary by destination; we advise accordingly.",
+      },
     ],
 
     mdTitle: "Managing Director",
@@ -114,7 +125,6 @@ const COPY = {
     ctaStaff: "دخول الموظفين",
     ctaQuote: "طلب عرض سعر",
     ctaWhatsapp: "واتساب",
-    ctaCall: "اتصال",
 
     metrics: [
       { value: "الأردن وسوريا", label: "نطاق الخدمة" },
@@ -319,7 +329,6 @@ export default function MarketingPage() {
 
       setApplyMsg(t.applySuccess);
       formEl?.reset();
-      // Keep selected job visible (so they know what they applied for).
     } catch (err) {
       setApplyErr(err?.message || "Failed to submit application");
     } finally {
@@ -343,7 +352,11 @@ export default function MarketingPage() {
       <header className="mkt-hero card">
         <div className="mkt-hero-top">
           <img className="mkt-logo" src="/logo.png" alt="Zomorod logo" />
-          <button type="button" className="btn btn-ghost mkt-lang" onClick={() => setLang((s) => (s === "en" ? "ar" : "en"))}>
+          <button
+            type="button"
+            className="btn btn-ghost mkt-lang"
+            onClick={() => setLang((s) => (s === "en" ? "ar" : "en"))}
+          >
             {t.langLabel}
           </button>
         </div>
@@ -355,20 +368,17 @@ export default function MarketingPage() {
           <span className="mkt-pill">{t.responseSla}</span>
         </div>
 
+        {/* HERO CTAs: max 2 */}
         <div className="mkt-cta-row">
-          <a
-            className="btn btn-primary mkt-cta"
-            href={buildWhatsAppQuoteLink()}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t.ctaWhatsapp}
-          </a>
+          <button type="button" className="btn btn-primary mkt-cta" onClick={scrollToQuote}>
+            {t.ctaQuote}
+          </button>
 
           <Link to="/login" className="btn btn-ghost mkt-cta">
             {t.ctaStaff}
           </Link>
         </div>
+
         <div className="mkt-hero-metrics">
           {t.metrics.map((m) => (
             <div className="mkt-metric" key={m.label}>
@@ -419,7 +429,12 @@ export default function MarketingPage() {
                 <div className="mkt-md-name">{t.mdName}</div>
                 <div className="mkt-md-role">{t.mdRole}</div>
                 <p className="mkt-p">{t.mdBody}</p>
-                <a className="mkt-link" href="https://www.linkedin.com/in/mohammadamaani/" target="_blank" rel="noopener noreferrer">
+                <a
+                  className="mkt-link"
+                  href="https://www.linkedin.com/in/mohammadamaani/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {t.mdLinkedInLabel}
                 </a>
               </article>
@@ -563,12 +578,14 @@ export default function MarketingPage() {
             <ul className="mkt-list">{t.quoteChecklist.map((it) => <li key={it}>{it}</li>)}</ul>
           </div>
 
+          {/* QUOTE CTAs: max 2 */}
           <div className="mkt-quote-actions">
             <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
               {t.ctaWhatsapp}
             </a>
-            <a className="btn" href="mailto:info@zomorodmedical.com">{t.contactEmail}</a>
-            <a className="btn btn-ghost" href="tel:+962791752686">{t.ctaCall}</a>
+            <a className="btn" href="mailto:info@zomorodmedical.com">
+              {t.contactEmail}
+            </a>
           </div>
         </div>
       </section>
