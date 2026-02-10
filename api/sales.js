@@ -2,11 +2,12 @@
 import { getSql } from "../lib/db.js";
 import { requireUserFromReq } from "../lib/requireAuth.js";
 
-let salesItemsSchemaReady = false;
+let salesSchemaReady = false;
 
 function send(res, status, payload) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json");
+  // Prevent BigInt JSON crashes
   res.end(
     JSON.stringify(payload, (_k, v) => (typeof v === "bigint" ? v.toString() : v))
   );
@@ -43,14 +44,14 @@ async function readJson(req) {
   }
 }
 
-/* ---------- UoM helpers ---------- */
+/* ---------------- UOM helpers ---------------- */
 
 function normalizeUom(raw) {
   const u = s(raw).toLowerCase();
   if (!u || u === "piece" || u === "pcs" || u === "pc" || u === "unit") return "piece";
   if (u === "dozen" || u === "dz") return "dozen";
 
-  // pack10 / box10 / carton10 / case10 / pack-10 / box_10
+  // pack10 / box10 / pack-10 / box_10 / carton12 / case24
   const m = u.match(/^(pack|box|carton|case)[-_ ]?(\d+)$/);
   if (m) return `pack${m[2]}`;
 
@@ -58,7 +59,7 @@ function normalizeUom(raw) {
   if (m2) return `pack${m2[1]}`;
 
   if (u === "custom") return "custom";
-  return u; // unknown => will fail validation
+  return u; // unknown => will fail validation via multiplier=0
 }
 
 function uomMultiplier(uomRaw, customPackSizeRaw) {
@@ -81,8 +82,8 @@ function uomMultiplier(uomRaw, customPackSizeRaw) {
   return 0;
 }
 
-async function ensureSalesItemsSchema(sql) {
-  if (salesItemsSchemaReady) return;
+async function ensureSalesSchema(sql) {
+  if (salesSchemaReady) return;
 
   await sql`ALTER TABLE sales_order_items ADD COLUMN IF NOT EXISTS qty_uom TEXT`;
   await sql`ALTER TABLE sales_order_items ADD COLUMN IF NOT EXISTS qty_uom_multiplier INT`;
@@ -94,10 +95,12 @@ async function ensureSalesItemsSchema(sql) {
   await sql`UPDATE sales_order_items SET qty_uom_multiplier = 1 WHERE qty_uom_multiplier IS NULL`;
   await sql`UPDATE sales_order_items SET qty_input = qty WHERE qty_input IS NULL`;
   await sql`UPDATE sales_order_items SET unit_price_input_jod = unit_price_jod WHERE unit_price_input_jod IS NULL`;
-  await sql`UPDATE sales_order_items SET unit_price_uom = 'piece' WHERE unit_price_uom IS NULL`;
+  await sql`UPDATE sales_order_items SET unit_price_uom = COALESCE(qty_uom,'piece') WHERE unit_price_uom IS NULL`;
 
-  salesItemsSchemaReady = true;
+  salesSchemaReady = true;
 }
+
+/* ---------------- handler ---------------- */
 
 export default async function handler(req, res) {
   try {
@@ -105,9 +108,9 @@ export default async function handler(req, res) {
     const sql = getSql();
     const warehouseId = 1;
 
-    await ensureSalesItemsSchema(sql);
+    await ensureSalesSchema(sql);
 
-    // GET /api/sales
+    // GET /api/sales  (list transactions)
     if (method === "GET") {
       const auth = await requireUserFromReq(req, res);
       if (!auth) return;
@@ -124,14 +127,10 @@ export default async function handler(req, res) {
           sp.display_name AS salesperson_name,
           o.sale_date,
           o.notes,
-
           COALESCE(t.total_jod, 0) AS total_jod,
-          COALESCE(t.items_count_units, 0) AS items_count_units,
-          COALESCE(t.items_count_pcs, 0) AS items_count_pcs,
-
+          COALESCE(t.items_count, 0) AS items_count,
           COALESCE(it.items, '[]'::json) AS items,
           o.created_at
-
         FROM sales_orders o
         JOIN clients c ON c.id = o.client_id
         LEFT JOIN salespersons sp ON sp.id = o.salesperson_id
@@ -140,8 +139,7 @@ export default async function handler(req, res) {
           SELECT
             order_id,
             SUM(qty * unit_price_jod) AS total_jod,
-            SUM(COALESCE(qty_input, qty)) AS items_count_units,
-            SUM(qty) AS items_count_pcs
+            SUM(qty) AS items_count
           FROM sales_order_items
           GROUP BY order_id
         ) t ON t.order_id = o.id
@@ -154,13 +152,15 @@ export default async function handler(req, res) {
                 'product_id', soi.product_id,
                 'product_name', p.official_name,
 
+                -- base units (pcs)
                 'qty', soi.qty,
                 'unit_price_jod', soi.unit_price_jod,
                 'line_total_jod', soi.line_total_jod,
 
-                'qty_input', soi.qty_input,
+                -- input units (what user entered)
                 'qty_uom', soi.qty_uom,
                 'qty_uom_multiplier', soi.qty_uom_multiplier,
+                'qty_input', soi.qty_input,
                 'unit_price_input_jod', soi.unit_price_input_jod,
                 'unit_price_uom', soi.unit_price_uom
               )
@@ -179,7 +179,7 @@ export default async function handler(req, res) {
       return send(res, 200, { ok: true, sales: rows });
     }
 
-    // POST /api/sales (main)
+    // POST /api/sales  (create transaction) main only
     if (method === "POST") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
@@ -202,15 +202,18 @@ export default async function handler(req, res) {
 
       const itemsRaw = Array.isArray(body?.items) ? body.items : [];
 
+      // Backward compatible:
+      // - qtyInput can come as it.qtyInput OR it.qty
+      // - unitPriceInput can come as it.unitPriceInputJod OR it.unitPriceJod
       const items = itemsRaw
         .map((it) => {
           const productId = n(it?.productId);
 
-          const qtyUom = normalizeUom(it?.qtyUom || "piece");
+          const qtyUom = normalizeUom(it?.qtyUom || it?.uom || "piece");
           const mult = uomMultiplier(qtyUom, it?.customPackSize);
 
-          const qtyInput = Math.floor(n(it?.qty)); // units
-          const unitPriceInputJod = n(it?.unitPriceJod); // per unit
+          const qtyInput = Math.floor(n(it?.qtyInput ?? it?.qty));
+          const unitPriceInputJod = n(it?.unitPriceInputJod ?? it?.unitPriceJod);
 
           const qtyBase = qtyInput * mult; // pcs
           const unitPricePerPiece = mult > 0 ? unitPriceInputJod / mult : 0;
@@ -220,16 +223,16 @@ export default async function handler(req, res) {
             qtyUom,
             mult,
             qtyInput,
-            unitPriceInputJod,
             qtyBase,
+            unitPriceInputJod,
             unitPricePerPiece,
           };
         })
         .filter(
           (it) =>
             it.productId &&
-            it.mult > 0 &&
             it.qtyInput > 0 &&
+            it.mult > 0 &&
             it.qtyBase > 0 &&
             it.unitPriceInputJod > 0 &&
             it.unitPricePerPiece > 0
@@ -239,19 +242,19 @@ export default async function handler(req, res) {
         return send(res, 400, { ok: false, error: "clientId and saleDate are required" });
       }
       if (!items.length) {
-        return send(res, 400, { ok: false, error: "At least 1 valid item is required" });
+        return send(res, 400, { ok: false, error: "At least 1 item is required" });
       }
 
       try {
         const result = await sql.begin(async (tx) => {
-          // default salesperson if none provided
+          // default salesperson
           let salespersonId = salespersonIdInput;
           if (!salespersonId) {
             const def = await tx`SELECT id FROM salespersons WHERE is_default = true LIMIT 1`;
             salespersonId = def?.[0]?.id || null;
           }
 
-          // stock check in PCS (base)
+          // Stock check per product in BASE pcs
           const byProduct = new Map();
           for (const it of items) {
             const prev = byProduct.get(it.productId) || { qtyBase: 0 };
@@ -283,28 +286,23 @@ export default async function handler(req, res) {
             }
           }
 
-          // totals
+          // totals (use base pcs * per-piece price)
           let total = 0;
-          let itemsCountUnits = 0;
-          let itemsCountPcs = 0;
+          for (const it of items) total += it.qtyBase * it.unitPricePerPiece;
 
-          for (const it of items) {
-            total += it.qtyInput * it.unitPriceInputJod;
-            itemsCountUnits += it.qtyInput;
-            itemsCountPcs += it.qtyBase;
-          }
+          const itemsCount = items.length;
 
           const orderIns = await tx`
             INSERT INTO sales_orders
               (client_id, salesperson_id, sale_date, notes, total_jod, items_count, created_by)
             VALUES
-              (${clientId}, ${salespersonId}, ${saleDate}, ${notes}, ${total}, ${itemsCountUnits}, ${auth.sub || null})
+              (${clientId}, ${salespersonId}, ${saleDate}, ${notes}, ${total}, ${itemsCount}, ${auth.sub || null})
             RETURNING id
           `;
           const orderId = orderIns[0].id;
 
           for (const it of items) {
-            const lineTotal = it.qtyInput * it.unitPriceInputJod;
+            const lineTotal = it.qtyBase * it.unitPricePerPiece;
 
             await tx`
               INSERT INTO sales_order_items
@@ -331,7 +329,7 @@ export default async function handler(req, res) {
             `;
           }
 
-          return { orderId, total, itemsCountUnits, itemsCountPcs };
+          return { orderId, total, itemsCount };
         });
 
         return send(res, 201, { ok: true, ...result });
@@ -339,14 +337,14 @@ export default async function handler(req, res) {
         if (String(err?.message) === "INSUFFICIENT_STOCK") {
           return send(res, 400, {
             ok: false,
-            error: `Not enough stock for product ${err.productId}. Requested=${err.requested} pcs, Available=${err.onHand} pcs`,
+            error: `Not enough stock for product ${err.productId}. Requested (pcs) = ${err.requested}, Available (pcs) = ${err.onHand}`,
           });
         }
         throw err;
       }
     }
 
-    // DELETE /api/sales?id=... (void) main
+    // DELETE /api/sales?id=...  (void transaction) main only
     if (method === "DELETE") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
       if (!auth) return;
@@ -377,6 +375,7 @@ export default async function handler(req, res) {
           WHERE id = ${id}
         `;
 
+        // reverse inventory in BASE pcs
         for (const it of items) {
           await tx`
             INSERT INTO inventory_movements

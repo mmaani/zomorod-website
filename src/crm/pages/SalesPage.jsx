@@ -2,52 +2,51 @@ import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../api.js";
 import { hasRole } from "../auth";
 
-const MAX_VISIBLE = 5;
+const MAX_VISIBLE = 5; // show latest 5, scroll for older
+const MAX_QTY_OPTIONS = 25; // show up to 25 options then add "Max"
 
-function uomLabel(u) {
-  const s = String(u || "piece");
-  if (s === "piece") return "Piece";
-  if (s === "dozen") return "Dozen (12)";
-  const m = s.match(/^pack(\d+)$/);
-  if (m) return `Box/Pack of ${m[1]}`;
-  if (s === "custom") return "Custom pack";
-  return s;
-}
+const UOM_OPTIONS = [
+  { value: "piece", label: "Piece" },
+  { value: "dozen", label: "Dozen (12 pcs)" },
+  { value: "pack10", label: "Pack 10" },
+  { value: "pack20", label: "Pack 20" },
+  { value: "pack24", label: "Pack 24" },
+  { value: "custom", label: "Custom pack" },
+];
 
 function normalizeUom(raw) {
   const u = String(raw ?? "").trim().toLowerCase();
   if (!u || u === "piece" || u === "pcs" || u === "pc" || u === "unit") return "piece";
   if (u === "dozen" || u === "dz") return "dozen";
+
   const m = u.match(/^(pack|box|carton|case)[-_ ]?(\d+)$/);
   if (m) return `pack${m[2]}`;
+
   const m2 = u.match(/^pack(\d+)$/);
   if (m2) return `pack${m2[1]}`;
+
   if (u === "custom") return "custom";
   return u;
 }
 
 function uomMultiplier(uomRaw, customPackSizeRaw) {
-  const u = normalizeUom(uomRaw);
-  if (u === "piece") return 1;
-  if (u === "dozen") return 12;
-  const m = u.match(/^pack(\d+)$/);
+  const uom = normalizeUom(uomRaw);
+
+  if (uom === "piece") return 1;
+  if (uom === "dozen") return 12;
+
+  const m = uom.match(/^pack(\d+)$/);
   if (m) {
     const k = Math.floor(Number(m[1]));
-    return k > 0 ? k : 0;
+    return Number.isFinite(k) && k > 0 ? k : 0;
   }
-  if (u === "custom") {
-    const k = Math.floor(Number(customPackSizeRaw || 0));
-    return k > 0 ? k : 0;
-  }
-  return 0;
-}
 
-function clampUnits(desired, maxUnits) {
-  const d = Math.floor(Number(desired || 0));
-  if (!maxUnits || maxUnits <= 0) return d > 0 ? d : 1;
-  if (d <= 1) return 1;
-  if (d >= maxUnits) return maxUnits;
-  return d;
+  if (uom === "custom") {
+    const k = Math.floor(Number(customPackSizeRaw));
+    return Number.isFinite(k) && k > 0 ? k : 0;
+  }
+
+  return 0;
 }
 
 export default function SalesPage() {
@@ -60,12 +59,20 @@ export default function SalesPage() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // items now store qty as "qtyInput" + UOM
   const [form, setForm] = useState({
     clientId: "",
     saleDate: "",
     salespersonId: "",
     items: [
-      { productId: "", qtyUom: "piece", customPackSize: "", qty: 1, unitPriceJod: "" },
+      {
+        productId: "",
+        qtyUom: "piece",
+        customPackSize: "",
+        qtyInput: "1",
+        unitPriceJod: "",
+        _autoPrice: true,
+      },
     ],
   });
 
@@ -96,6 +103,7 @@ export default function SalesPage() {
     );
   }
 
+  // default sell price is per PIECE
   function getDefaultSellPricePerPiece(p) {
     const v =
       p?.default_sell_price_jod ??
@@ -111,25 +119,27 @@ export default function SalesPage() {
   }
 
   function getSalespersonName(sp) {
-    const n =
+    const name =
       sp?.display_name ||
       sp?.displayName ||
       `${sp?.first_name || sp?.firstName || ""} ${sp?.last_name || sp?.lastName || ""}`.trim();
-    return n || `Salesperson #${sp?.id}`;
+    return name || `Salesperson #${sp?.id}`;
   }
-
-  const total = useMemo(() => {
-    return (form.items || []).reduce((sum, it) => {
-      const qtyUnits = Math.floor(Number(it.qty || 0));
-      const unitPricePerUnit = Number(it.unitPriceJod || 0);
-      return sum + (qtyUnits > 0 && unitPricePerUnit > 0 ? qtyUnits * unitPricePerUnit : 0);
-    }, 0);
-  }, [form.items]);
 
   function formatDate(d) {
     if (!d) return "-";
-    const s = String(d);
-    return s.includes("T") ? s.split("T")[0] : s;
+    const s0 = String(d);
+    return s0.includes("T") ? s0.split("T")[0] : s0;
+  }
+
+  function formatUom(uom, mult) {
+    const u = normalizeUom(uom);
+    if (u === "piece") return "pcs";
+    if (u === "dozen") return "dozen";
+    const m = u.match(/^pack(\d+)$/);
+    if (m) return `pack(${m[1]})`;
+    if (u === "custom") return mult > 0 ? `custom(${mult})` : "custom";
+    return u || "pcs";
   }
 
   function formatSaleItems(sale) {
@@ -145,20 +155,29 @@ export default function SalesPage() {
           it.name ||
           `#${it.product_id || it.productId}`;
 
-        const qtyInput = Number(it.qty_input ?? it.qtyInput ?? 0) || 0;
-        const qtyPcs = Number(it.qty ?? 0) || 0;
+        // Prefer input fields (units), fallback to base pcs
+        const qtyInput = Number(it.qty_input ?? it.qtyInput ?? it.qty ?? 0);
+        const qtyUom = it.qty_uom ?? it.qtyUom ?? "piece";
+        const mult = Number(it.qty_uom_multiplier ?? it.qtyUomMultiplier ?? 1);
 
-        const qtyUom = it.qty_uom || it.qtyUom || "piece";
-        const mult = Number(it.qty_uom_multiplier ?? it.qtyUomMultiplier ?? 1) || 1;
+        const upInput = Number(it.unit_price_input_jod ?? it.unitPriceInputJod ?? it.unit_price_jod ?? it.unitPriceJod ?? 0);
+        const uomLabel = formatUom(qtyUom, mult);
 
-        const unitPriceInput = Number(it.unit_price_input_jod ?? it.unitPriceInputJod ?? 0) || 0;
-
-        return `${name} ×${qtyInput} ${uomLabel(qtyUom)} @ ${unitPriceInput.toFixed(
-          3
-        )} (= ${qtyPcs} pcs, ×${mult})`;
+        return `${name} ×${qtyInput} ${uomLabel} @ ${upInput.toFixed(3)}`;
       })
       .join(" | ");
   }
+
+  const total = useMemo(() => {
+    return (form.items || []).reduce((sum, it) => {
+      const qtyInput = Number(it.qtyInput || 0);
+      const mult = uomMultiplier(it.qtyUom, it.customPackSize);
+      const upInput = Number(it.unitPriceJod || 0);
+
+      if (!(qtyInput > 0) || !(upInput >= 0) || !(mult > 0)) return sum;
+      return sum + qtyInput * upInput;
+    }, 0);
+  }, [form.items]);
 
   async function load() {
     setLoading(true);
@@ -174,10 +193,12 @@ export default function SalesPage() {
     const [saleR, clientR, prodR, spR] = results;
 
     const parseOk = async (r, label) => {
-      if (r.status !== "fulfilled") return { ok: false, error: `${label}: ${r.reason?.message || "failed"}` };
+      if (r.status !== "fulfilled")
+        return { ok: false, error: `${label}: ${r.reason?.message || "failed"}` };
       const res = r.value;
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok) return { ok: false, error: `${label}: ${data?.error || data?.detail || `HTTP ${res.status}`}` };
+      if (!res.ok || !data?.ok)
+        return { ok: false, error: `${label}: ${data?.error || data?.detail || `HTTP ${res.status}`}` };
       return { ok: true, data };
     };
 
@@ -222,7 +243,10 @@ export default function SalesPage() {
   function addItem() {
     setForm((s) => ({
       ...s,
-      items: [...(s.items || []), { productId: "", qtyUom: "piece", customPackSize: "", qty: 1, unitPriceJod: "" }],
+      items: [
+        ...(s.items || []),
+        { productId: "", qtyUom: "piece", customPackSize: "", qtyInput: "1", unitPriceJod: "", _autoPrice: true },
+      ],
     }));
   }
 
@@ -232,39 +256,34 @@ export default function SalesPage() {
       items.splice(idx, 1);
       return {
         ...s,
-        items: items.length ? items : [{ productId: "", qtyUom: "piece", customPackSize: "", qty: 1, unitPriceJod: "" }],
+        items: items.length
+          ? items
+          : [{ productId: "", qtyUom: "piece", customPackSize: "", qtyInput: "1", unitPriceJod: "", _autoPrice: true }],
       };
     });
   }
 
-  function itemQtyPieces(it) {
-    const qtyUnits = Math.floor(Number(it.qty || 0));
-    const mult = uomMultiplier(it.qtyUom, it.customPackSize);
-    return qtyUnits > 0 && mult > 0 ? qtyUnits * mult : 0;
+  function computeMaxUnits(p, uom, customPackSize) {
+    const onHandPcs = getOnHandQty(p);
+    const mult = uomMultiplier(uom, customPackSize);
+    if (!(mult > 0)) return 0;
+    return Math.floor(onHandPcs / mult);
   }
 
   function validateStockClientSide() {
-    const byProduct = new Map();
-
-    for (const it of form.items || []) {
-      const productId = String(it.productId || "");
-      if (!productId) continue;
-
-      const pcs = itemQtyPieces(it);
-      if (pcs <= 0) continue;
-
-      byProduct.set(productId, (byProduct.get(productId) || 0) + pcs);
-    }
-
-    for (const [pid, requestedPcs] of byProduct.entries()) {
-      const p = productsById.get(String(pid));
+    for (const it of form.items) {
+      const p = productsById.get(String(it.productId));
       if (!p) continue;
-      const onHand = getOnHandQty(p);
-      if (requestedPcs > onHand) {
-        return `Not enough stock for ${getProductName(p)}. Requested=${requestedPcs} pcs, Available=${onHand} pcs`;
+
+      const onHandPcs = getOnHandQty(p);
+      const mult = uomMultiplier(it.qtyUom, it.customPackSize);
+      const qtyInput = Number(it.qtyInput || 0);
+      const qtyBase = qtyInput * mult;
+
+      if (qtyBase > onHandPcs) {
+        return `Not enough stock for ${getProductName(p)}. Requested=${qtyBase} pcs, Available=${onHandPcs} pcs`;
       }
     }
-
     return null;
   }
 
@@ -278,26 +297,22 @@ export default function SalesPage() {
     }
 
     const cleanItems = (form.items || [])
-      .map((it) => ({
-        productId: Number(it.productId),
-        qtyUom: normalizeUom(it.qtyUom || "piece"),
-        customPackSize: it.qtyUom === "custom" ? Math.floor(Number(it.customPackSize || 0)) : null,
-        qty: Math.floor(Number(it.qty)),
-        unitPriceJod: Number(it.unitPriceJod || 0), // per selected unit
-      }))
-      .filter((it) => it.productId && it.qty > 0 && it.unitPriceJod > 0);
+      .map((it) => {
+        const productId = Number(it.productId);
+        const qtyUom = normalizeUom(it.qtyUom || "piece");
+        const customPackSize = it.customPackSize;
+        const mult = uomMultiplier(qtyUom, customPackSize);
+
+        const qtyInput = Math.floor(Number(it.qtyInput || 0));
+        const unitPriceJod = Number(it.unitPriceJod || 0); // per selected unit
+
+        return { productId, qty: qtyInput, qtyUom, customPackSize, unitPriceJod, mult };
+      })
+      .filter((it) => it.productId && it.qty > 0 && it.mult > 0 && it.unitPriceJod > 0);
 
     if (!cleanItems.length) {
-      alert("Add at least one valid item (product + qty + price)");
+      alert("Add at least one valid item (product + qty + unit + price)");
       return;
-    }
-
-    for (const it of cleanItems) {
-      const mult = uomMultiplier(it.qtyUom, it.customPackSize);
-      if (!mult || mult <= 0) {
-        alert(`Invalid unit / pack size for productId=${it.productId}`);
-        return;
-      }
     }
 
     const stockErr = validateStockClientSide();
@@ -313,7 +328,7 @@ export default function SalesPage() {
         saleDate: form.saleDate,
         salespersonId: form.salespersonId ? Number(form.salespersonId) : null,
         notes: notes || null,
-        items: cleanItems,
+        items: cleanItems.map(({ mult, ...x }) => x),
       },
     });
 
@@ -328,7 +343,7 @@ export default function SalesPage() {
       clientId: "",
       saleDate: "",
       salespersonId: s.salespersonId || "",
-      items: [{ productId: "", qtyUom: "piece", customPackSize: "", qty: 1, unitPriceJod: "" }],
+      items: [{ productId: "", qtyUom: "piece", customPackSize: "", qtyInput: "1", unitPriceJod: "", _autoPrice: true }],
     }));
 
     await load();
@@ -405,21 +420,28 @@ export default function SalesPage() {
             const p = productsById.get(String(it.productId));
             const onHandPcs = getOnHandQty(p);
 
-            const mult = uomMultiplier(it.qtyUom, it.customPackSize);
-            const maxUnits = mult > 0 ? Math.floor(onHandPcs / mult) : 0;
+            const qtyUom = normalizeUom(it.qtyUom);
+            const mult = uomMultiplier(qtyUom, it.customPackSize);
 
-            const qtyUnits = Math.floor(Number(it.qty || 0));
-            const qtyPcs = qtyUnits > 0 && mult > 0 ? qtyUnits * mult : 0;
+            const maxUnits = p ? computeMaxUnits(p, qtyUom, it.customPackSize) : 0;
 
-            const unitPricePerUnit = Number(it.unitPriceJod || 0);
-            const unitPricePerPc = mult > 0 && unitPricePerUnit > 0 ? unitPricePerUnit / mult : 0;
+            // qtyInput stored as string, but may be "__max__"
+            let qtyInput = it.qtyInput === "__max__" ? maxUnits : Number(it.qtyInput || 0);
+            if (!Number.isFinite(qtyInput) || qtyInput < 0) qtyInput = 0;
 
-            const lineTotal = qtyUnits > 0 && unitPricePerUnit > 0 ? qtyUnits * unitPricePerUnit : 0;
+            const unitPriceInput = Number(it.unitPriceJod || 0);
+            const lineTotal = qtyInput > 0 && unitPriceInput >= 0 ? qtyInput * unitPriceInput : 0;
 
-            const tooMuch = it.productId && qtyPcs > onHandPcs;
-            const canDropdown = !!it.productId && mult > 0 && maxUnits > 0;
-            const dropdownLimit = 50;
-            const showMaxOption = canDropdown && maxUnits > dropdownLimit;
+            const qtyBase = qtyInput * (mult || 0); // pcs
+            const tooMuch = !!it.productId && qtyBase > onHandPcs;
+
+            const uomLabel = formatUom(qtyUom, mult);
+
+            // build qty dropdown options up to MAX_QTY_OPTIONS, then add Max
+            const qtyOptions = [];
+            const cap = Math.min(maxUnits, MAX_QTY_OPTIONS);
+            for (let k = 1; k <= cap; k++) qtyOptions.push(k);
+            const showMax = maxUnits > MAX_QTY_OPTIONS;
 
             return (
               <div key={idx} className="crm-card" style={{ marginTop: 10 }}>
@@ -428,126 +450,126 @@ export default function SalesPage() {
                   onChange={(e) => {
                     const productId = e.target.value;
                     const p2 = productsById.get(String(productId));
-                    const base = Number(getDefaultSellPricePerPiece(p2) || 0);
 
-                    const mult2 = uomMultiplier(it.qtyUom, it.customPackSize);
-                    const suggested = base > 0 && mult2 > 0 ? (base * mult2) : "";
-
-                    // clamp qty to new max
-                    const onHand2 = getOnHandQty(p2);
-                    const maxUnits2 = mult2 > 0 ? Math.floor(onHand2 / mult2) : 0;
-                    const clampedQty = maxUnits2 > 0 ? clampUnits(it.qty, maxUnits2) : it.qty;
+                    // default price is per piece; convert to selected unit
+                    const perPiece = Number(getDefaultSellPricePerPiece(p2));
+                    const mult2 = uomMultiplier(it.qtyUom || "piece", it.customPackSize);
+                    const autoPrice = Number.isFinite(perPiece) && perPiece !== 0
+                      ? String((perPiece * (mult2 || 1)).toFixed(3))
+                      : "";
 
                     setItem(idx, {
                       productId,
-                      unitPriceJod: suggested !== "" ? String(suggested) : "",
-                      qty: clampedQty,
+                      // reset qty selection
+                      qtyInput: "1",
+                      // keep existing UOM selection
+                      unitPriceJod: autoPrice,
+                      _autoPrice: true,
                     });
                   }}
                 >
                   <option value="">Select product...</option>
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>{getProductName(p)}</option>
+                  {products.map((p0) => (
+                    <option key={p0.id} value={p0.id}>{getProductName(p0)}</option>
                   ))}
                 </select>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
                   <select
                     value={it.qtyUom}
                     onChange={(e) => {
-                      const qtyUom = e.target.value;
-
+                      const nextUom = e.target.value;
                       const p2 = productsById.get(String(it.productId));
-                      const base = Number(getDefaultSellPricePerPiece(p2) || 0);
+                      const perPiece = Number(getDefaultSellPricePerPiece(p2));
+                      const mult2 = uomMultiplier(nextUom, it.customPackSize);
 
-                      const mult2 = uomMultiplier(qtyUom, it.customPackSize);
-                      const suggested = (it.unitPriceJod === "" && base > 0 && mult2 > 0) ? String(base * mult2) : it.unitPriceJod;
+                      // If auto-price, recompute from per-piece price
+                      const nextPrice =
+                        it._autoPrice && Number.isFinite(perPiece) && perPiece !== 0 && mult2 > 0
+                          ? String((perPiece * mult2).toFixed(3))
+                          : it.unitPriceJod;
 
-                      const onHand2 = getOnHandQty(p2);
-                      const maxUnits2 = mult2 > 0 ? Math.floor(onHand2 / mult2) : 0;
-                      const clampedQty = it.productId && maxUnits2 > 0 ? clampUnits(it.qty, maxUnits2) : it.qty;
+                      // also clamp qty
+                      const max2 = p2 ? computeMaxUnits(p2, nextUom, it.customPackSize) : 0;
+                      const nextQty =
+                        max2 >= 1 ? "1" : "0";
 
-                      setItem(idx, { qtyUom, unitPriceJod: suggested, qty: clampedQty });
+                      setItem(idx, { qtyUom: nextUom, unitPriceJod: nextPrice, qtyInput: nextQty });
                     }}
                   >
-                    <option value="piece">Piece</option>
-                    <option value="dozen">Dozen (12)</option>
-                    <option value="pack10">Box/Pack of 10</option>
-                    <option value="pack20">Box/Pack of 20</option>
-                    <option value="pack25">Box/Pack of 25</option>
-                    <option value="pack50">Box/Pack of 50</option>
-                    <option value="pack100">Box/Pack of 100</option>
-                    <option value="custom">Custom…</option>
+                    {UOM_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
                   </select>
 
-                  {it.qtyUom === "custom" ? (
+                  {normalizeUom(it.qtyUom) === "custom" ? (
                     <input
                       type="number"
                       min="1"
                       step="1"
                       value={it.customPackSize}
                       onChange={(e) => {
-                        const customPackSize = e.target.value;
-
-                        const mult2 = uomMultiplier("custom", customPackSize);
+                        const nextSize = e.target.value;
                         const p2 = productsById.get(String(it.productId));
-                        const onHand2 = getOnHandQty(p2);
-                        const maxUnits2 = mult2 > 0 ? Math.floor(onHand2 / mult2) : 0;
-                        const clampedQty = it.productId && maxUnits2 > 0 ? clampUnits(it.qty, maxUnits2) : it.qty;
+                        const perPiece = Number(getDefaultSellPricePerPiece(p2));
+                        const mult2 = uomMultiplier("custom", nextSize);
 
-                        setItem(idx, { customPackSize, qty: clampedQty });
+                        const nextPrice =
+                          it._autoPrice && Number.isFinite(perPiece) && perPiece !== 0 && mult2 > 0
+                            ? String((perPiece * mult2).toFixed(3))
+                            : it.unitPriceJod;
+
+                        const max2 = p2 ? computeMaxUnits(p2, "custom", nextSize) : 0;
+                        const nextQty = max2 >= 1 ? "1" : "0";
+
+                        setItem(idx, { customPackSize: nextSize, unitPriceJod: nextPrice, qtyInput: nextQty });
                       }}
-                      placeholder="Custom pack size"
+                      placeholder="Custom pack size (pcs)"
                     />
                   ) : (
                     <div className="muted" style={{ alignSelf: "center" }}>
-                      Unit: <b>{uomLabel(it.qtyUom)}</b>
+                      Unit: <b>{uomLabel}</b>
                     </div>
                   )}
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-                  {/* ✅ Qty dropdown auto-limited by available units */}
-                  {canDropdown ? (
-                    <select
-                      value={String(clampUnits(it.qty, maxUnits))}
-                      onChange={(e) => setItem(idx, { qty: clampUnits(e.target.value, maxUnits) })}
-                      title={`Available: ${maxUnits} units`}
-                    >
-                      {Array.from({ length: Math.min(maxUnits, dropdownLimit) }, (_v, i) => i + 1).map((k) => (
-                        <option key={k} value={k}>{k}</option>
-                      ))}
-                      {showMaxOption ? (
-                        <option value={maxUnits}>Max ({maxUnits})</option>
-                      ) : null}
-                    </select>
-                  ) : (
-                    <input
-                      type="number"
-                      min="1"
-                      value={it.qty}
-                      onChange={(e) => setItem(idx, { qty: e.target.value })}
-                      placeholder="Qty (units)"
-                      disabled={!it.productId}
-                    />
-                  )}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
+                  <select
+                    value={it.qtyInput}
+                    onChange={(e) => setItem(idx, { qtyInput: e.target.value })}
+                    disabled={!it.productId || !(maxUnits >= 1)}
+                  >
+                    {!it.productId ? (
+                      <option value="0">Select product first</option>
+                    ) : maxUnits < 1 ? (
+                      <option value="0">Out of stock for this unit</option>
+                    ) : (
+                      <>
+                        {qtyOptions.map((k) => (
+                          <option key={k} value={String(k)}>{k}</option>
+                        ))}
+                        {showMax ? (
+                          <option value="__max__">Max ({maxUnits})</option>
+                        ) : null}
+                      </>
+                    )}
+                  </select>
 
                   <input
                     type="number"
                     min="0"
                     step="0.001"
                     value={it.unitPriceJod}
-                    onChange={(e) => setItem(idx, { unitPriceJod: e.target.value })}
-                    placeholder="Unit Price (JOD per unit)"
+                    onChange={(e) => setItem(idx, { unitPriceJod: e.target.value, _autoPrice: false })}
+                    placeholder="Unit Price (JOD per selected unit)"
                   />
                 </div>
 
                 <div className="muted" style={{ marginTop: 6 }}>
-                  Available: <b>{onHandPcs}</b> pcs{" "}
-                  {mult > 0 ? <span>(= <b>{maxUnits}</b> {uomLabel(it.qtyUom)} units)</span> : null}
+                  Available: <b>{onHandPcs}</b> pcs
+                  {" "}• In unit: <b>{maxUnits}</b> {uomLabel}
+                  {" "}• Requested: <b>{qtyBase}</b> pcs
                   {tooMuch ? <span style={{ color: "#b91c1c", fontWeight: 800 }}> — Not enough stock</span> : null}
-                  {" "}• This line uses: <b>{qtyPcs}</b> pcs
-                  {" "}• Effective: <b>{unitPricePerPc.toFixed(4)}</b> JOD/pc
                   {" "}• Line Total: <b>{lineTotal.toFixed(3)} JOD</b>
                 </div>
 
@@ -572,15 +594,15 @@ export default function SalesPage() {
         </form>
       )}
 
+      {/* Latest 5 */}
       <table className="table" style={{ marginTop: 12 }}>
         <thead>
           <tr>
             <th>Date</th>
             <th>Client</th>
             <th>Salesperson</th>
-            <th>Units</th>
-            <th>Pieces</th>
-            <th>Purchased Items</th>
+            <th>Items (pcs)</th>
+            <th>Purchased Items (unit-based)</th>
             <th>Total (JOD)</th>
             <th>Actions</th>
           </tr>
@@ -591,8 +613,7 @@ export default function SalesPage() {
               <td>{formatDate(s.sale_date)}</td>
               <td>{s.client_name}</td>
               <td>{s.salesperson_name || "-"}</td>
-              <td>{Number(s.items_count_units || 0)}</td>
-              <td>{Number(s.items_count_pcs || 0)}</td>
+              <td>{Number(s.items_count || 0)}</td>
               <td>{formatSaleItems(s)}</td>
               <td>{Number(s.total_jod || 0).toFixed(3)}</td>
               <td>{hasRole("main") ? <button onClick={() => handleDelete(s.id)}>Void</button> : "-"}</td>
@@ -601,12 +622,13 @@ export default function SalesPage() {
 
           {!latest.length ? (
             <tr>
-              <td colSpan={8} className="muted">No transactions yet.</td>
+              <td colSpan={7} className="muted">No transactions yet.</td>
             </tr>
           ) : null}
         </tbody>
       </table>
 
+      {/* Older ones */}
       {older.length ? (
         <div style={{ marginTop: 10 }}>
           <div className="muted" style={{ marginBottom: 6 }}>
@@ -620,9 +642,8 @@ export default function SalesPage() {
                   <th>Date</th>
                   <th>Client</th>
                   <th>Salesperson</th>
-                  <th>Units</th>
-                  <th>Pieces</th>
-                  <th>Purchased Items</th>
+                  <th>Items (pcs)</th>
+                  <th>Purchased Items (unit-based)</th>
                   <th>Total (JOD)</th>
                   <th>Actions</th>
                 </tr>
@@ -633,8 +654,7 @@ export default function SalesPage() {
                     <td>{formatDate(s.sale_date)}</td>
                     <td>{s.client_name}</td>
                     <td>{s.salesperson_name || "-"}</td>
-                    <td>{Number(s.items_count_units || 0)}</td>
-                    <td>{Number(s.items_count_pcs || 0)}</td>
+                    <td>{Number(s.items_count || 0)}</td>
                     <td>{formatSaleItems(s)}</td>
                     <td>{Number(s.total_jod || 0).toFixed(3)}</td>
                     <td>{hasRole("main") ? <button onClick={() => handleDelete(s.id)}>Void</button> : "-"}</td>
