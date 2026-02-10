@@ -1,4 +1,3 @@
-// MarketingPage.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -13,23 +12,13 @@ const COPY = {
   en: {
     dir: "ltr",
     langLabel: "عربي",
-
     brandName: "Zomorod Medical Supplies LLC",
     tagline:
-      "Compliance-aware supply and consistent specifications for pharmacies and resellers — Jordan & Syria.",
+      "Reliable supply and consistent specifications for pharmacies and resellers — Jordan & Syria.",
     responseSla: "Quote response within 48 business hours.",
 
     ctaStaff: "Staff Login",
     ctaWhatsapp: "WhatsApp",
-    ctaQuote: "Request a Quote",
-    ctaQuoteHint: "Jump to the quote section",
-
-    heroBullets: [
-      "Quote-ready supply for repeat orders (consistent specs & packaging).",
-      "Documentation guidance per destination (requirements vary by Jordan/Syria import rules).",
-      "Fast coordination via WhatsApp for availability, alternatives, and lead time.",
-    ],
-    trustBadges: ["Docs support (as applicable)", "Lot/Batch (when available)", "Clear lead times"],
 
     metrics: [
       { value: "Jordan & Syria", label: "Coverage" },
@@ -67,7 +56,6 @@ const COPY = {
         v: "Regulatory and import requirements vary by destination; we advise accordingly.",
       },
     ],
-    capabilityCta: "Download Capability Statement (PDF)",
 
     mdTitle: "Managing Director",
     mdName: "Mohammad Maani",
@@ -86,7 +74,7 @@ const COPY = {
 
     productsTitle: "Our product lines (category-level)",
     productsNote:
-      "We publish categories (not a full SKU catalog). Tap a category to prefill your quote template.",
+      "We publish categories (not a full SKU catalog). Availability and documentation requirements vary by destination.",
     sectorsTitle: "Who we serve",
     sectors: ["Pharmacies", "Resellers / distributors", "Clinics", "Laboratories"],
 
@@ -117,13 +105,10 @@ const COPY = {
       "Delivery city + destination (Jordan or Syria)",
       "Preferred brands (optional)",
     ],
-    selectedCategoryLabel: "Selected category",
-    clearCategory: "Clear",
 
     contactTitle: "Contact",
     contactEmail: "Email",
     contactPhone: "Phone",
-    contactWhatsapp: "WhatsApp",
     contactAddress: "Address",
     addressValue: "Amman, Jordan",
   },
@@ -131,22 +116,12 @@ const COPY = {
   ar: {
     dir: "rtl",
     langLabel: "EN",
-
     brandName: "شركة زمرد للمستلزمات الطبية ذ.م.م",
-    tagline: "توريد واعٍ بالامتثال ومواصفات ثابتة للصيدليات والموزعين — الأردن وسوريا.",
+    tagline: "توريد موثوق ومواصفات ثابتة للصيدليات والموزعين — الأردن وسوريا.",
     responseSla: "الرد على عروض الأسعار خلال 48 ساعة عمل.",
 
     ctaStaff: "دخول الموظفين",
     ctaWhatsapp: "واتساب",
-    ctaQuote: "طلب عرض سعر",
-    ctaQuoteHint: "الانتقال لقسم عرض السعر",
-
-    heroBullets: [
-      "توريد جاهز لعروض الأسعار للطلبات المتكررة (ثبات المواصفات والتعبئة).",
-      "إرشادات المستندات حسب الوجهة (متطلبات الاستيراد تختلف بين الأردن وسوريا).",
-      "تنسيق سريع عبر واتساب للتوفر والبدائل ووقت التوريد.",
-    ],
-    trustBadges: ["دعم المستندات (عند الاقتضاء)", "رقم تشغيلة/دفعة (عند توفره)", "أوقات توريد واضحة"],
 
     metrics: [
       { value: "الأردن وسوريا", label: "نطاق الخدمة" },
@@ -184,7 +159,6 @@ const COPY = {
         v: "المتطلبات التنظيمية تختلف حسب الوجهة؛ نقدم الإرشاد وفقاً لطلبك.",
       },
     ],
-    capabilityCta: "تحميل ملف التعريف (PDF)",
 
     mdTitle: "المدير العام",
     mdName: "Mohammad Maani",
@@ -202,7 +176,8 @@ const COPY = {
     ],
 
     productsTitle: "خطوط المنتجات (حسب الفئات)",
-    productsNote: "نعرض فئات وليس قائمة أصناف كاملة. اضغط على فئة لإضافة الفئة لقالب طلب عرض السعر.",
+    productsNote:
+      "نعرض فئات وليس قائمة أصناف كاملة. التوفر ومتطلبات المستندات تختلف حسب الوجهة.",
     sectorsTitle: "الجهات التي نخدمها",
     sectors: ["الصيدليات", "الموزعون/الموردون", "العيادات", "المختبرات"],
 
@@ -223,7 +198,8 @@ const COPY = {
     cover: "رسالة تغطية (اختياري)",
 
     quoteTitle: "طلب عرض سعر",
-    quoteSubtitle: "الأسرع: أرسل طلبك عبر واتساب مع الفئة والمواصفات والكمية ومدينة التسليم.",
+    quoteSubtitle:
+      "الأسرع: أرسل طلبك عبر واتساب مع الفئة والمواصفات والكمية ومدينة التسليم.",
     quoteChecklistTitle: "يرجى تضمين التالي",
     quoteChecklist: [
       "نوع الجهة (صيدلية أو موزع)",
@@ -232,13 +208,10 @@ const COPY = {
       "مدينة التسليم + الوجهة (الأردن أو سوريا)",
       "العلامات المفضلة (اختياري)",
     ],
-    selectedCategoryLabel: "الفئة المختارة",
-    clearCategory: "إزالة",
 
     contactTitle: "التواصل",
     contactEmail: "البريد الإلكتروني",
     contactPhone: "الهاتف",
-    contactWhatsapp: "واتساب",
     contactAddress: "العنوان",
     addressValue: "عمّان، الأردن",
   },
@@ -281,7 +254,13 @@ function truncateWords(text, maxWords) {
 
 function LinkedInIcon({ title = "LinkedIn" }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      aria-hidden="true"
+      focusable="false"
+    >
       <title>{title}</title>
       <path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5ZM.5 8.5H4.5V24H.5V8.5ZM8.5 8.5H12.3V10.6H12.36C12.89 9.6 14.2 8.5 16.2 8.5 20.3 8.5 21 11.1 21 14.5V24H17V15.6C17 13.6 17 11.9 15.2 11.9 13.4 11.9 13.1 13.3 13.1 15.5V24H9.1V8.5H8.5Z" />
     </svg>
@@ -291,7 +270,6 @@ function LinkedInIcon({ title = "LinkedIn" }) {
 export default function MarketingPage() {
   const [lang, setLang] = useState("en");
   const [activeTab, setActiveTab] = useState("about");
-
   const [jobs, setJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(true);
 
@@ -302,24 +280,15 @@ export default function MarketingPage() {
   const [applyErr, setApplyErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [expandedJobs, setExpandedJobs] = useState({});
-
-  const [quoteCategory, setQuoteCategory] = useState("");
-
   const applyFormRef = useRef(null);
-  const quoteRef = useRef(null);
-
   const t = useMemo(() => COPY[lang], [lang]);
-
-  // Keep document language + dir in sync (accessibility + RTL/LTR correctness)
-  useEffect(() => {
-    document.documentElement.setAttribute("dir", t.dir);
-    document.documentElement.setAttribute("lang", lang === "ar" ? "ar" : "en");
-  }, [t.dir, lang]);
 
   const selectedJob = useMemo(() => {
     const id = Number(selectedJobId || 0);
     return jobs.find((j) => Number(j.id) === id) || null;
   }, [jobs, selectedJobId]);
+
+  const quoteRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -335,13 +304,6 @@ export default function MarketingPage() {
       }
     })();
   }, []);
-
-  function scrollToQuote() {
-    const el = quoteRef.current;
-    if (el && typeof el.scrollIntoView === "function") {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }
 
   function handleSelectJob(jobId) {
     setSelectedJobId(String(jobId));
@@ -384,7 +346,6 @@ export default function MarketingPage() {
 
       setApplyMsg(t.applySuccess);
       formEl?.reset();
-      setSelectedJobId("");
     } catch (err) {
       setApplyErr(err?.message || "Failed to submit application");
     } finally {
@@ -393,16 +354,13 @@ export default function MarketingPage() {
   }
 
   const quoteMessage = useMemo(() => {
-    const header = lang === "ar" ? "طلب عرض سعر — زمرد" : "Quote request — Zomorod";
     const buyer = lang === "ar" ? "الجهة: صيدلية/موزع" : "Buyer type: Pharmacy/Reseller";
-    const cat = quoteCategory
-      ? (lang === "ar" ? `الفئة المقترحة: ${quoteCategory}` : `Suggested category: ${quoteCategory}`)
-      : "";
+    const header = lang === "ar" ? "طلب عرض سعر — زمرد" : "Quote request — Zomorod";
     const line1 = lang === "ar" ? "الفئة + المواصفات:" : "Category + specification:";
     const line2 = lang === "ar" ? "الكمية:" : "Quantity:";
     const line3 = lang === "ar" ? "مدينة التسليم + الوجهة:" : "Delivery city + destination (Jordan/Syria):";
-    return [header, buyer, cat, line1, line2, line3].filter(Boolean).join("\n");
-  }, [lang, quoteCategory]);
+    return `${header}\n${buyer}\n${line1}\n${line2}\n${line3}`;
+  }, [lang]);
 
   const whatsappQuoteHref = buildWhatsAppLink(quoteMessage);
 
@@ -410,51 +368,37 @@ export default function MarketingPage() {
     <main className="mkt-page" dir={t.dir}>
       <header className="mkt-hero card">
         <div className="mkt-hero-top">
-          <img className="mkt-logo" src="/logo.png" alt="Zomorod logo" width="120" height="120" />
-
-          <div className="mkt-hero-actions">
-            <Link to="/login" className="btn btn-ghost">
-              {t.ctaStaff}
-            </Link>
-
-            <button
-              type="button"
-              className="btn btn-ghost mkt-lang"
-              onClick={() => setLang((s) => (s === "en" ? "ar" : "en"))}
-              aria-label={lang === "en" ? "Switch to Arabic" : "Switch to English"}
-            >
-              {t.langLabel}
-            </button>
-          </div>
+          <img className="mkt-logo" src="/logo.png" alt="Zomorod logo" />
+          <button
+            type="button"
+            className="btn btn-ghost mkt-lang"
+            onClick={() => setLang((s) => (s === "en" ? "ar" : "en"))}
+          >
+            {t.langLabel}
+          </button>
         </div>
 
         <h1 className="mkt-title">{t.brandName}</h1>
         <p className="mkt-tagline">{t.tagline}</p>
 
-        <ul className="mkt-hero-bullets">
-          {t.heroBullets.map((b) => (
-            <li key={b}>{b}</li>
-          ))}
-        </ul>
-
         <div className="mkt-trust-row">
           <span className="mkt-pill">{t.responseSla}</span>
-          {t.trustBadges.map((b) => (
-            <span key={b} className="mkt-pill">
-              {b}
-            </span>
-          ))}
         </div>
 
-        {/* Primary CTA: Quote (scroll). Secondary: WhatsApp */}
+        {/* CTAs: max 2 */}
         <div className="mkt-cta-row">
-          <button type="button" className="btn btn-primary mkt-cta" onClick={scrollToQuote} title={t.ctaQuoteHint}>
-            {t.ctaQuote}
-          </button>
-
-          <a className="btn btn-ghost mkt-cta" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+          <a
+            className="btn btn-primary mkt-cta"
+            href={whatsappQuoteHref}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {t.ctaWhatsapp}
           </a>
+
+          <Link to="/login" className="btn btn-ghost mkt-cta">
+            {t.ctaStaff}
+          </Link>
         </div>
 
         <div className="mkt-hero-metrics">
@@ -500,17 +444,6 @@ export default function MarketingPage() {
                     </div>
                   ))}
                 </div>
-
-                <div style={{ marginTop: 10 }}>
-                  <a
-                    className="btn btn-ghost"
-                    href="/docs/zomorod-capability-statement.pdf"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {t.capabilityCta}
-                  </a>
-                </div>
               </article>
 
               <article className="mkt-md card-soft">
@@ -538,21 +471,12 @@ export default function MarketingPage() {
           <div className="mkt-tab-panel">
             <h2 className="mkt-h2">{t.productsTitle}</h2>
             <p className="mkt-p">{t.productsNote}</p>
-
             <div className="mkt-grid">
               {PRODUCT_CARDS[lang].map((card) => (
-                <button
-                  key={card.title}
-                  type="button"
-                  className="mkt-card mkt-card-btn"
-                  onClick={() => {
-                    setQuoteCategory(card.title);
-                    scrollToQuote();
-                  }}
-                >
+                <article className="mkt-card" key={card.title}>
                   <div className="mkt-card-title">{card.title}</div>
                   <p className="mkt-card-body">{card.body}</p>
-                </button>
+                </article>
               ))}
             </div>
           </div>
@@ -571,9 +495,7 @@ export default function MarketingPage() {
                   <article key={job.id} className="mkt-job-card">
                     <div className="mkt-card-title">{job.title}</div>
                     <p className="mkt-card-body">
-                      {[job.department, job.location_city, job.location_country, job.employment_type]
-                        .filter(Boolean)
-                        .join(" • ")}
+                      {[job.department, job.location_city, job.location_country, job.employment_type].filter(Boolean).join(" • ")}
                     </p>
 
                     {(() => {
@@ -618,11 +540,7 @@ export default function MarketingPage() {
                 <div className="mkt-selected-job">
                   <span className="mkt-selected-job-label">{t.selectedJobLabel}:</span>
                   <span className="mkt-selected-job-value">
-                    {selectedJob
-                      ? selectedJob.title
-                      : lang === "ar"
-                        ? "يرجى اختيار وظيفة أعلاه"
-                        : "Please select a job above"}
+                    {selectedJob ? selectedJob.title : (lang === "ar" ? "يرجى اختيار وظيفة أعلاه" : "Please select a job above")}
                   </span>
                 </div>
 
@@ -632,13 +550,9 @@ export default function MarketingPage() {
                   <input className="input" type="email" name="email" placeholder="Email" required />
                   <input className="input" name="phone" placeholder={lang === "ar" ? "رقم الهاتف" : "Phone number"} required />
                   <select className="input" name="educationLevel" defaultValue="" required>
-                    <option value="" disabled>
-                      {t.educationPlaceholder}
-                    </option>
+                    <option value="" disabled>{t.educationPlaceholder}</option>
                     {EDUCATION_LEVEL_OPTIONS[lang].map((level) => (
-                      <option key={level} value={level}>
-                        {level}
-                      </option>
+                      <option key={level} value={level}>{level}</option>
                     ))}
                   </select>
                   <input className="input" name="country" placeholder={lang === "ar" ? "الدولة" : "Country"} required />
@@ -646,14 +560,8 @@ export default function MarketingPage() {
                 </div>
 
                 <div className="grid grid-2" style={{ marginTop: 10 }}>
-                  <label>
-                    {t.cv}
-                    <input className="input" name="cv" type="file" required />
-                  </label>
-                  <label>
-                    {t.cover}
-                    <input className="input" name="cover" type="file" />
-                  </label>
+                  <label>{t.cv}<input className="input" name="cv" type="file" required /></label>
+                  <label>{t.cover}<input className="input" name="cover" type="file" /></label>
                 </div>
 
                 <button type="submit" className="btn btn-primary" disabled={submitting || !selectedJobId}>
@@ -678,9 +586,7 @@ export default function MarketingPage() {
             <h2 className="mkt-h2">{t.sectorsTitle}</h2>
             <div className="mkt-grid mkt-grid-compact">
               {t.sectors.map((sector) => (
-                <div key={sector} className="mkt-card">
-                  <div className="mkt-card-title">{sector}</div>
-                </div>
+                <div key={sector} className="mkt-card"><div className="mkt-card-title">{sector}</div></div>
               ))}
             </div>
           </article>
@@ -691,23 +597,13 @@ export default function MarketingPage() {
         <h2 className="mkt-h2">{t.quoteTitle}</h2>
         <p className="mkt-p">{t.quoteSubtitle}</p>
 
-        {quoteCategory ? (
-          <div className="mkt-trust-row" style={{ marginTop: 8 }}>
-            <span className="mkt-pill">
-              {t.selectedCategoryLabel}: <bdi>{quoteCategory}</bdi>
-            </span>
-            <button type="button" className="btn btn-ghost" onClick={() => setQuoteCategory("")}>
-              {t.clearCategory}
-            </button>
-          </div>
-        ) : null}
-
         <div className="mkt-quote-grid">
           <div>
             <h3 className="mkt-h3">{t.quoteChecklistTitle}</h3>
             <ul className="mkt-list">{t.quoteChecklist.map((it) => <li key={it}>{it}</li>)}</ul>
           </div>
 
+          {/* CTAs: max 2 */}
           <div className="mkt-quote-actions">
             <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
               {t.ctaWhatsapp}
@@ -723,29 +619,13 @@ export default function MarketingPage() {
         <h2 className="mkt-h2">{t.contactTitle}</h2>
         <div className="mkt-contact">
           <div className="mkt-contact-row">
-            <span className="mkt-contact-label">{t.contactWhatsapp}</span>
-            <a
-              href={buildWhatsAppLink(lang === "ar" ? "مرحباً، أود طلب عرض سعر" : "Hello, I’d like a quote")}
-              className="ltr"
-            >
-              <bdi>wa.me/{WHATSAPP_NUMBER}</bdi>
-            </a>
-          </div>
-
-          <div className="mkt-contact-row">
             <span className="mkt-contact-label">{t.contactEmail}</span>
-            <a href="mailto:info@zomorodmedical.com" className="ltr">
-              <bdi>info@zomorodmedical.com</bdi>
-            </a>
+            <a href="mailto:info@zomorodmedical.com" className="ltr">info@zomorodmedical.com</a>
           </div>
-
           <div className="mkt-contact-row">
             <span className="mkt-contact-label">{t.contactPhone}</span>
-            <a href="tel:+962791752686" className="ltr">
-              <bdi>+962 79 175 2686</bdi>
-            </a>
+            <a href="tel:+962791752686" className="ltr">+962 79 175 2686</a>
           </div>
-
           <div className="mkt-contact-row">
             <span className="mkt-contact-label">{t.contactAddress}</span>
             <span>{t.addressValue}</span>
