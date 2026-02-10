@@ -1,6 +1,15 @@
+// src/crm/pages/ProductsPage.jsx
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../api.js";
 import { getUser, hasRole } from "../auth";
+
+function normalize(v) {
+  return String(v ?? "").trim();
+}
+function toInt(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
 
 function formatDateTime(value) {
   if (!value) return "—";
@@ -101,29 +110,41 @@ export default function ProductsPage() {
     purchaseDate: "",
     expiryDate: "",
 
-    // NEW
     qtyUom: "piece",
     customPackSize: "",
 
-    purchasePriceJod: "", // price PER selected unit (uom)
-    qtyReceived: "", // number of selected units (e.g., 5 boxes)
+    purchasePriceJod: "",
+    qtyReceived: "",
 
     supplierId: "",
     supplierName: "",
     supplierInvoiceNo: "",
   });
 
+  // ✅ Robustness: ensure products have valid numeric IDs (prevents “first item weirdness”)
+  const productsSafe = useMemo(() => {
+    return (Array.isArray(products) ? products : [])
+      .map((p) => ({ ...p, id: toInt(p?.id) }))
+      .filter((p) => toInt(p.id) > 0);
+  }, [products]);
+
   const selectedProduct = useMemo(() => {
-    const pid = String(bForm.productId || "");
-    return products.find((p) => String(p.id) === pid) || null;
-  }, [products, bForm.productId]);
+    const pid = toInt(bForm.productId);
+    if (!pid) return null;
+    return productsSafe.find((p) => toInt(p.id) === pid) || null;
+  }, [productsSafe, bForm.productId]);
 
   const productOptions = useMemo(() => {
-    return products.map((p) => ({
-      id: p.id,
-      label: `${p.productCode} — ${p.officialName}${p.archivedAt ? " (archived)" : ""}`,
-    }));
-  }, [products]);
+    return productsSafe.map((p) => {
+      const code = normalize(p.productCode);
+      const name = normalize(p.officialName);
+      const labelCore = code && name ? `${code} — ${name}` : name || code || `Product #${p.id}`;
+      return {
+        id: p.id,
+        label: `${labelCore}${p.archivedAt ? " (archived)" : ""}`,
+      };
+    });
+  }, [productsSafe]);
 
   const receivePreview = useMemo(() => {
     const mult = parseMultiplier(bForm.qtyUom, bForm.customPackSize);
@@ -156,14 +177,15 @@ export default function ProductsPage() {
   }
 
   async function loadBatches(productId) {
-    if (!productId) {
+    const pid = toInt(productId);
+    if (!pid) {
       setBatches([]);
       return;
     }
     setBatchesLoading(true);
     setErr("");
     try {
-      const res = await apiFetch(`/api/batches?productId=${productId}`);
+      const res = await apiFetch(`/api/batches?productId=${pid}`);
       if (!res) return;
 
       const data = await res.json().catch(() => ({}));
@@ -201,7 +223,9 @@ export default function ProductsPage() {
   }, []);
 
   useEffect(() => {
-    if (isMain && bForm.productId) loadBatches(Number(bForm.productId));
+    // only main loads batches
+    if (isMain && bForm.productId) loadBatches(bForm.productId);
+    if (!bForm.productId) setBatches([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bForm.productId]);
 
@@ -210,10 +234,10 @@ export default function ProductsPage() {
     setErr("");
 
     const payload = {
-      productCode: String(pForm.productCode || "").trim(),
-      category: String(pForm.category || "").trim(),
-      officialName: String(pForm.officialName || "").trim(),
-      marketName: String(pForm.marketName || "").trim(),
+      productCode: normalize(pForm.productCode),
+      category: normalize(pForm.category),
+      officialName: normalize(pForm.officialName),
+      marketName: normalize(pForm.marketName),
       defaultSellPriceJod: Number(pForm.defaultSellPriceJod || 0),
       priceTiers: Array.isArray(pForm.priceTiers) ? pForm.priceTiers : [],
     };
@@ -253,26 +277,27 @@ export default function ProductsPage() {
     e.preventDefault();
     setErr("");
 
-    const qtyUom = String(bForm.qtyUom || "piece").trim();
+    const productId = toInt(bForm.productId);
+    const qtyUom = normalize(bForm.qtyUom) || "piece";
     const mult = parseMultiplier(qtyUom, bForm.customPackSize);
 
     const payload = {
-      productId: Number(bForm.productId),
-      lotNumber: String(bForm.lotNumber || "").trim(),
-      purchaseDate: String(bForm.purchaseDate || "").trim(),
-      expiryDate: String(bForm.expiryDate || "").trim() || null,
+      productId,
+      lotNumber: normalize(bForm.lotNumber),
+      purchaseDate: normalize(bForm.purchaseDate),
+      expiryDate: normalize(bForm.expiryDate) || null,
 
-      // NOTE: api/batches.js interprets qtyReceived as "qty input in selected unit"
+      // api/batches.js interprets qtyReceived as "qty input in selected unit"
       qtyReceived: Math.floor(Number(bForm.qtyReceived || 0)),
       qtyUom,
       customPackSize: qtyUom === "custom" ? Math.floor(Number(bForm.customPackSize || 0)) : null,
 
-      // NOTE: api/batches.js interprets purchasePriceJod as "price per selected unit"
+      // api/batches.js interprets purchasePriceJod as "price per selected unit"
       purchasePriceJod: Number(bForm.purchasePriceJod || 0),
 
-      supplierId: bForm.supplierId ? Number(bForm.supplierId) : null,
-      supplierName: String(bForm.supplierName || "").trim() || null,
-      supplierInvoiceNo: String(bForm.supplierInvoiceNo || "").trim() || null,
+      supplierId: bForm.supplierId ? toInt(bForm.supplierId) : null,
+      supplierName: normalize(bForm.supplierName) || null,
+      supplierInvoiceNo: normalize(bForm.supplierInvoiceNo) || null,
     };
 
     if (!payload.productId) return setErr("Please select a product.");
@@ -299,7 +324,7 @@ export default function ProductsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
-      // Keep selected product + unit selection; clear rest
+      // Keep product + UOM; clear rest
       setBForm((s) => ({
         ...s,
         lotNumber: "",
@@ -339,7 +364,7 @@ export default function ProductsPage() {
 
   async function deleteProduct(p) {
     setErr("");
-    if (!confirm(`Delete product "${p.productCode}" permanently?\n\nOnly works if it has no batches/movements/tiers.`)) return;
+    if (!window.confirm(`Delete product "${p.productCode}" permanently?\n\nOnly works if it has no batches/movements/tiers.`)) return;
     try {
       const res = await apiFetch(`/api/products?id=${p.id}`, { method: "DELETE" });
       if (!res) return;
@@ -355,7 +380,7 @@ export default function ProductsPage() {
 
   async function voidBatch(batchId) {
     setErr("");
-    if (!confirm("Void this batch?\n\nThis will reduce stock and can affect average cost.")) return;
+    if (!window.confirm("Void this batch?\n\nThis will reduce stock and can affect average cost.")) return;
     try {
       const res = await apiFetch(`/api/batches?id=${batchId}`, { method: "DELETE" });
       if (!res) return;
@@ -364,7 +389,7 @@ export default function ProductsPage() {
       if (!res.ok || !data?.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
       await loadProducts();
-      if (bForm.productId) await loadBatches(Number(bForm.productId));
+      if (bForm.productId) await loadBatches(bForm.productId);
     } catch (e) {
       setErr(e?.message || "Failed to void batch");
     }
@@ -373,7 +398,15 @@ export default function ProductsPage() {
   return (
     <div className="crm-content">
       <div className="crm-card">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
           <div>
             <h2 style={{ margin: 0 }}>Products</h2>
             <div className="muted" style={{ marginTop: 6 }}>
@@ -382,11 +415,7 @@ export default function ProductsPage() {
           </div>
 
           <label className="muted" style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700 }}>
-            <input
-              type="checkbox"
-              checked={includeArchived}
-              onChange={(e) => setIncludeArchived(e.target.checked)}
-            />
+            <input type="checkbox" checked={includeArchived} onChange={(e) => setIncludeArchived(e.target.checked)} />
             Show archived
           </label>
         </div>
@@ -412,7 +441,7 @@ export default function ProductsPage() {
             </thead>
 
             <tbody>
-              {!loading && products.length === 0 ? (
+              {!loading && productsSafe.length === 0 ? (
                 <tr>
                   <td colSpan={isMain ? (canSeePurchase ? 10 : 8) : canSeePurchase ? 9 : 7} className="muted">
                     No products yet.
@@ -420,16 +449,16 @@ export default function ProductsPage() {
                 </tr>
               ) : null}
 
-              {products.map((p) => (
+              {productsSafe.map((p) => (
                 <tr key={p.id} style={p.archivedAt ? { opacity: 0.65 } : undefined}>
                   <td>
                     <div style={{ fontWeight: 900 }}>{p.productCode}</div>
                     {p.archivedAt ? <div className="muted" style={{ fontSize: 12 }}>(archived)</div> : null}
                   </td>
-                  <td>{p.category}</td>
-                  <td>{p.officialName}</td>
-                  <td>{p.marketName}</td>
-                  <td style={{ fontWeight: 900 }}>{p.onHandQty}</td>
+                  <td>{p.category || <span className="muted">—</span>}</td>
+                  <td>{p.officialName || <span className="muted">—</span>}</td>
+                  <td>{p.marketName || <span className="muted">—</span>}</td>
+                  <td style={{ fontWeight: 900 }}>{Number(p.onHandQty || 0)}</td>
                   <td>{formatMoneyMax2(p.defaultSellPriceJod)}</td>
                   {canSeePurchase ? <td>{formatMoneyMax4(p.avgPurchasePriceJod)}</td> : null}
                   {canSeePurchase ? <td>{formatDateTime(p.lastPurchaseDate)}</td> : null}
@@ -521,12 +550,16 @@ export default function ProductsPage() {
                     onChange={(e) => setPForm((s) => ({ ...s, defaultSellPriceJod: e.target.value }))}
                     placeholder="e.g., 0.35"
                   />
-                  <div className="muted" style={{ fontSize: 12 }}>Must be greater than 0.</div>
+                  <div className="muted" style={{ fontSize: 12 }}>
+                    Must be greater than 0.
+                  </div>
                 </div>
               </div>
 
               <div style={{ marginTop: 12 }}>
-                <button className="crm-btn crm-btn-primary" type="submit">Add Product</button>
+                <button className="crm-btn crm-btn-primary" type="submit">
+                  Add Product
+                </button>
               </div>
             </form>
           </div>
@@ -542,7 +575,10 @@ export default function ProductsPage() {
                 <div className="muted" style={{ marginTop: 6 }}>
                   On-hand: <b>{Number(selectedProduct.onHandQty || 0)}</b> pcs
                   {canSeePurchase && selectedProduct.avgPurchasePriceJod != null ? (
-                    <> • Avg purchase: <b>{formatMoneyMax4(selectedProduct.avgPurchasePriceJod)}</b> JOD/pc</>
+                    <>
+                      {" "}
+                      • Avg purchase: <b>{formatMoneyMax4(selectedProduct.avgPurchasePriceJod)}</b> JOD/pc
+                    </>
                   ) : null}
                 </div>
               </div>
@@ -553,51 +589,37 @@ export default function ProductsPage() {
                 <div className="field">
                   <label>Product</label>
                   <select
+                    className="input"
                     value={bForm.productId}
                     onChange={(e) => setBForm((s) => ({ ...s, productId: e.target.value }))}
                   >
                     <option value="">Select product…</option>
                     {productOptions.map((opt) => (
-                      <option key={opt.id} value={opt.id}>{opt.label}</option>
+                      <option key={opt.id} value={opt.id}>
+                        {opt.label}
+                      </option>
                     ))}
                   </select>
                 </div>
 
                 <div className="field">
                   <label>Lot Number</label>
-                  <input
-                    className="input"
-                    value={bForm.lotNumber}
-                    onChange={(e) => setBForm((s) => ({ ...s, lotNumber: e.target.value }))}
-                  />
+                  <input className="input" value={bForm.lotNumber} onChange={(e) => setBForm((s) => ({ ...s, lotNumber: e.target.value }))} />
                 </div>
 
                 <div className="field">
                   <label>Purchase Date</label>
-                  <input
-                    className="input"
-                    type="date"
-                    value={bForm.purchaseDate}
-                    onChange={(e) => setBForm((s) => ({ ...s, purchaseDate: e.target.value }))}
-                  />
+                  <input className="input" type="date" value={bForm.purchaseDate} onChange={(e) => setBForm((s) => ({ ...s, purchaseDate: e.target.value }))} />
                 </div>
 
                 <div className="field">
                   <label>Expiry Date (optional)</label>
-                  <input
-                    className="input"
-                    type="date"
-                    value={bForm.expiryDate}
-                    onChange={(e) => setBForm((s) => ({ ...s, expiryDate: e.target.value }))}
-                  />
+                  <input className="input" type="date" value={bForm.expiryDate} onChange={(e) => setBForm((s) => ({ ...s, expiryDate: e.target.value }))} />
                 </div>
 
                 <div className="field">
                   <label>Received Unit</label>
-                  <select
-                    value={bForm.qtyUom}
-                    onChange={(e) => setBForm((s) => ({ ...s, qtyUom: e.target.value }))}
-                  >
+                  <select className="input" value={bForm.qtyUom} onChange={(e) => setBForm((s) => ({ ...s, qtyUom: e.target.value }))}>
                     <option value="piece">Piece</option>
                     <option value="dozen">Dozen (12)</option>
                     <option value="pack10">Box/Pack of 10</option>
@@ -652,21 +674,19 @@ export default function ProductsPage() {
                   />
 
                   <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                    Preview: <b>{receivePreview.qtyPieces || 0}</b> pcs total
-                    {" "}• Effective cost: <b>{formatMoneyMax4(receivePreview.pricePerPiece || 0)}</b> JOD/pc
-                    {" "}• Unit: <b>{labelForUom(bForm.qtyUom)}</b>
+                    Preview: <b>{receivePreview.qtyPieces || 0}</b> pcs total • Effective cost:{" "}
+                    <b>{formatMoneyMax4(receivePreview.pricePerPiece || 0)}</b> JOD/pc • Unit: <b>{labelForUom(bForm.qtyUom)}</b>
                   </div>
                 </div>
 
                 <div className="field">
                   <label>Supplier</label>
-                  <select
-                    value={bForm.supplierId || ""}
-                    onChange={(e) => setBForm((s) => ({ ...s, supplierId: e.target.value }))}
-                  >
+                  <select className="input" value={bForm.supplierId || ""} onChange={(e) => setBForm((s) => ({ ...s, supplierId: e.target.value }))}>
                     <option value="">Select supplier…</option>
                     {suppliers.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
                     ))}
                   </select>
 
@@ -690,7 +710,9 @@ export default function ProductsPage() {
               </div>
 
               <div style={{ marginTop: 12 }}>
-                <button className="crm-btn crm-btn-primary" type="submit">Receive</button>
+                <button className="crm-btn crm-btn-primary" type="submit">
+                  Receive
+                </button>
               </div>
             </form>
 
@@ -746,9 +768,7 @@ export default function ProductsPage() {
                               {canSeePurchase ? <td>{costPerPc ? `${formatMoneyMax4(costPerPc)}` : "—"}</td> : null}
 
                               <td>
-                                <span style={{ color: status.color, fontWeight: 800 }}>
-                                  {status.label}
-                                </span>
+                                <span style={{ color: status.color, fontWeight: 800 }}>{status.label}</span>
                               </td>
                               <td>{batch.supplierName || "—"}</td>
                               <td style={{ whiteSpace: "nowrap" }}>
