@@ -1,17 +1,17 @@
+// src/crm/pages/SuppliersPage.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../api.js";
 import { hasRole } from "../auth";
 
 /*
   Improvements (safe, no DB changes):
-  - Better layout alignment (helper text is clamped + fixed height)
+  - Better layout alignment (helper text clamped + fixed height)
   - Category picker scales to many categories (search + chips + scroll)
   - Server-side search + category filter (calls /api/suppliers?q=&categoryId=)
 */
 
 const PINNED = ["Jordan", "China", "Malaysia", "Turkey", "Syria"];
 
-// Small safe list (you can expand anytime)
 const COUNTRY_LIST = [
   ...PINNED,
   "United Arab Emirates",
@@ -134,11 +134,12 @@ function Chip({ label, onRemove, title }) {
   );
 }
 
-/** Scalable multi-select category picker */
+/** Scalable multi-select category picker (safe + de-dupes + ESC close) */
 function CategoryPicker({ categories, valueIds, onChange }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const boxRef = useRef(null);
+  const searchRef = useRef(null);
 
   // Normalize incoming ids to clean numeric array
   const ids = useMemo(() => uniqInts(valueIds), [valueIds]);
@@ -160,6 +161,7 @@ function CategoryPicker({ categories, valueIds, onChange }) {
     return list.filter((c) => String(c.name || "").toLowerCase().includes(term));
   }, [categories, q]);
 
+  // Close on outside click
   useEffect(() => {
     function onDoc(e) {
       if (!open) return;
@@ -168,6 +170,24 @@ function CategoryPicker({ categories, valueIds, onChange }) {
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  // Close on ESC
+  useEffect(() => {
+    function onKey(e) {
+      if (!open) return;
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // Focus search when opening
+  useEffect(() => {
+    if (open) {
+      const t = setTimeout(() => searchRef.current?.focus(), 0);
+      return () => clearTimeout(t);
+    }
   }, [open]);
 
   function toggle(idRaw) {
@@ -179,18 +199,21 @@ function CategoryPicker({ categories, valueIds, onChange }) {
     onChange(next); // always numbers
   }
 
+  function clearAll() {
+    onChange([]);
+  }
+
   return (
     <div ref={boxRef} style={{ position: "relative" }}>
       {/* Selected chips */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
         {selected.length ? (
-          selected.map((c) => (
-            <Chip
-              key={toInt(c.id)}
-              label={c.name}
-              onRemove={() => onChange(ids.filter((x) => x !== toInt(c.id)))}
-            />
-          ))
+          selected.map((c) => {
+            const cid = toInt(c.id);
+            return (
+              <Chip key={cid} label={c.name} onRemove={() => onChange(ids.filter((x) => x !== cid))} />
+            );
+          })
         ) : (
           <span className="muted" style={{ fontSize: 13 }}>
             No categories selected.
@@ -199,12 +222,12 @@ function CategoryPicker({ categories, valueIds, onChange }) {
       </div>
 
       <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
-        <button type="button" onClick={() => setOpen((s) => !s)}>
+        <button type="button" onClick={() => setOpen((s) => !s)} aria-expanded={open}>
           {open ? "Close categories" : "Choose categories"}
         </button>
 
         {ids.length ? (
-          <button type="button" onClick={() => onChange([])}>
+          <button type="button" onClick={clearAll}>
             Clear
           </button>
         ) : null}
@@ -212,6 +235,8 @@ function CategoryPicker({ categories, valueIds, onChange }) {
 
       {open ? (
         <div
+          role="dialog"
+          aria-label="Choose categories"
           style={{
             position: "absolute",
             top: "calc(100% + 10px)",
@@ -228,6 +253,7 @@ function CategoryPicker({ categories, valueIds, onChange }) {
         >
           <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
             <input
+              ref={searchRef}
               className="input"
               placeholder="Search categories…"
               value={q}
@@ -277,7 +303,7 @@ function CategoryPicker({ categories, valueIds, onChange }) {
           </div>
 
           <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-            Tip: search + check, then close.
+            Tip: search + check, then close. (Esc closes)
           </div>
         </div>
       ) : null}
@@ -402,7 +428,6 @@ export default function SuppliersPage() {
       supplierCountry: inList ? storedCountry : storedCountry ? "Other" : "",
       supplierCountryOther: inList ? "" : storedCountry,
       supplierCity: s.supplierCity || "",
-      // IMPORTANT: normalize to number array
       categoryIds: uniqInts(s.categoryIds),
     });
 
@@ -447,7 +472,6 @@ export default function SuppliersPage() {
       website: normalize(form.website),
       supplierCountry: effectiveCountry,
       supplierCity: normalize(form.supplierCity),
-      // IMPORTANT: always send numbers
       categoryIds: uniqInts(form.categoryIds),
     };
 
@@ -694,100 +718,102 @@ export default function SuppliersPage() {
 
       {/* Table */}
       <div style={{ overflowX: "auto" }}>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Business Name</th>
-              <th>Contact</th>
-              <th>Country</th>
-              <th>City</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Website</th>
-              <th>Categories</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {loading ? (
+        <div className="table">
+          <table>
+            <thead>
               <tr>
-                <td colSpan={9} className="muted">
-                  Loading…
-                </td>
+                <th>Business Name</th>
+                <th>Contact</th>
+                <th>Country</th>
+                <th>City</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Website</th>
+                <th>Categories</th>
+                <th>Actions</th>
               </tr>
-            ) : null}
+            </thead>
 
-            {!loading && suppliers.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="muted">
-                  No suppliers yet.
-                </td>
-              </tr>
-            ) : null}
-
-            {suppliers.map((s) => {
-              const catNames = uniqInts(s.categoryIds)
-                .map((id) => categoriesById.get(id)?.name)
-                .filter(Boolean);
-
-              const business = s.businessName || s.contactName || s.name;
-
-              return (
-                <tr key={s.id}>
-                  <td style={{ fontWeight: 900 }}>{business}</td>
-                  <td>{s.contactName || <span className="muted">—</span>}</td>
-                  <td>{s.supplierCountry || <span className="muted">—</span>}</td>
-                  <td>{s.supplierCity || <span className="muted">—</span>}</td>
-                  <td>{s.phone || <span className="muted">—</span>}</td>
-                  <td>{s.email || <span className="muted">—</span>}</td>
-
-                  <td>
-                    {s.website ? (
-                      <a href={s.website} target="_blank" rel="noreferrer">
-                        Open
-                      </a>
-                    ) : (
-                      <span className="muted">—</span>
-                    )}
-                  </td>
-
-                  <td>
-                    {catNames.length ? (
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {catNames.slice(0, 6).map((name) => (
-                          <Chip key={name} label={name} title={name} />
-                        ))}
-                        {catNames.length > 6 ? (
-                          <span className="muted" style={{ fontSize: 12 }}>
-                            +{catNames.length - 6} more
-                          </span>
-                        ) : null}
-                      </div>
-                    ) : (
-                      <span className="muted">—</span>
-                    )}
-                  </td>
-
-                  <td style={{ whiteSpace: "nowrap" }}>
-                    {hasRole("main") ? (
-                      <>
-                        <button type="button" onClick={() => handleEdit(s)}>
-                          Edit
-                        </button>{" "}
-                        <button type="button" onClick={() => handleDelete(s.id)}>
-                          Delete
-                        </button>
-                      </>
-                    ) : (
-                      <span className="muted">—</span>
-                    )}
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={9} className="muted">
+                    Loading…
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ) : null}
+
+              {!loading && suppliers.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="muted">
+                    No suppliers yet.
+                  </td>
+                </tr>
+              ) : null}
+
+              {suppliers.map((s) => {
+                const catNames = uniqInts(s.categoryIds)
+                  .map((id) => categoriesById.get(id)?.name)
+                  .filter(Boolean);
+
+                const business = s.businessName || s.contactName || s.name;
+
+                return (
+                  <tr key={s.id}>
+                    <td style={{ fontWeight: 900 }}>{business}</td>
+                    <td>{s.contactName || <span className="muted">—</span>}</td>
+                    <td>{s.supplierCountry || <span className="muted">—</span>}</td>
+                    <td>{s.supplierCity || <span className="muted">—</span>}</td>
+                    <td>{s.phone || <span className="muted">—</span>}</td>
+                    <td>{s.email || <span className="muted">—</span>}</td>
+
+                    <td>
+                      {s.website ? (
+                        <a href={s.website} target="_blank" rel="noreferrer">
+                          Open
+                        </a>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+
+                    <td>
+                      {catNames.length ? (
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {catNames.slice(0, 6).map((name) => (
+                            <Chip key={name} label={name} title={name} />
+                          ))}
+                          {catNames.length > 6 ? (
+                            <span className="muted" style={{ fontSize: 12 }}>
+                              +{catNames.length - 6} more
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      {hasRole("main") ? (
+                        <>
+                          <button type="button" onClick={() => handleEdit(s)}>
+                            Edit
+                          </button>{" "}
+                          <button type="button" onClick={() => handleDelete(s.id)}>
+                            Delete
+                          </button>
+                        </>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
