@@ -12,6 +12,8 @@ const EMPTY_FORM = {
   isPublished: false,
 };
 
+const APP_LIMIT = 10;
+
 function toHtml(text) {
   return String(text || "")
     .split("\n")
@@ -31,18 +33,24 @@ function fromHtml(html) {
 export default function RecruitmentPage() {
   const isMain = hasRole("main");
   const [jobs, setJobs] = useState([]);
+
+  // Applications (paginated)
   const [applications, setApplications] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [appsPage, setAppsPage] = useState(1);
+  const [appsTotal, setAppsTotal] = useState(0);
+  const [appsLoading, setAppsLoading] = useState(false);
+
+  const [loading, setLoading] = useState(true); // initial page load (jobs + first apps page)
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
-    const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const publishedCount = useMemo(() => jobs.filter((j) => j.is_published).length, [jobs]);
 
-    const filteredApplications = useMemo(() => {
+  const filteredApplications = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     if (!q) return applications;
     return applications.filter((a) => {
@@ -54,13 +62,58 @@ export default function RecruitmentPage() {
     });
   }, [applications, searchTerm]);
 
+  const hasNextPage = useMemo(() => {
+    return appsPage * APP_LIMIT < appsTotal;
+  }, [appsPage, appsTotal]);
+
+  const canLoadMore = useMemo(() => {
+    return applications.length < appsTotal;
+  }, [applications.length, appsTotal]);
+
+  async function loadApplicationsPage(nextPage, { append = false } = {}) {
+    setAppsLoading(true);
+    setError("");
+
+    try {
+      const res = await apiFetch(`/recruitment?resource=applications&page=${nextPage}&limit=${APP_LIMIT}`);
+      if (!res) return;
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || "Failed to load applications");
+
+      const newApps = Array.isArray(data.applications) ? data.applications : [];
+
+      setAppsTotal(Number(data.total || 0));
+      setAppsPage(Number(data.page || nextPage || 1));
+
+      setApplications((prev) => {
+        if (!append) return newApps;
+
+        // Append with de-duplication by id
+        const seen = new Set(prev.map((x) => String(x.id)));
+        const merged = prev.slice();
+        for (const app of newApps) {
+          const k = String(app.id);
+          if (!seen.has(k)) merged.push(app);
+          seen.add(k);
+        }
+        return merged;
+      });
+    } catch (e) {
+      setError(e?.message || "Failed to load applications");
+    } finally {
+      setAppsLoading(false);
+    }
+  }
+
   async function loadAll() {
     setLoading(true);
     setError("");
+
     try {
       const [jobsRes, appsRes] = await Promise.all([
         apiFetch("/recruitment?resource=jobs_admin"),
-        apiFetch("/recruitment?resource=applications"),
+        apiFetch(`/recruitment?resource=applications&page=1&limit=${APP_LIMIT}`),
       ]);
       if (!jobsRes || !appsRes) return;
 
@@ -71,7 +124,11 @@ export default function RecruitmentPage() {
       if (!appsRes.ok || !appsData.ok) throw new Error(appsData.error || "Failed to load applications");
 
       setJobs(Array.isArray(jobsData.jobs) ? jobsData.jobs : []);
-      setApplications(Array.isArray(appsData.applications) ? appsData.applications : []);
+
+      const firstApps = Array.isArray(appsData.applications) ? appsData.applications : [];
+      setApplications(firstApps);
+      setAppsPage(Number(appsData.page || 1));
+      setAppsTotal(Number(appsData.total || 0));
     } catch (e) {
       setError(e?.message || "Failed to load recruitment data");
     } finally {
@@ -133,11 +190,14 @@ export default function RecruitmentPage() {
         body: payload,
       });
       if (!res) return;
+
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || "Failed to save job");
 
       setOk(editingId ? "Job updated." : "Job created.");
       resetForm();
+
+      // Reload jobs + refresh applications back to first 10 (most recent)
       await loadAll();
     } catch (e2) {
       setError(e2?.message || "Failed to save job");
@@ -160,6 +220,7 @@ export default function RecruitmentPage() {
       setError(e?.message || "Failed to unpublish");
     }
   }
+
   async function deleteJob(id) {
     setError("");
     setOk("");
@@ -190,6 +251,7 @@ export default function RecruitmentPage() {
       <section className="crm-card">
         <h2>{editingId ? "Edit Vacancy" : "Create Vacancy"}</h2>
         <p className="muted">Create, edit, publish, unpublish, and delete vacancy announcements.</p>
+
         <form className="crm-form-grid" onSubmit={saveJob}>
           <div className="field">
             <label>Job title</label>
@@ -203,7 +265,11 @@ export default function RecruitmentPage() {
             </div>
             <div className="field">
               <label>Employment type</label>
-              <input value={form.employmentType} onChange={(e) => setForm((s) => ({ ...s, employmentType: e.target.value }))} placeholder="Full-time / Part-time" />
+              <input
+                value={form.employmentType}
+                onChange={(e) => setForm((s) => ({ ...s, employmentType: e.target.value }))}
+                placeholder="Full-time / Part-time"
+              />
             </div>
           </div>
 
@@ -220,17 +286,28 @@ export default function RecruitmentPage() {
 
           <div className="field">
             <label>Job description</label>
-            <textarea rows={7} value={form.description} onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))} placeholder="Add responsibilities, requirements, and benefits." />
+            <textarea
+              rows={7}
+              value={form.description}
+              onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
+              placeholder="Add responsibilities, requirements, and benefits."
+            />
           </div>
 
           <label className="crm-check">
             <input type="checkbox" checked={form.isPublished} onChange={(e) => setForm((s) => ({ ...s, isPublished: e.target.checked }))} />
             Publish on main website announcement section
-             </label>
+          </label>
 
           <div className="row">
-            <button className="crm-btn crm-btn-primary" type="submit" disabled={saving}>{saving ? "Saving..." : (editingId ? "Update vacancy" : "Create vacancy")}</button>
-            {editingId ? <button type="button" className="crm-btn crm-btn-outline" onClick={resetForm}>Cancel edit</button> : null}
+            <button className="crm-btn crm-btn-primary" type="submit" disabled={saving}>
+              {saving ? "Saving..." : editingId ? "Update vacancy" : "Create vacancy"}
+            </button>
+            {editingId ? (
+              <button type="button" className="crm-btn crm-btn-outline" onClick={resetForm}>
+                Cancel edit
+              </button>
+            ) : null}
           </div>
         </form>
 
@@ -240,9 +317,13 @@ export default function RecruitmentPage() {
 
       <section className="crm-card">
         <h2>Recruitment Overview</h2>
-        <p className="muted">Published vacancies: {publishedCount} / {jobs.length}</p>
+        <p className="muted">
+          Published vacancies: {publishedCount} / {jobs.length}
+        </p>
 
-        {loading ? <p className="muted">Loading...</p> : (
+        {loading ? (
+          <p className="muted">Loading...</p>
+        ) : (
           <div className="table-wrap" style={{ marginTop: 10 }}>
             <table>
               <thead>
@@ -260,13 +341,27 @@ export default function RecruitmentPage() {
                     <td>{[job.location_city, job.location_country].filter(Boolean).join(", ") || "—"}</td>
                     <td>{job.is_published ? "Published" : "Draft"}</td>
                     <td className="row">
-                      <button className="crm-btn crm-btn-outline" onClick={() => startEdit(job)}>Edit</button>
-                      {job.is_published ? <button className="crm-btn crm-btn-outline" onClick={() => unpublishJob(job.id)}>Unpublish</button> : null}
-                      <button className="crm-btn crm-btn-outline" onClick={() => deleteJob(job.id)}>Delete</button>
+                      <button className="crm-btn crm-btn-outline" onClick={() => startEdit(job)}>
+                        Edit
+                      </button>
+                      {job.is_published ? (
+                        <button className="crm-btn crm-btn-outline" onClick={() => unpublishJob(job.id)}>
+                          Unpublish
+                        </button>
+                      ) : null}
+                      <button className="crm-btn crm-btn-outline" onClick={() => deleteJob(job.id)}>
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}
-                {!jobs.length ? <tr><td colSpan={4} className="muted">No vacancies yet.</td></tr> : null}
+                {!jobs.length ? (
+                  <tr>
+                    <td colSpan={4} className="muted">
+                      No vacancies yet.
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>
@@ -274,11 +369,12 @@ export default function RecruitmentPage() {
       </section>
 
       <section className="crm-card crm-span-2">
-        <div className="row" style={{ justifyContent: "space-between" }}>
+        <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
           <div>
             <h2>Applications</h2>
             <p className="muted">CV and cover files are uploaded to Google Drive and logged in Google Sheets.</p>
           </div>
+
           <input
             className="input"
             style={{ maxWidth: 320 }}
@@ -287,6 +383,43 @@ export default function RecruitmentPage() {
             placeholder="Search candidate, job, phone, city..."
           />
         </div>
+
+        <div className="row" style={{ justifyContent: "space-between", marginTop: 8, flexWrap: "wrap", gap: 10 }}>
+          <p className="muted" style={{ margin: 0 }}>
+            Loaded {Math.min(applications.length, appsTotal)} of {appsTotal} · Page {appsPage}
+            {searchTerm.trim() ? ` · Filtered ${filteredApplications.length}` : ""}
+          </p>
+
+          <div className="row" style={{ gap: 8 }}>
+            <button
+              className="crm-btn crm-btn-outline"
+              disabled={appsLoading || appsPage <= 1}
+              onClick={() => loadApplicationsPage(appsPage - 1, { append: false })}
+              type="button"
+            >
+              Prev page
+            </button>
+
+            <button
+              className="crm-btn crm-btn-outline"
+              disabled={appsLoading || !hasNextPage}
+              onClick={() => loadApplicationsPage(appsPage + 1, { append: false })}
+              type="button"
+            >
+              Next page
+            </button>
+
+            <button
+              className="crm-btn crm-btn-primary"
+              disabled={appsLoading || !canLoadMore || !hasNextPage}
+              onClick={() => loadApplicationsPage(appsPage + 1, { append: true })}
+              type="button"
+            >
+              {appsLoading ? "Loading..." : "Load more"}
+            </button>
+          </div>
+        </div>
+
         <div className="table-wrap" style={{ marginTop: 10 }}>
           <table>
             <thead>
@@ -301,20 +434,41 @@ export default function RecruitmentPage() {
             </thead>
             <tbody>
               {filteredApplications.map((a) => (
-                  <tr key={a.id}>
-                  <td>{a.first_name} {a.last_name}</td>
+                <tr key={a.id}>
+                  <td>
+                    {a.first_name} {a.last_name}
+                  </td>
                   <td>{a.job_title}</td>
-                  <td>{a.city}, {a.country}</td>
+                  <td>
+                    {a.city}, {a.country}
+                  </td>
                   <td>{a.phone || "—"}</td>
                   <td>{a.education_level}</td>
                   <td>
-                    <a href={a.cv_drive_link} target="_blank" rel="noreferrer">CV</a>
-                    {a.cover_drive_link ? <> · <a href={a.cover_drive_link} target="_blank" rel="noreferrer">Cover</a></> : null}
+                    <a href={a.cv_drive_link} target="_blank" rel="noreferrer">
+                      CV
+                    </a>
+                    {a.cover_drive_link ? (
+                      <>
+                        {" "}
+                        ·{" "}
+                        <a href={a.cover_drive_link} target="_blank" rel="noreferrer">
+                          Cover
+                        </a>
+                      </>
+                    ) : null}
                   </td>
                 </tr>
               ))}
-              {!filteredApplications.length ? <tr><td colSpan={6} className="muted">No applications found.</td></tr> : null}
-              </tbody>
+
+              {!filteredApplications.length ? (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    {appsLoading ? "Loading..." : "No applications found."}
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
           </table>
         </div>
       </section>

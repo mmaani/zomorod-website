@@ -86,6 +86,7 @@ async function ensureRecruitmentSchema(sql) {
   await sql`CREATE INDEX IF NOT EXISTS idx_jobs_is_published ON jobs (is_published, published_at DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_job_applications_job_id ON job_applications (job_id, created_at DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_job_applications_status ON job_applications (status, created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_job_applications_created_at ON job_applications (created_at DESC, id DESC)`;
 
   recruitmentSchemaReady = true;
 }
@@ -721,23 +722,48 @@ export default async function recruitmentHandler(req, res) {
       });
     }
 
-    if (req.method === "GET" && resource === "applications") {
-      if (!(await requireMain(req, res))) return;
-      const jobId = toNum(params.get("jobId")) || null;
+if (req.method === "GET" && resource === "applications") {
+  if (!(await requireMain(req, res))) return;
 
-      const rows = await sql`
-        SELECT a.id, a.job_id, j.title AS job_title, a.first_name, a.last_name,
-               a.education_level, a.country, a.city, a.cv_drive_link, a.cover_drive_link,
-               a.email, a.phone, a.status, a.created_at
-        FROM job_applications a
-        JOIN jobs j ON j.id = a.job_id
-        WHERE (${jobId}::int IS NULL OR a.job_id = ${jobId})
-        ORDER BY a.created_at DESC, a.id DESC
-        LIMIT 300
-      `;
+  const jobId = toNum(params.get("jobId")) || null;
 
-      return send(res, 200, { ok: true, applications: rows });
-    }
+  // Pagination (default 10)
+  const limitRaw = toNum(params.get("limit"));
+  const limit = Math.min(Math.max(limitRaw || 10, 1), 50);
+
+  const pageRaw = toNum(params.get("page"));
+  const page = Math.max(pageRaw || 1, 1);
+
+  const offset = (page - 1) * limit;
+
+  const totalRes = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM job_applications a
+    WHERE (${jobId}::bigint IS NULL OR a.job_id = ${jobId})
+  `;
+  const total = Number(totalRes?.[0]?.count || 0);
+
+  const rows = await sql`
+    SELECT a.id, a.job_id, j.title AS job_title, a.first_name, a.last_name,
+           a.education_level, a.country, a.city, a.cv_drive_link, a.cover_drive_link,
+           a.email, a.phone, a.status, a.created_at
+    FROM job_applications a
+    JOIN jobs j ON j.id = a.job_id
+    WHERE (${jobId}::bigint IS NULL OR a.job_id = ${jobId})
+    ORDER BY a.created_at DESC, a.id DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+
+  return send(res, 200, {
+    ok: true,
+    applications: rows,
+    page,
+    limit,
+    total,
+    hasMore: offset + rows.length < total,
+  });
+}
+
 
     return send(res, 400, { ok: false, error: "Unknown route. Use ?resource=..." });
   } catch (err) {
