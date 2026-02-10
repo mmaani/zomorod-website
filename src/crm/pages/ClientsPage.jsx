@@ -9,6 +9,9 @@ import { hasRole } from "../auth";
   - Better layout (grid + aligned helper text)
   - Scalable product-interest picker (search + chips + scroll)
   - Filters (debounced): search + type + product-interest filter (calls /api/clients?q=&clientType=&productId=)
+
+  IMPORTANT robustness:
+  - Never render/select products with invalid ids (id <= 0) to avoid “first item not selectable” issues.
 */
 
 function normalize(v) {
@@ -79,16 +82,9 @@ function Chip({ label, onRemove, title }) {
       {onRemove ? (
         <button
           type="button"
+          className="btn btn-ghost"
           onClick={onRemove}
-          style={{
-            padding: "2px 8px",
-            borderRadius: 999,
-            border: "1px solid var(--z-border)",
-            background: "rgba(255,255,255,0.06)",
-            color: "inherit",
-            cursor: "pointer",
-            fontWeight: 900,
-          }}
+          style={{ padding: "2px 8px", borderRadius: 999 }}
           aria-label={`Remove ${label}`}
           title="Remove"
         >
@@ -159,12 +155,20 @@ function ProductPicker({ products, valueIds, onChange }) {
 
   return (
     <div ref={boxRef} style={{ position: "relative" }}>
+      {/* Selected chips */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
         {selected.length ? (
           selected.map((p) => {
             const pid = toInt(p.id);
             const label = productLabel(p);
-            return <Chip key={pid} label={label} title={label} onRemove={() => onChange(ids.filter((x) => x !== pid))} />;
+            return (
+              <Chip
+                key={pid}
+                label={label}
+                title={label}
+                onRemove={() => onChange(ids.filter((x) => x !== pid))}
+              />
+            );
           })
         ) : (
           <span className="muted" style={{ fontSize: 13 }}>
@@ -174,11 +178,12 @@ function ProductPicker({ products, valueIds, onChange }) {
       </div>
 
       <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
-        <button type="button" onClick={() => setOpen((s) => !s)} aria-expanded={open}>
+        <button type="button" className="btn btn-ghost" onClick={() => setOpen((s) => !s)} aria-expanded={open}>
           {open ? "Close products" : "Choose products"}
         </button>
+
         {ids.length ? (
-          <button type="button" onClick={() => onChange([])}>
+          <button type="button" className="btn btn-ghost" onClick={() => onChange([])}>
             Clear
           </button>
         ) : null}
@@ -211,7 +216,7 @@ function ProductPicker({ products, valueIds, onChange }) {
               onChange={(e) => setQ(e.target.value)}
               style={{ flex: 1 }}
             />
-            <button type="button" onClick={() => setQ("")}>
+            <button type="button" className="btn btn-ghost" onClick={() => setQ("")}>
               Reset
             </button>
           </div>
@@ -247,7 +252,12 @@ function ProductPicker({ products, valueIds, onChange }) {
                       userSelect: "none",
                     }}
                   >
-                    <input type="checkbox" checked={checked} onChange={() => toggle(pid)} style={{ marginTop: 3 }} />
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggle(pid)}
+                      style={{ marginTop: 3 }}
+                    />
                     <div style={{ display: "grid", gap: 2 }}>
                       <div style={{ fontWeight: 900, lineHeight: "16px" }}>{name || code || "Product"}</div>
                       {code && name ? (
@@ -325,7 +335,13 @@ function ProductFilterPicker({ products, valueId, onChange }) {
 
   return (
     <div ref={boxRef} style={{ position: "relative" }}>
-      <button type="button" onClick={() => setOpen((s) => !s)} aria-expanded={open} style={{ width: "100%" }}>
+      <button
+        type="button"
+        className="btn btn-ghost"
+        onClick={() => setOpen((s) => !s)}
+        aria-expanded={open}
+        style={{ width: "100%", textAlign: "left" }}
+      >
         {label}
       </button>
 
@@ -356,6 +372,7 @@ function ProductFilterPicker({ products, valueId, onChange }) {
             />
             <button
               type="button"
+              className="btn btn-ghost"
               onClick={() => {
                 setQ("");
                 onChange("");
@@ -377,6 +394,7 @@ function ProductFilterPicker({ products, valueId, onChange }) {
           >
             <button
               type="button"
+              className="btn btn-ghost"
               onClick={() => {
                 onChange("");
                 setOpen(false);
@@ -386,6 +404,7 @@ function ProductFilterPicker({ products, valueId, onChange }) {
                 textAlign: "left",
                 padding: "10px 12px",
                 borderBottom: "1px solid rgba(255,255,255,.06)",
+                borderRadius: 0,
               }}
             >
               All products
@@ -399,6 +418,7 @@ function ProductFilterPicker({ products, valueId, onChange }) {
                 <button
                   key={pid}
                   type="button"
+                  className="btn btn-ghost"
                   onClick={() => {
                     onChange(String(pid));
                     setOpen(false);
@@ -408,6 +428,7 @@ function ProductFilterPicker({ products, valueId, onChange }) {
                     textAlign: "left",
                     padding: "10px 12px",
                     borderBottom: "1px solid rgba(255,255,255,.06)",
+                    borderRadius: 0,
                     background: isActive ? "rgba(14,142,50,0.16)" : "transparent",
                     borderLeft: isActive ? "3px solid rgba(14,142,50,0.65)" : "3px solid transparent",
                   }}
@@ -467,11 +488,18 @@ export default function ClientsPage() {
     WebkitBoxOrient: "vertical",
   };
 
+  // ✅ VERY IMPORTANT: remove products with invalid ids so nothing appears “unselectable”
+  const productsSafe = useMemo(() => {
+    return (Array.isArray(products) ? products : [])
+      .map((p) => ({ ...p, id: toInt(p?.id) }))
+      .filter((p) => toInt(p.id) > 0);
+  }, [products]);
+
   const productsById = useMemo(() => {
     const m = new Map();
-    for (const p of products) m.set(toInt(p.id), p);
+    for (const p of productsSafe) m.set(toInt(p.id), p);
     return m;
-  }, [products]);
+  }, [productsSafe]);
 
   async function loadProducts() {
     const res = await apiFetch("/api/products");
@@ -558,7 +586,10 @@ export default function ClientsPage() {
 
   const handleEdit = (c) => {
     // ✅ FIX: load interests from the row
-    const interestIds = Array.isArray(c?.interests) ? c.interests.map((i) => toInt(i?.id)).filter((x) => x > 0) : [];
+    const interestIds = Array.isArray(c?.interests)
+      ? c.interests.map((i) => toInt(i?.id)).filter((x) => x > 0)
+      : [];
+
     setForm({
       id: c.id,
       clientType: c.client_type || "pharmacy",
@@ -633,7 +664,7 @@ export default function ClientsPage() {
 
           <div className="field">
             <label>Product interest filter</label>
-            <ProductFilterPicker products={products} valueId={productFilterId} onChange={setProductFilterId} />
+            <ProductFilterPicker products={productsSafe} valueId={productFilterId} onChange={setProductFilterId} />
             <div className="muted" style={hintStyle}>
               Filters clients who are interested in a specific product.
             </div>
@@ -642,6 +673,7 @@ export default function ClientsPage() {
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               type="button"
+              className="btn btn-ghost"
               onClick={() => {
                 setSearchQ("");
                 setTypeFilter("");
@@ -650,7 +682,7 @@ export default function ClientsPage() {
             >
               Clear
             </button>
-            <button type="button" onClick={() => loadClients()}>
+            <button type="button" className="btn btn-ghost" onClick={() => loadClients()}>
               Refresh
             </button>
           </div>
@@ -716,7 +748,7 @@ export default function ClientsPage() {
                 onChange={(e) => setForm((s) => ({ ...s, website: e.target.value }))}
               />
               <div className="muted" style={hintStyle}>
-                Optional (we will store a clean URL on save).
+                Optional.
               </div>
             </div>
           </div>
@@ -762,13 +794,13 @@ export default function ClientsPage() {
 
           <div className="field" style={{ marginBottom: 12 }}>
             <label>Client Interests (products)</label>
-            {products.length === 0 ? (
+            {productsSafe.length === 0 ? (
               <div className="muted" style={{ marginTop: 8 }}>
                 No products found. Add products first.
               </div>
             ) : (
               <ProductPicker
-                products={products}
+                products={productsSafe}
                 valueIds={form.interestProductIds}
                 onChange={(ids) => setForm((s) => ({ ...s, interestProductIds: uniqInts(ids) }))}
               />
@@ -776,9 +808,11 @@ export default function ClientsPage() {
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button type="submit">{form.id ? "Update" : "Add"}</button>
+            <button className="btn btn-primary" type="submit">
+              {form.id ? "Update" : "Add"}
+            </button>
             {form.id ? (
-              <button type="button" onClick={resetForm}>
+              <button className="btn btn-ghost" type="button" onClick={resetForm}>
                 Cancel
               </button>
             ) : null}
@@ -831,7 +865,11 @@ export default function ClientsPage() {
 
                 const website = normalize(c.website);
                 const websiteHref =
-                  website && (website.startsWith("http://") || website.startsWith("https://")) ? website : website ? `https://${website}` : "";
+                  website && (website.startsWith("http://") || website.startsWith("https://"))
+                    ? website
+                    : website
+                    ? `https://${website}`
+                    : "";
 
                 return (
                   <tr key={c.id}>
@@ -871,10 +909,10 @@ export default function ClientsPage() {
 
                     {hasRole("main") ? (
                       <td style={{ whiteSpace: "nowrap" }}>
-                        <button type="button" onClick={() => handleEdit(c)}>
+                        <button type="button" className="btn btn-ghost" onClick={() => handleEdit(c)}>
                           Edit
                         </button>{" "}
-                        <button type="button" onClick={() => handleDelete(c.id)}>
+                        <button type="button" className="btn btn-danger" onClick={() => handleDelete(c.id)}>
                           Delete
                         </button>
                       </td>
