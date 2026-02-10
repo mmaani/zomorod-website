@@ -1,13 +1,19 @@
 // src/crm/pages/SuppliersPage.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { apiFetch } from "../api.js";
 import { hasRole } from "../auth";
 
 /*
-  Improvements (safe, no DB changes):
-  - Better layout alignment (helper text clamped + fixed height)
-  - Category picker scales to many categories (search + chips + scroll)
-  - Server-side search + category filter (calls /api/suppliers?q=&categoryId=)
+  Fixes + Improvements (safe, no DB changes):
+  ✅ Fix dropdown list issue for "Product Categories" picker:
+     - Render the dropdown in a portal (document.body) + position: fixed
+     - This prevents clipping/covering by parent cards/tables (overflow/z-index/stacking contexts)
+  ✅ Robust ID handling: never use invalid ids (id <= 0)
+  ✅ Website link normalization (adds https:// when missing)
+  ✅ Business Name fallback: if empty, uses Contact Name in payload (matches helper text)
+  ✅ Cleaner buttons (use btn classes like ClientsPage)
+  ✅ Server-side search + category filter (/api/suppliers?q=&categoryId=)
 */
 
 const PINNED = ["Jordan", "China", "Malaysia", "Turkey", "Syria"];
@@ -114,16 +120,9 @@ function Chip({ label, onRemove, title }) {
       {onRemove ? (
         <button
           type="button"
+          className="btn btn-ghost"
           onClick={onRemove}
-          style={{
-            padding: "2px 8px",
-            borderRadius: 999,
-            border: "1px solid var(--z-border)",
-            background: "rgba(255,255,255,0.06)",
-            color: "inherit",
-            cursor: "pointer",
-            fontWeight: 900,
-          }}
+          style={{ padding: "2px 8px", borderRadius: 999 }}
           aria-label={`Remove ${label}`}
           title="Remove"
         >
@@ -134,14 +133,18 @@ function Chip({ label, onRemove, title }) {
   );
 }
 
-/** Scalable multi-select category picker (safe + de-dupes + ESC close) */
+/**
+ * Scalable multi-select category picker.
+ * ✅ Uses Portal + position: fixed to avoid being covered/clipped by parent containers.
+ */
 function CategoryPicker({ categories, valueIds, onChange }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const boxRef = useRef(null);
+
+  const anchorRef = useRef(null);
+  const panelRef = useRef(null);
   const searchRef = useRef(null);
 
-  // Normalize incoming ids to clean numeric array
   const ids = useMemo(() => uniqInts(valueIds), [valueIds]);
 
   const byId = useMemo(() => {
@@ -156,17 +159,53 @@ function CategoryPicker({ categories, valueIds, onChange }) {
 
   const filtered = useMemo(() => {
     const term = normalize(q).toLowerCase();
-    const list = categories || [];
+    const list = Array.isArray(categories) ? categories : [];
     if (!term) return list;
-    return list.filter((c) => String(c.name || "").toLowerCase().includes(term));
+    return list.filter((c) => normalize(c?.name).toLowerCase().includes(term));
   }, [categories, q]);
 
-  // Close on outside click
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+
+  function updatePos() {
+    const el = anchorRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setPos({
+      top: Math.round(r.bottom + 10),
+      left: Math.round(r.left),
+      width: Math.round(r.width),
+    });
+  }
+
+  // Open/close handlers
+  useEffect(() => {
+    if (!open) return;
+
+    updatePos();
+
+    const onScroll = () => requestAnimationFrame(updatePos);
+    const onResize = () => requestAnimationFrame(updatePos);
+
+    // capture scroll from any scroll container
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [open]);
+
+  // Close on outside click (works with portal)
   useEffect(() => {
     function onDoc(e) {
       if (!open) return;
-      if (!boxRef.current) return;
-      if (!boxRef.current.contains(e.target)) setOpen(false);
+      const t = e.target;
+      const anchor = anchorRef.current;
+      const panel = panelRef.current;
+      if (anchor && anchor.contains(t)) return;
+      if (panel && panel.contains(t)) return;
+      setOpen(false);
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
@@ -182,37 +221,114 @@ function CategoryPicker({ categories, valueIds, onChange }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // Focus search when opening
+  // Focus search on open
   useEffect(() => {
-    if (open) {
-      const t = setTimeout(() => searchRef.current?.focus(), 0);
-      return () => clearTimeout(t);
-    }
+    if (!open) return;
+    const t = setTimeout(() => searchRef.current?.focus(), 0);
+    return () => clearTimeout(t);
   }, [open]);
 
   function toggle(idRaw) {
     const cid = toInt(idRaw);
     if (!cid) return;
-
     const has = ids.includes(cid);
     const next = has ? ids.filter((x) => x !== cid) : [...ids, cid];
-    onChange(next); // always numbers
+    onChange(next);
   }
 
   function clearAll() {
     onChange([]);
   }
 
+  const panel =
+    open && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            ref={panelRef}
+            role="dialog"
+            aria-label="Choose categories"
+            style={{
+              position: "fixed",
+              top: pos.top,
+              left: pos.left,
+              width: pos.width,
+              zIndex: 9999, // ✅ ensure on top of cards/tables
+              borderRadius: 14,
+              border: "1px solid var(--z-border)",
+              background: "rgba(10, 20, 18, 0.92)",
+              backdropFilter: "blur(10px)",
+              padding: 12,
+              boxShadow: "0 18px 50px rgba(0,0,0,.35)",
+            }}
+          >
+            <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
+              <input
+                ref={searchRef}
+                className="input"
+                placeholder="Search categories…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              <button type="button" className="btn btn-ghost" onClick={() => setQ("")}>
+                Reset
+              </button>
+            </div>
+
+            <div
+              style={{
+                maxHeight: 260,
+                overflowY: "auto",
+                borderRadius: 12,
+                border: "1px solid rgba(255,255,255,.08)",
+              }}
+            >
+              {filtered.length === 0 ? (
+                <div className="muted" style={{ padding: 12 }}>
+                  No matches.
+                </div>
+              ) : (
+                filtered.map((c) => {
+                  const cid = toInt(c.id);
+                  const checked = ids.includes(cid);
+                  return (
+                    <label
+                      key={cid}
+                      style={{
+                        display: "flex",
+                        gap: 10,
+                        alignItems: "center",
+                        padding: "10px 12px",
+                        borderBottom: "1px solid rgba(255,255,255,.06)",
+                        cursor: "pointer",
+                        userSelect: "none",
+                      }}
+                    >
+                      <input type="checkbox" checked={checked} onChange={() => toggle(cid)} />
+                      <span style={{ fontWeight: 800 }}>{c.name}</span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
+              Tip: search + check, then close. (Esc closes)
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
-    <div ref={boxRef} style={{ position: "relative" }}>
+    <div ref={anchorRef} style={{ position: "relative" }}>
       {/* Selected chips */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
         {selected.length ? (
           selected.map((c) => {
             const cid = toInt(c.id);
-            return (
-              <Chip key={cid} label={c.name} onRemove={() => onChange(ids.filter((x) => x !== cid))} />
-            );
+            const label = normalize(c.name) || `Category #${cid}`;
+            return <Chip key={cid} label={label} title={label} onRemove={() => onChange(ids.filter((x) => x !== cid))} />;
           })
         ) : (
           <span className="muted" style={{ fontSize: 13 }}>
@@ -222,91 +338,23 @@ function CategoryPicker({ categories, valueIds, onChange }) {
       </div>
 
       <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
-        <button type="button" onClick={() => setOpen((s) => !s)} aria-expanded={open}>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={() => setOpen((s) => !s)}
+          aria-expanded={open}
+        >
           {open ? "Close categories" : "Choose categories"}
         </button>
 
         {ids.length ? (
-          <button type="button" onClick={clearAll}>
+          <button type="button" className="btn btn-ghost" onClick={clearAll}>
             Clear
           </button>
         ) : null}
       </div>
 
-      {open ? (
-        <div
-          role="dialog"
-          aria-label="Choose categories"
-          style={{
-            position: "absolute",
-            top: "calc(100% + 10px)",
-            left: 0,
-            right: 0,
-            zIndex: 30,
-            borderRadius: 14,
-            border: "1px solid var(--z-border)",
-            background: "rgba(10, 20, 18, 0.92)",
-            backdropFilter: "blur(10px)",
-            padding: 12,
-            boxShadow: "0 18px 50px rgba(0,0,0,.35)",
-          }}
-        >
-          <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
-            <input
-              ref={searchRef}
-              className="input"
-              placeholder="Search categories…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              style={{ flex: 1 }}
-            />
-            <button type="button" onClick={() => setQ("")}>
-              Reset
-            </button>
-          </div>
-
-          <div
-            style={{
-              maxHeight: 260,
-              overflowY: "auto",
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,.08)",
-            }}
-          >
-            {filtered.length === 0 ? (
-              <div className="muted" style={{ padding: 12 }}>
-                No matches.
-              </div>
-            ) : (
-              filtered.map((c) => {
-                const cid = toInt(c.id);
-                const checked = ids.includes(cid);
-                return (
-                  <label
-                    key={cid}
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      alignItems: "center",
-                      padding: "10px 12px",
-                      borderBottom: "1px solid rgba(255,255,255,.06)",
-                      cursor: "pointer",
-                      userSelect: "none",
-                    }}
-                  >
-                    <input type="checkbox" checked={checked} onChange={() => toggle(cid)} />
-                    <span style={{ fontWeight: 800 }}>{c.name}</span>
-                  </label>
-                );
-              })
-            )}
-          </div>
-
-          <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-            Tip: search + check, then close. (Esc closes)
-          </div>
-        </div>
-      ) : null}
+      {panel}
     </div>
   );
 }
@@ -360,23 +408,27 @@ export default function SuppliersPage() {
     return raw;
   }, [form.supplierCountry, form.supplierCountryOther]);
 
+  // ✅ Safety: remove invalid category ids (prevents weird selection behavior)
+  const categoriesSafe = useMemo(() => {
+    return (Array.isArray(categories) ? categories : [])
+      .map((c) => ({ ...c, id: toInt(c?.id), name: normalize(c?.name) }))
+      .filter((c) => c.id > 0 && c.name);
+  }, [categories]);
+
   const categoriesById = useMemo(() => {
     const m = new Map();
-    for (const c of categories) m.set(toInt(c.id), c);
+    for (const c of categoriesSafe) m.set(toInt(c.id), c);
     return m;
-  }, [categories]);
+  }, [categoriesSafe]);
 
   const hintStyle = {
     marginTop: 6,
     fontSize: 12,
     opacity: 0.75,
-
-    // keep alignment + prevent box growth
     lineHeight: "16px",
     minHeight: 32,
     maxHeight: 32,
     overflow: "hidden",
-
     display: "-webkit-box",
     WebkitLineClamp: 2,
     WebkitBoxOrient: "vertical",
@@ -400,6 +452,8 @@ export default function SuppliersPage() {
 
     if (!res?.ok || !data?.ok) {
       setErr(data?.error || data?.detail || `Failed to load suppliers (${res?.status || "?"})`);
+      setSuppliers([]);
+      setCategories([]);
       setLoading(false);
       return;
     }
@@ -453,7 +507,10 @@ export default function SuppliersPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
 
-    if (!normalize(form.businessName) && !normalize(form.contactName)) {
+    const businessName = normalize(form.businessName);
+    const contactName = normalize(form.contactName);
+
+    if (!businessName && !contactName) {
       alert("Business Name or Contact Name is required");
       return;
     }
@@ -465,8 +522,9 @@ export default function SuppliersPage() {
 
     const payload = {
       id: form.id,
-      businessName: normalize(form.businessName),
-      contactName: normalize(form.contactName),
+      // ✅ enforce the helper-text promise
+      businessName: businessName || contactName,
+      contactName,
       phone: normalize(form.phone),
       email: normalize(form.email),
       website: normalize(form.website),
@@ -523,8 +581,8 @@ export default function SuppliersPage() {
               className="input"
             >
               <option value="">All categories</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
+              {categoriesSafe.map((c) => (
+                <option key={c.id} value={String(c.id)}>
                   {c.name}
                 </option>
               ))}
@@ -537,6 +595,7 @@ export default function SuppliersPage() {
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               type="button"
+              className="btn btn-ghost"
               onClick={() => {
                 setSearchQ("");
                 setCategoryFilterId("");
@@ -545,7 +604,7 @@ export default function SuppliersPage() {
               Clear
             </button>
 
-            <button type="button" onClick={() => load()}>
+            <button type="button" className="btn btn-ghost" onClick={() => load()}>
               Refresh
             </button>
           </div>
@@ -692,13 +751,13 @@ export default function SuppliersPage() {
 
           <div className="field" style={{ marginBottom: 12 }}>
             <label>Product Categories (supplier can provide)</label>
-            {categories.length === 0 ? (
+            {categoriesSafe.length === 0 ? (
               <div className="muted" style={{ marginTop: 8 }}>
                 No categories found. Add categories via Products first.
               </div>
             ) : (
               <CategoryPicker
-                categories={categories}
+                categories={categoriesSafe}
                 valueIds={form.categoryIds}
                 onChange={(ids) => setForm((s) => ({ ...s, categoryIds: uniqInts(ids) }))}
               />
@@ -706,12 +765,14 @@ export default function SuppliersPage() {
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button type="submit">{form.id ? "Update Supplier" : "Add Supplier"}</button>
-            {form.id && (
-              <button type="button" onClick={() => setForm(emptyForm)}>
+            <button className="btn btn-primary" type="submit">
+              {form.id ? "Update Supplier" : "Add Supplier"}
+            </button>
+            {form.id ? (
+              <button className="btn btn-ghost" type="button" onClick={() => setForm(emptyForm)}>
                 Cancel
               </button>
-            )}
+            ) : null}
           </div>
         </form>
       )}
@@ -756,7 +817,15 @@ export default function SuppliersPage() {
                   .map((id) => categoriesById.get(id)?.name)
                   .filter(Boolean);
 
-                const business = s.businessName || s.contactName || s.name;
+                const business = normalize(s.businessName) || normalize(s.contactName) || normalize(s.name) || "—";
+
+                const website = normalize(s.website);
+                const websiteHref =
+                  website && (website.startsWith("http://") || website.startsWith("https://"))
+                    ? website
+                    : website
+                    ? `https://${website}`
+                    : "";
 
                 return (
                   <tr key={s.id}>
@@ -768,8 +837,8 @@ export default function SuppliersPage() {
                     <td>{s.email || <span className="muted">—</span>}</td>
 
                     <td>
-                      {s.website ? (
-                        <a href={s.website} target="_blank" rel="noreferrer">
+                      {websiteHref ? (
+                        <a href={websiteHref} target="_blank" rel="noreferrer">
                           Open
                         </a>
                       ) : (
@@ -797,10 +866,10 @@ export default function SuppliersPage() {
                     <td style={{ whiteSpace: "nowrap" }}>
                       {hasRole("main") ? (
                         <>
-                          <button type="button" onClick={() => handleEdit(s)}>
+                          <button type="button" className="btn btn-ghost" onClick={() => handleEdit(s)}>
                             Edit
                           </button>{" "}
-                          <button type="button" onClick={() => handleDelete(s.id)}>
+                          <button type="button" className="btn btn-danger" onClick={() => handleDelete(s.id)}>
                             Delete
                           </button>
                         </>
