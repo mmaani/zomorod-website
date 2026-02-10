@@ -2,17 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../api.js";
 import { hasRole } from "../auth";
 
-/*
- * Suppliers page (production-safe):
- * - No external dataset dependency (removes country-state-city)
- * - Country dropdown uses a small built-in list + optional free text "Other"
- * - City is free text input
- * - Categories multi-select saved to supplier_categories
- */
-
 const PINNED = ["Jordan", "China", "Malaysia", "Turkey", "Syria"];
 
-// Small, safe list (you can expand anytime without affecting bundle much)
 const COUNTRY_LIST = [
   ...PINNED,
   "United Arab Emirates",
@@ -55,10 +46,24 @@ function normalize(v) {
   return String(v ?? "").trim();
 }
 
+function hostOnly(url) {
+  try {
+    const u = new URL(url);
+    return u.host;
+  } catch {
+    return url;
+  }
+}
+
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+
+  // Search / filter
+  const [q, setQ] = useState("");
+  const [categoryFilterId, setCategoryFilterId] = useState(0);
 
   const emptyForm = {
     id: null,
@@ -70,14 +75,12 @@ export default function SuppliersPage() {
     supplierCountry: "",
     supplierCity: "",
     categoryIds: [],
-    // optional: when country is "Other"
     supplierCountryOther: "",
   };
 
   const [form, setForm] = useState(emptyForm);
 
   const countriesSorted = useMemo(() => {
-    // De-duplicate and keep pinned on top
     const set = new Set(COUNTRY_LIST.map((x) => normalize(x)).filter(Boolean));
     const all = Array.from(set);
 
@@ -92,36 +95,66 @@ export default function SuppliersPage() {
     return [...pinned, ...rest];
   }, []);
 
-  // Effective country that goes to API
   const effectiveCountry = useMemo(() => {
     const raw = normalize(form.supplierCountry);
     if (raw === "Other") return normalize(form.supplierCountryOther);
     return raw;
   }, [form.supplierCountry, form.supplierCountryOther]);
 
-  async function load() {
+  async function load(opts = {}) {
+    const q0 = normalize(opts.q ?? q);
+    const catId = Number.isFinite(Number(opts.categoryId ?? categoryFilterId))
+      ? Number(opts.categoryId ?? categoryFilterId)
+      : 0;
+
     setLoading(true);
-    const res = await apiFetch("/api/suppliers");
+    setErr("");
+
+    const qs = new URLSearchParams();
+    if (q0) qs.set("q", q0);
+    if (catId > 0) qs.set("categoryId", String(catId));
+
+    const url = `/api/suppliers${qs.toString() ? `?${qs.toString()}` : ""}`;
+
+    const res = await apiFetch(url).catch((e) => {
+      setErr(e?.message || "Network error");
+      return null;
+    });
+
     if (!res) {
       setLoading(false);
       return;
     }
+
     const data = await res.json().catch(() => ({}));
-    if (res.ok && data.ok) {
-      setSuppliers(data.suppliers || []);
-      setCategories(data.categories || []);
+    if (!res.ok || !data?.ok) {
+      setErr(data?.error || data?.detail || `HTTP ${res.status}`);
+      setLoading(false);
+      return;
     }
+
+    setSuppliers(Array.isArray(data.suppliers) ? data.suppliers : []);
+    setCategories(Array.isArray(data.categories) ? data.categories : []);
     setLoading(false);
   }
 
+  // Initial load
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Debounced search/filter reload
+  useEffect(() => {
+    const t = setTimeout(() => load({ q, categoryId: categoryFilterId }), 250);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, categoryFilterId]);
+
   const handleEdit = (s) => {
-    // If stored country is not in our list, set dropdown to Other + store actual value
     const storedCountry = normalize(s.supplierCountry);
     const inList = countriesSorted.includes(storedCountry);
+
     setForm({
       id: s.id,
       businessName: s.businessName || "",
@@ -138,7 +171,16 @@ export default function SuppliersPage() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this supplier?")) return;
-    await apiFetch(`/api/suppliers?id=${id}`, { method: "DELETE" });
+
+    const res = await apiFetch(`/api/suppliers?id=${id}`, { method: "DELETE" }).catch((e) => {
+      alert(e?.message || "Network error");
+      return null;
+    });
+    const data = await res?.json().catch(() => ({}));
+    if (!res?.ok || !data?.ok) {
+      alert(data?.error || data?.detail || "Failed to delete supplier");
+      return;
+    }
     load();
   };
 
@@ -156,14 +198,13 @@ export default function SuppliersPage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setErr("");
 
-    // Business Name preferred; if empty, backend will copy Contact Name.
     if (!normalize(form.businessName) && !normalize(form.contactName)) {
       alert("Business Name or Contact Name is required");
       return;
     }
 
-    // If user picked Other, enforce providing text
     if (normalize(form.supplierCountry) === "Other" && !normalize(form.supplierCountryOther)) {
       alert("Please type the country name (Other).");
       return;
@@ -182,7 +223,17 @@ export default function SuppliersPage() {
     };
 
     const method = form.id ? "PATCH" : "POST";
-    await apiFetch("/api/suppliers", { method, body: payload });
+
+    const res = await apiFetch("/api/suppliers", { method, body: payload }).catch((e) => {
+      setErr(e?.message || "Network error");
+      return null;
+    });
+
+    const data = await res?.json().catch(() => ({}));
+    if (!res?.ok || !data?.ok) {
+      setErr(data?.error || data?.detail || "Failed to save supplier");
+      return;
+    }
 
     setForm(emptyForm);
     load();
@@ -192,11 +243,65 @@ export default function SuppliersPage() {
     <div className="container">
       <h2>Suppliers</h2>
 
+      {err ? (
+        <div className="banner" style={{ marginTop: 10 }}>
+          {err}
+        </div>
+      ) : null}
+
+      {/* Search + Filter */}
+      <div className="card" style={{ padding: 12, marginTop: 12, marginBottom: 12 }}>
+        <div className="grid grid-3" style={{ gap: 10 }}>
+          <div className="field">
+            <label>Search</label>
+            <input
+              className="input"
+              placeholder="Name, business, email, phone, country..."
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+            <div className="small muted" style={{ marginTop: 6 }}>
+              Searches across name/business/contact/email/phone/website/country/city.
+            </div>
+          </div>
+
+          <div className="field">
+            <label>Category filter</label>
+            <select
+              value={categoryFilterId}
+              onChange={(e) => setCategoryFilterId(Number(e.target.value) || 0)}
+            >
+              <option value={0}>All categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="field" style={{ display: "flex", alignItems: "end", gap: 10 }}>
+            <button
+              className="btn btn-ghost"
+              type="button"
+              onClick={() => {
+                setQ("");
+                setCategoryFilterId(0);
+              }}
+            >
+              Clear
+            </button>
+            <button className="btn btn-ghost" type="button" onClick={() => load()}>
+              Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+
       {hasRole("main") && (
         <form onSubmit={onSubmit} className="card" style={{ padding: 16, marginBottom: 16 }}>
           <h3 style={{ marginTop: 0 }}>{form.id ? "Edit Supplier" : "Add Supplier"}</h3>
 
-          {/* Business name + contact */}
           <div className="grid grid-2" style={{ marginBottom: 12 }}>
             <div className="field">
               <label>Business Name</label>
@@ -247,14 +352,13 @@ export default function SuppliersPage() {
               <label>Website (optional)</label>
               <input
                 className="input"
-                placeholder="https://..."
+                placeholder="https://... or example.com"
                 value={form.website}
                 onChange={(e) => setForm((s) => ({ ...s, website: e.target.value }))}
               />
             </div>
           </div>
 
-          {/* Country + City */}
           <div className="grid grid-2" style={{ marginBottom: 12 }}>
             <div className="field">
               <label>Country</label>
@@ -301,7 +405,6 @@ export default function SuppliersPage() {
             </div>
           </div>
 
-          {/* Categories multi-select */}
           <div className="field" style={{ marginBottom: 12 }}>
             <label>Product Categories (supplier can provide)</label>
             {categories.length === 0 ? (
@@ -393,18 +496,36 @@ export default function SuppliersPage() {
                 .map((id) => categories.find((c) => c.id === id)?.name)
                 .filter(Boolean);
 
+              const displayBusiness = s.businessName || s.contactName || s.name;
+
               return (
                 <tr key={s.id}>
-                  <td>{s.businessName || s.contactName || s.name}</td>
-                  <td>{s.contactName}</td>
-                  <td>{s.supplierCountry}</td>
-                  <td>{s.supplierCity}</td>
-                  <td>{s.phone}</td>
-                  <td>{s.email}</td>
+                  <td style={{ fontWeight: 700 }}>{displayBusiness}</td>
+                  <td>{s.contactName || <span className="muted">—</span>}</td>
+                  <td>{s.supplierCountry || <span className="muted">—</span>}</td>
+                  <td>{s.supplierCity || <span className="muted">—</span>}</td>
+                  <td>
+                    {s.phone ? (
+                      <a href={`tel:${s.phone}`} rel="noreferrer">
+                        {s.phone}
+                      </a>
+                    ) : (
+                      <span className="muted">—</span>
+                    )}
+                  </td>
+                  <td>
+                    {s.email ? (
+                      <a href={`mailto:${s.email}`} rel="noreferrer">
+                        {s.email}
+                      </a>
+                    ) : (
+                      <span className="muted">—</span>
+                    )}
+                  </td>
                   <td>
                     {s.website ? (
                       <a href={s.website} target="_blank" rel="noreferrer">
-                        {s.website}
+                        {hostOnly(s.website)}
                       </a>
                     ) : (
                       <span className="muted">—</span>
