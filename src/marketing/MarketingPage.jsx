@@ -18,7 +18,7 @@ const COPY = {
     responseSla: "Quote response within 48 business hours.",
 
     ctaStaff: "Staff Login",
-    ctaWhatsapp: "WhatsApp",
+    ctaWhatsapp: "Get a Quote",
 
     metrics: [
       { value: "Jordan & Syria", label: "Coverage" },
@@ -72,9 +72,9 @@ const COPY = {
       "Order fulfillment coordination and after-sales follow-up",
     ],
 
-    productsTitle: "Our product lines (category-level)",
+    productsTitle: "Pilot product lines",
     productsNote:
-      "We publish categories (not a full SKU catalog). Availability and documentation requirements vary by destination.",
+      "Category-level view — request a quotation for exact SKUs, packaging, and documentation.",
     sectorsTitle: "Who we serve",
     sectors: ["Pharmacies", "Resellers / distributors", "Clinics", "Laboratories"],
 
@@ -121,7 +121,7 @@ const COPY = {
     responseSla: "الرد على عروض الأسعار خلال 48 ساعة عمل.",
 
     ctaStaff: "دخول الموظفين",
-    ctaWhatsapp: "واتساب",
+    ctaWhatsapp: "احصل على عرض سعر",
 
     metrics: [
       { value: "الأردن وسوريا", label: "نطاق الخدمة" },
@@ -175,9 +175,9 @@ const COPY = {
       "تنسيق تنفيذ الطلبات والمتابعة بعد البيع",
     ],
 
-    productsTitle: "خطوط المنتجات (حسب الفئات)",
+    productsTitle: "خطوط المنتجات التجريبية",
     productsNote:
-      "نعرض فئات وليس قائمة أصناف كاملة. التوفر ومتطلبات المستندات تختلف حسب الوجهة.",
+      "عرض حسب الفئات — اطلب عرض سعر لتحديد الأصناف الدقيقة والتغليف والمتطلبات الوثائقية.",
     sectorsTitle: "الجهات التي نخدمها",
     sectors: ["الصيدليات", "الموزعون/الموردون", "العيادات", "المختبرات"],
 
@@ -217,26 +217,124 @@ const COPY = {
   },
 };
 
-const PRODUCT_CARDS = {
+const PRODUCT_FILTERS = {
   en: [
-    { title: "Baby Care", body: "Silicone feeding bottles, pacifiers, and selected baby accessories." },
-    { title: "Oral Care", body: "Toothpaste, toothbrushes, and selected oral-care items." },
-    { title: "PPE (selected)", body: "Request-based PPE options aligned to your need and destination." },
-    { title: "Hygiene & Infection Control", body: "Selected hygiene and infection-prevention items (request-based)." },
-    { title: "Clinic Consumables", body: "Routine clinic consumables and procedure support items (selected)." },
-    { title: "Lab Consumables (selected)", body: "Selected lab disposables on request, with pack/size matching." },
-    { title: "Custom Sourcing", body: "Specification-based sourcing for recurring or volume demand." },
+    { key: "all", label: "All" },
+    { key: "wound", label: "Wound care" },
+    { key: "ppe", label: "PPE" },
+    { key: "baby", label: "Baby care" },
   ],
   ar: [
-    { title: "عناية بالأطفال", body: "رضّاعات سيليكون، لهايات، ومستلزمات أطفال مختارة." },
-    { title: "عناية فموية", body: "معجون وفرش أسنان وأصناف عناية فموية مختارة." },
-    { title: "معدات وقاية (مختارة)", body: "خيارات وقاية حسب الطلب بما يتناسب مع الحاجة والوجهة." },
-    { title: "نظافة ومكافحة العدوى", body: "أصناف نظافة ووقاية من العدوى مختارة (حسب الطلب)." },
-    { title: "مستهلكات العيادات", body: "مستهلكات عيادات روتينية وأصناف دعم الإجراءات (مختارة)." },
-    { title: "مستلزمات مختبر (مختارة)", body: "مستهلكات مخبرية مختارة عند الطلب مع مطابقة التعبئة/الحجم." },
-    { title: "توريد حسب الطلب", body: "توريد حسب المواصفات للطلبات الدورية أو الكميات الكبيرة." },
+    { key: "all", label: "الكل" },
+    { key: "wound", label: "العناية بالجروح" },
+    { key: "ppe", label: "معدات وقاية" },
+    { key: "baby", label: "عناية بالأطفال" },
   ],
 };
+
+const PRODUCT_ITEMS = {
+  en: [
+    {
+      id: "adv-wound",
+      category: "wound",
+      title: "Advanced wound care dressings",
+      body: "Silicone foam, hydrocolloid, and transparent film dressings (sterile options).",
+      img: "/products/advanced-wound-care.svg",
+      tags: ["Sterile options", "Clinic use", "High margin"],
+    },
+    {
+      id: "basic-wound",
+      category: "wound",
+      title: "Basic wound care consumables",
+      body: "Gauze swabs & rolls, non-woven pads, and elastic/crepe bandages for routine care.",
+      img: "/products/basic-wound-care.svg",
+      tags: ["Fast-moving", "Bundling-friendly", "Reliable specs"],
+    },
+    {
+      id: "nitrile-gloves",
+      category: "ppe",
+      title: "Nitrile examination gloves",
+      body: "Powder-free nitrile exam gloves (sizes S/M) with consistent QC and clear labeling.",
+      img: "/products/nitrile-gloves.svg",
+      tags: ["Powder-free", "S/M sizes", "Blue/pink/black"],
+    },
+    {
+      id: "surgical-masks",
+      category: "ppe",
+      title: "Type IIR surgical masks (optional add-on)",
+      body: "Type IIR masks with ear-loop or head-loop options, suitable for private-sector channels.",
+      img: "/products/surgical-masks.svg",
+      tags: ["Type IIR", "Ear/Head loop", "Color options"],
+    },
+    {
+      id: "silicone-bottles",
+      category: "baby",
+      title: "Silicone baby feeding bottles",
+      body: "Food-grade silicone bottles (150/240/330 ml), heat-resistant and sterilization-safe.",
+      img: "/products/silicone-baby-bottle.svg",
+      tags: ["Food-grade", "BPA-free", "Handle-free"],
+    },
+    {
+      id: "silicone-pacifiers",
+      category: "baby",
+      title: "Silicone pacifiers (phase 2)",
+      body: "Orthodontic and standard shapes (0–6m / 6–18m), individually packaged.",
+      img: "/products/silicone-pacifier.svg",
+      tags: ["Orthodontic", "2 age ranges", "Individually packed"],
+    },
+  ],
+  ar: [
+    {
+      id: "adv-wound",
+      category: "wound",
+      title: "ضمادات عناية متقدمة بالجروح",
+      body: "ضمادات رغوية سيليكون، هيدروكولويد، وضمادات فيلم شفافة (خيارات معقمة).",
+      img: "/products/advanced-wound-care.svg",
+      tags: ["خيارات معقمة", "استخدام عيادات", "هامش مرتفع"],
+    },
+    {
+      id: "basic-wound",
+      category: "wound",
+      title: "مستلزمات العناية الأساسية بالجروح",
+      body: "شاش معقم ولفائف شاش، فوط/وسائد غير منسوجة، ورباط/ضماد مرن للعناية الروتينية.",
+      img: "/products/basic-wound-care.svg",
+      tags: ["سريع الدوران", "مناسب للتجميع", "مواصفات ثابتة"],
+    },
+    {
+      id: "nitrile-gloves",
+      category: "ppe",
+      title: "قفازات فحص نيتريل",
+      body: "قفازات نيتريل للفحص بدون بودرة (مقاسات S/M) مع ضبط جودة وتوسيم واضح.",
+      img: "/products/nitrile-gloves.svg",
+      tags: ["بدون بودرة", "مقاسات S/M", "أزرق/وردي/أسود"],
+    },
+    {
+      id: "surgical-masks",
+      category: "ppe",
+      title: "كمامات جراحية Type IIR (اختياري)",
+      body: "كمامات Type IIR بخيارات ربط خلف الأذن أو خلف الرأس، مناسبة لقنوات القطاع الخاص.",
+      img: "/products/surgical-masks.svg",
+      tags: ["Type IIR", "رباط أذن/رأس", "خيارات ألوان"],
+    },
+    {
+      id: "silicone-bottles",
+      category: "baby",
+      title: "رضّاعات سيليكون",
+      body: "رضّاعات سيليكون بدرجة غذائية (150/240/330 مل)، مقاومة للحرارة وآمنة للتعقيم.",
+      img: "/products/silicone-baby-bottle.svg",
+      tags: ["درجة غذائية", "خالٍ من BPA", "بدون مقابض"],
+    },
+    {
+      id: "silicone-pacifiers",
+      category: "baby",
+      title: "لهايات سيليكون (مرحلة 2)",
+      body: "أشكال تقويمية وعادية (0–6 أشهر / 6–18 شهر)، مغلفة بشكل فردي.",
+      img: "/products/silicone-pacifier.svg",
+      tags: ["تقويمية", "فئتان عمريتان", "تغليف فردي"],
+    },
+  ],
+};
+
 
 const EDUCATION_LEVEL_OPTIONS = {
   en: ["High School", "Diploma", "Bachelor's Degree", "Master's Degree", "PhD", "Other"],
@@ -270,6 +368,7 @@ function LinkedInIcon({ title = "LinkedIn" }) {
 export default function MarketingPage() {
   const [lang, setLang] = useState("en");
   const [activeTab, setActiveTab] = useState("about");
+  const [productFilter, setProductFilter] = useState("all");
   const [jobs, setJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(true);
 
@@ -378,27 +477,41 @@ export default function MarketingPage() {
           </button>
         </div>
 
-        <h1 className="mkt-title">{t.brandName}</h1>
-        <p className="mkt-tagline">{t.tagline}</p>
+        <div className="mkt-hero-main">
+          <div className="mkt-hero-copy">
+            <h1 className="mkt-title">{t.brandName}</h1>
+            <p className="mkt-tagline">{t.tagline}</p>
 
-        <div className="mkt-trust-row">
-          <span className="mkt-pill">{t.responseSla}</span>
-        </div>
+            <div className="mkt-trust-row">
+              <span className="mkt-pill">{t.responseSla}</span>
+            </div>
 
-        {/* CTAs: max 2 */}
-        <div className="mkt-cta-row">
-          <a
-            className="btn btn-primary mkt-cta"
-            href={whatsappQuoteHref}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t.ctaWhatsapp}
-          </a>
+            {/* CTAs: max 2 */}
+            <div className="mkt-cta-row">
+              <a
+                className="btn btn-primary mkt-cta"
+                href={whatsappQuoteHref}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t.ctaWhatsapp}
+              </a>
 
-          <Link to="/login" className="btn btn-ghost mkt-cta">
-            {t.ctaStaff}
-          </Link>
+              <Link to="/login" className="btn btn-ghost mkt-cta">
+                {t.ctaStaff}
+              </Link>
+            </div>
+          </div>
+
+          <div className="mkt-hero-art" aria-hidden="true">
+            <img
+              className="mkt-hero-illustration"
+              src="/products/hero-illustration.svg"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
         </div>
 
         <div className="mkt-hero-metrics">
@@ -471,13 +584,43 @@ export default function MarketingPage() {
           <div className="mkt-tab-panel">
             <h2 className="mkt-h2">{t.productsTitle}</h2>
             <p className="mkt-p">{t.productsNote}</p>
-            <div className="mkt-grid">
-              {PRODUCT_CARDS[lang].map((card) => (
-                <article className="mkt-card" key={card.title}>
-                  <div className="mkt-card-title">{card.title}</div>
-                  <p className="mkt-card-body">{card.body}</p>
-                </article>
+
+            <div
+              className="mkt-products-toolbar"
+              role="tablist"
+              aria-label={lang === "ar" ? "تصفية المنتجات" : "Product filters"}
+            >
+              {PRODUCT_FILTERS[lang].map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  className={`mkt-filter ${productFilter === f.key ? "is-active" : ""}`}
+                  onClick={() => setProductFilter(f.key)}
+                >
+                  {f.label}
+                </button>
               ))}
+            </div>
+
+            <div className="mkt-products-grid">
+              {PRODUCT_ITEMS[lang]
+                .filter((p) => productFilter === "all" || p.category === productFilter)
+                .map((p) => (
+                  <article className="mkt-product-card" key={p.id}>
+                    <div className="mkt-product-thumb" aria-hidden="true">
+                      <img src={p.img} alt="" loading="lazy" decoding="async" />
+                    </div>
+                    <div className="mkt-product-title">{p.title}</div>
+                    <p className="mkt-product-body">{p.body}</p>
+                    <div className="mkt-product-tags">
+                      {p.tags.map((tag) => (
+                        <span className="mkt-tag" key={tag}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </article>
+                ))}
             </div>
           </div>
         ) : null}
