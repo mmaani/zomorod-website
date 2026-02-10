@@ -18,7 +18,19 @@ function formatDateTime(value) {
 function formatMoneyMax2(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return "";
-  return new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n);
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
+function formatMoneyMax4(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "";
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 4,
+  }).format(n);
 }
 
 function expiryBadge(status) {
@@ -28,40 +40,33 @@ function expiryBadge(status) {
   return { label: "No expiry", color: "#94a3b8" };
 }
 
-/* ---------- UOM helpers (client-side preview + labels) ---------- */
+function parseMultiplier(qtyUom, customPackSize) {
+  const u = String(qtyUom || "piece").toLowerCase().trim();
+  if (u === "piece") return 1;
+  if (u === "dozen") return 12;
 
-const UOM_OPTIONS = [
-  { value: "piece", label: "Piece (1)" },
-  { value: "dozen", label: "Dozen (12)" },
-  { value: "pack10", label: "Pack of 10" },
-  { value: "pack20", label: "Pack of 20" },
-  { value: "pack25", label: "Pack of 25" },
-  { value: "pack50", label: "Pack of 50" },
-  { value: "pack100", label: "Pack of 100" },
-  { value: "custom", label: "Custom pack size…" },
-];
-
-function uomMultiplier(uom, customPackSize) {
-  if (!uom || uom === "piece") return 1;
-  if (uom === "dozen") return 12;
-  const m = String(uom).match(/^pack(\d+)$/);
+  const m = u.match(/^pack(\d+)$/);
   if (m) {
     const k = Math.floor(Number(m[1]));
-    return Number.isFinite(k) && k > 0 ? k : 0;
+    return k > 0 ? k : 0;
   }
-  if (uom === "custom") {
-    const k = Math.floor(Number(customPackSize));
-    return Number.isFinite(k) && k > 0 ? k : 0;
+
+  if (u === "custom") {
+    const k = Math.floor(Number(customPackSize || 0));
+    return k > 0 ? k : 0;
   }
+
   return 0;
 }
 
-function uomLabel(uom, mult, customPackSize) {
-  if (!uom || uom === "piece") return "piece";
-  if (uom === "dozen") return "dozen";
-  if (String(uom).startsWith("pack")) return `pack of ${mult || ""}`.trim();
-  if (uom === "custom") return `pack of ${customPackSize || mult || ""}`.trim();
-  return String(uom);
+function labelForUom(u) {
+  const s = String(u || "piece");
+  if (s === "piece") return "Piece";
+  if (s === "dozen") return "Dozen (12)";
+  const m = s.match(/^pack(\d+)$/);
+  if (m) return `Box/Pack of ${m[1]}`;
+  if (s === "custom") return "Custom pack size";
+  return s;
 }
 
 export default function ProductsPage() {
@@ -95,12 +100,13 @@ export default function ProductsPage() {
     lotNumber: "",
     purchaseDate: "",
     expiryDate: "",
-    purchasePriceJod: "",
-    qtyReceived: "",
 
-    // NEW (UOM)
+    // NEW
     qtyUom: "piece",
     customPackSize: "",
+
+    purchasePriceJod: "", // price PER selected unit (uom)
+    qtyReceived: "", // number of selected units (e.g., 5 boxes)
 
     supplierId: "",
     supplierName: "",
@@ -119,27 +125,16 @@ export default function ProductsPage() {
     }));
   }, [products]);
 
-  const multPreview = useMemo(() => uomMultiplier(bForm.qtyUom, bForm.customPackSize), [bForm.qtyUom, bForm.customPackSize]);
+  const receivePreview = useMemo(() => {
+    const mult = parseMultiplier(bForm.qtyUom, bForm.customPackSize);
+    const qtyUnits = Math.floor(Number(bForm.qtyReceived || 0));
+    const pricePerUnit = Number(bForm.purchasePriceJod || 0);
 
-  const qtyInputPreview = useMemo(() => {
-    const q = Math.floor(Number(bForm.qtyReceived || 0));
-    return Number.isFinite(q) && q > 0 ? q : 0;
-  }, [bForm.qtyReceived]);
+    const qtyPieces = mult > 0 && qtyUnits > 0 ? qtyUnits * mult : 0;
+    const pricePerPiece = mult > 0 && pricePerUnit > 0 ? pricePerUnit / mult : 0;
 
-  const qtyBasePreview = useMemo(() => {
-    if (!qtyInputPreview || !multPreview) return 0;
-    return qtyInputPreview * multPreview;
-  }, [qtyInputPreview, multPreview]);
-
-  const priceInputPreview = useMemo(() => {
-    const p = Number(bForm.purchasePriceJod || 0);
-    return Number.isFinite(p) && p > 0 ? p : 0;
-  }, [bForm.purchasePriceJod]);
-
-  const pricePerPiecePreview = useMemo(() => {
-    if (!priceInputPreview || !multPreview) return 0;
-    return priceInputPreview / multPreview;
-  }, [priceInputPreview, multPreview]);
+    return { mult, qtyUnits, qtyPieces, pricePerUnit, pricePerPiece };
+  }, [bForm.qtyUom, bForm.customPackSize, bForm.qtyReceived, bForm.purchasePriceJod]);
 
   async function loadProducts() {
     setLoading(true);
@@ -258,8 +253,8 @@ export default function ProductsPage() {
     e.preventDefault();
     setErr("");
 
-    const qtyUom = String(bForm.qtyUom || "piece");
-    const customPackSize = qtyUom === "custom" ? Math.floor(Number(bForm.customPackSize || 0)) : null;
+    const qtyUom = String(bForm.qtyUom || "piece").trim();
+    const mult = parseMultiplier(qtyUom, bForm.customPackSize);
 
     const payload = {
       productId: Number(bForm.productId),
@@ -267,13 +262,13 @@ export default function ProductsPage() {
       purchaseDate: String(bForm.purchaseDate || "").trim(),
       expiryDate: String(bForm.expiryDate || "").trim() || null,
 
-      // IMPORTANT:
-      // qtyReceived = qty input in selected unit
-      // purchasePriceJod = price per selected unit
-      qtyReceived: Number(bForm.qtyReceived || 0),
-      purchasePriceJod: Number(bForm.purchasePriceJod || 0),
+      // NOTE: api/batches.js interprets qtyReceived as "qty input in selected unit"
+      qtyReceived: Math.floor(Number(bForm.qtyReceived || 0)),
       qtyUom,
-      customPackSize,
+      customPackSize: qtyUom === "custom" ? Math.floor(Number(bForm.customPackSize || 0)) : null,
+
+      // NOTE: api/batches.js interprets purchasePriceJod as "price per selected unit"
+      purchasePriceJod: Number(bForm.purchasePriceJod || 0),
 
       supplierId: bForm.supplierId ? Number(bForm.supplierId) : null,
       supplierName: String(bForm.supplierName || "").trim() || null,
@@ -284,11 +279,18 @@ export default function ProductsPage() {
     if (!payload.lotNumber) return setErr("Lot Number is required.");
     if (!payload.purchaseDate) return setErr("Purchase Date is required.");
 
-    const mult = uomMultiplier(payload.qtyUom, payload.customPackSize);
-    if (!mult || mult <= 0) return setErr("Invalid unit / pack size. Check 'Received As'.");
+    if (!payload.qtyUom) return setErr("Received Unit is required.");
+    if (!mult || mult <= 0) return setErr("Invalid Received Unit / pack size.");
+    if (payload.qtyUom === "custom" && (!payload.customPackSize || payload.customPackSize <= 0)) {
+      return setErr("Custom pack size must be > 0.");
+    }
 
-    if (!Number.isFinite(payload.qtyReceived) || payload.qtyReceived <= 0) return setErr("Quantity must be > 0.");
-    if (!Number.isFinite(payload.purchasePriceJod) || payload.purchasePriceJod <= 0) return setErr("Purchase Price must be > 0.");
+    if (!Number.isFinite(payload.qtyReceived) || payload.qtyReceived <= 0) {
+      return setErr("Quantity Received must be > 0.");
+    }
+    if (!Number.isFinite(payload.purchasePriceJod) || payload.purchasePriceJod <= 0) {
+      return setErr("Purchase Price must be > 0.");
+    }
 
     try {
       const res = await apiFetch("/api/batches", { method: "POST", body: payload });
@@ -297,7 +299,7 @@ export default function ProductsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
-      // Keep selected product; clear other fields (keep qtyUom as-is for faster repeated receiving)
+      // Keep selected product + unit selection; clear rest
       setBForm((s) => ({
         ...s,
         lotNumber: "",
@@ -305,7 +307,6 @@ export default function ProductsPage() {
         expiryDate: "",
         purchasePriceJod: "",
         qtyReceived: "",
-        customPackSize: "",
         supplierId: "",
         supplierName: "",
         supplierInvoiceNo: "",
@@ -321,7 +322,10 @@ export default function ProductsPage() {
   async function toggleArchive(p) {
     setErr("");
     try {
-      const res = await apiFetch("/api/products", { method: "PATCH", body: { id: p.id, archived: !p.archivedAt } });
+      const res = await apiFetch("/api/products", {
+        method: "PATCH",
+        body: { id: p.id, archived: !p.archivedAt },
+      });
       if (!res) return;
 
       const data = await res.json().catch(() => ({}));
@@ -368,7 +372,6 @@ export default function ProductsPage() {
 
   return (
     <div className="crm-content">
-      {/* Products table */}
       <div className="crm-card">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
@@ -379,7 +382,11 @@ export default function ProductsPage() {
           </div>
 
           <label className="muted" style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700 }}>
-            <input type="checkbox" checked={includeArchived} onChange={(e) => setIncludeArchived(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={includeArchived}
+              onChange={(e) => setIncludeArchived(e.target.checked)}
+            />
             Show archived
           </label>
         </div>
@@ -424,7 +431,7 @@ export default function ProductsPage() {
                   <td>{p.marketName}</td>
                   <td style={{ fontWeight: 900 }}>{p.onHandQty}</td>
                   <td>{formatMoneyMax2(p.defaultSellPriceJod)}</td>
-                  {canSeePurchase ? <td>{formatMoneyMax2(p.avgPurchasePriceJod)}</td> : null}
+                  {canSeePurchase ? <td>{formatMoneyMax4(p.avgPurchasePriceJod)}</td> : null}
                   {canSeePurchase ? <td>{formatDateTime(p.lastPurchaseDate)}</td> : null}
 
                   <td>
@@ -458,10 +465,8 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Main-only forms */}
       {isMain ? (
         <div style={{ display: "grid", gap: 14, marginTop: 14 }}>
-          {/* Add product */}
           <div className="crm-card">
             <h3 style={{ marginTop: 0 }}>Add Product (Main only)</h3>
 
@@ -469,27 +474,53 @@ export default function ProductsPage() {
               <div className="grid grid-2">
                 <div className="field">
                   <label>Product Code</label>
-                  <input className="input" value={pForm.productCode} onChange={(e) => setPForm((s) => ({ ...s, productCode: e.target.value }))} placeholder="e.g., S-L11" />
+                  <input
+                    className="input"
+                    value={pForm.productCode}
+                    onChange={(e) => setPForm((s) => ({ ...s, productCode: e.target.value }))}
+                    placeholder="e.g., S-L11"
+                  />
                 </div>
 
                 <div className="field">
                   <label>Category</label>
-                  <input className="input" value={pForm.category} onChange={(e) => setPForm((s) => ({ ...s, category: e.target.value }))} placeholder="e.g., Mask" />
+                  <input
+                    className="input"
+                    value={pForm.category}
+                    onChange={(e) => setPForm((s) => ({ ...s, category: e.target.value }))}
+                    placeholder="e.g., Mask"
+                  />
                 </div>
 
                 <div className="field">
                   <label>Official Name</label>
-                  <input className="input" value={pForm.officialName} onChange={(e) => setPForm((s) => ({ ...s, officialName: e.target.value }))} />
+                  <input
+                    className="input"
+                    value={pForm.officialName}
+                    onChange={(e) => setPForm((s) => ({ ...s, officialName: e.target.value }))}
+                  />
                 </div>
 
                 <div className="field">
                   <label>Market Name</label>
-                  <input className="input" value={pForm.marketName} onChange={(e) => setPForm((s) => ({ ...s, marketName: e.target.value }))} />
+                  <input
+                    className="input"
+                    value={pForm.marketName}
+                    onChange={(e) => setPForm((s) => ({ ...s, marketName: e.target.value }))}
+                  />
                 </div>
 
                 <div className="field">
                   <label>Default Sell Price (JOD)</label>
-                  <input className="input" type="number" min="0.01" step="0.01" value={pForm.defaultSellPriceJod} onChange={(e) => setPForm((s) => ({ ...s, defaultSellPriceJod: e.target.value }))} placeholder="e.g., 0.35" />
+                  <input
+                    className="input"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={pForm.defaultSellPriceJod}
+                    onChange={(e) => setPForm((s) => ({ ...s, defaultSellPriceJod: e.target.value }))}
+                    placeholder="e.g., 0.35"
+                  />
                   <div className="muted" style={{ fontSize: 12 }}>Must be greater than 0.</div>
                 </div>
               </div>
@@ -500,7 +531,6 @@ export default function ProductsPage() {
             </form>
           </div>
 
-          {/* Receive batch */}
           <div className="crm-card">
             <h3 style={{ marginTop: 0 }}>Receive Batch (Main only)</h3>
 
@@ -512,9 +542,7 @@ export default function ProductsPage() {
                 <div className="muted" style={{ marginTop: 6 }}>
                   On-hand: <b>{Number(selectedProduct.onHandQty || 0)}</b> pcs
                   {canSeePurchase && selectedProduct.avgPurchasePriceJod != null ? (
-                    <>
-                      {" "}• Avg purchase: <b>{formatMoneyMax2(selectedProduct.avgPurchasePriceJod)}</b> JOD/pc
-                    </>
+                    <> • Avg purchase: <b>{formatMoneyMax4(selectedProduct.avgPurchasePriceJod)}</b> JOD/pc</>
                   ) : null}
                 </div>
               </div>
@@ -524,7 +552,10 @@ export default function ProductsPage() {
               <div className="grid grid-2">
                 <div className="field">
                   <label>Product</label>
-                  <select value={bForm.productId} onChange={(e) => setBForm((s) => ({ ...s, productId: e.target.value }))}>
+                  <select
+                    value={bForm.productId}
+                    onChange={(e) => setBForm((s) => ({ ...s, productId: e.target.value }))}
+                  >
                     <option value="">Select product…</option>
                     {productOptions.map((opt) => (
                       <option key={opt.id} value={opt.id}>{opt.label}</option>
@@ -534,65 +565,105 @@ export default function ProductsPage() {
 
                 <div className="field">
                   <label>Lot Number</label>
-                  <input className="input" value={bForm.lotNumber} onChange={(e) => setBForm((s) => ({ ...s, lotNumber: e.target.value }))} />
+                  <input
+                    className="input"
+                    value={bForm.lotNumber}
+                    onChange={(e) => setBForm((s) => ({ ...s, lotNumber: e.target.value }))}
+                  />
                 </div>
 
                 <div className="field">
                   <label>Purchase Date</label>
-                  <input className="input" type="date" value={bForm.purchaseDate} onChange={(e) => setBForm((s) => ({ ...s, purchaseDate: e.target.value }))} />
+                  <input
+                    className="input"
+                    type="date"
+                    value={bForm.purchaseDate}
+                    onChange={(e) => setBForm((s) => ({ ...s, purchaseDate: e.target.value }))}
+                  />
                 </div>
 
                 <div className="field">
                   <label>Expiry Date (optional)</label>
-                  <input className="input" type="date" value={bForm.expiryDate} onChange={(e) => setBForm((s) => ({ ...s, expiryDate: e.target.value }))} />
+                  <input
+                    className="input"
+                    type="date"
+                    value={bForm.expiryDate}
+                    onChange={(e) => setBForm((s) => ({ ...s, expiryDate: e.target.value }))}
+                  />
                 </div>
 
-                {/* NEW: UOM */}
                 <div className="field">
-                  <label>Received As</label>
-                  <select value={bForm.qtyUom} onChange={(e) => setBForm((s) => ({ ...s, qtyUom: e.target.value }))}>
-                    {UOM_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
+                  <label>Received Unit</label>
+                  <select
+                    value={bForm.qtyUom}
+                    onChange={(e) => setBForm((s) => ({ ...s, qtyUom: e.target.value }))}
+                  >
+                    <option value="piece">Piece</option>
+                    <option value="dozen">Dozen (12)</option>
+                    <option value="pack10">Box/Pack of 10</option>
+                    <option value="pack20">Box/Pack of 20</option>
+                    <option value="pack25">Box/Pack of 25</option>
+                    <option value="pack50">Box/Pack of 50</option>
+                    <option value="pack100">Box/Pack of 100</option>
+                    <option value="custom">Custom…</option>
                   </select>
 
-                  {bForm.qtyUom === "custom" ? (
+                  {String(bForm.qtyUom) === "custom" ? (
                     <input
                       className="input"
                       type="number"
                       min="1"
                       step="1"
-                      placeholder="Custom pack size (e.g., 30)"
+                      placeholder="Custom pack size (e.g., 75)"
                       value={bForm.customPackSize}
                       onChange={(e) => setBForm((s) => ({ ...s, customPackSize: e.target.value }))}
                       style={{ marginTop: 10 }}
                     />
                   ) : null}
 
-                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                    Inventory is tracked in pieces. Multiplier: <b>{multPreview || "—"}</b>
+                  <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+                    Inventory is stored in <b>pieces</b>. We convert automatically.
                   </div>
                 </div>
 
                 <div className="field">
-                  <label>Quantity (count of selected unit)</label>
-                  <input className="input" type="number" min="1" step="1" value={bForm.qtyReceived} onChange={(e) => setBForm((s) => ({ ...s, qtyReceived: e.target.value }))} />
-                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                    Will add: <b>{qtyBasePreview || 0}</b> pcs
-                  </div>
+                  <label>Quantity Received (in selected unit)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={bForm.qtyReceived}
+                    onChange={(e) => setBForm((s) => ({ ...s, qtyReceived: e.target.value }))}
+                    placeholder="e.g., 5 (boxes)"
+                  />
                 </div>
 
                 <div className="field">
-                  <label>Purchase Price (per selected unit)</label>
-                  <input className="input" type="number" min="0.0001" step="0.0001" value={bForm.purchasePriceJod} onChange={(e) => setBForm((s) => ({ ...s, purchasePriceJod: e.target.value }))} />
-                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                    Est. cost per piece: <b>{pricePerPiecePreview ? pricePerPiecePreview.toFixed(4) : "—"}</b> JOD/pc
+                  <label>Purchase Price (JOD per selected unit)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0.0001"
+                    step="0.0001"
+                    value={bForm.purchasePriceJod}
+                    onChange={(e) => setBForm((s) => ({ ...s, purchasePriceJod: e.target.value }))}
+                    placeholder="e.g., 12.50 (per box)"
+                  />
+
+                  <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+                    Preview: <b>{receivePreview.qtyPieces || 0}</b> pcs total
+                    {" "}• Effective cost: <b>{formatMoneyMax4(receivePreview.pricePerPiece || 0)}</b> JOD/pc
+                    {" "}• Unit: <b>{labelForUom(bForm.qtyUom)}</b>
                   </div>
                 </div>
 
                 <div className="field">
                   <label>Supplier</label>
-                  <select value={bForm.supplierId || ""} onChange={(e) => setBForm((s) => ({ ...s, supplierId: e.target.value }))}>
+                  <select
+                    value={bForm.supplierId || ""}
+                    onChange={(e) => setBForm((s) => ({ ...s, supplierId: e.target.value }))}
+                  >
                     <option value="">Select supplier…</option>
                     {suppliers.map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
@@ -610,7 +681,11 @@ export default function ProductsPage() {
 
                 <div className="field">
                   <label>Supplier Invoice No (optional)</label>
-                  <input className="input" value={bForm.supplierInvoiceNo} onChange={(e) => setBForm((s) => ({ ...s, supplierInvoiceNo: e.target.value }))} />
+                  <input
+                    className="input"
+                    value={bForm.supplierInvoiceNo}
+                    onChange={(e) => setBForm((s) => ({ ...s, supplierInvoiceNo: e.target.value }))}
+                  />
                 </div>
               </div>
 
@@ -619,7 +694,6 @@ export default function ProductsPage() {
               </div>
             </form>
 
-            {/* Batches table */}
             {bForm.productId ? (
               <div style={{ marginTop: 18 }}>
                 <h4 style={{ margin: "0 0 10px" }}>Batches for selected product</h4>
@@ -636,7 +710,8 @@ export default function ProductsPage() {
                           <th>Expiry</th>
                           <th>Received (input)</th>
                           <th>Qty (pcs)</th>
-                          <th>Price</th>
+                          {canSeePurchase ? <th>Price/unit</th> : null}
+                          {canSeePurchase ? <th>Cost/pc</th> : null}
                           <th>Status</th>
                           <th>Supplier</th>
                           <th></th>
@@ -646,11 +721,13 @@ export default function ProductsPage() {
                         {batches.map((batch) => {
                           const status = expiryBadge(batch.expiryStatus);
 
+                          const qtyUom = batch.qtyUom || "piece";
                           const mult = Number(batch.qtyUomMultiplier || 1);
-                          const receivedLabel = `${Number(batch.qtyInput ?? 0)} ${uomLabel(batch.qtyUom, mult, batch.qtyUom === "custom" ? mult : null)}`;
+                          const qtyInput = Number(batch.qtyInput || 0);
+                          const qtyPcs = Number(batch.qtyReceived || 0);
 
-                          const priceInput = batch.purchasePriceInputJod;
-                          const pricePerPiece = batch.purchasePriceJod;
+                          const pricePerUnit = Number(batch.purchasePriceInputJod || 0);
+                          const costPerPc = Number(batch.purchasePriceJod || 0);
 
                           return (
                             <tr key={batch.id}>
@@ -659,25 +736,19 @@ export default function ProductsPage() {
                               <td>{formatDateTime(batch.expiryDate)}</td>
 
                               <td>
-                                <div style={{ fontWeight: 800 }}>{receivedLabel}</div>
-                                <div className="muted" style={{ fontSize: 12 }}>
-                                  multiplier: {mult}
-                                </div>
+                                <b>{qtyInput}</b> {labelForUom(qtyUom)}
+                                {mult > 1 ? <span className="muted"> (×{mult})</span> : null}
                               </td>
 
-                              <td>{batch.qtyReceived}</td>
+                              <td>{qtyPcs}</td>
+
+                              {canSeePurchase ? <td>{pricePerUnit ? `${formatMoneyMax4(pricePerUnit)}` : "—"}</td> : null}
+                              {canSeePurchase ? <td>{costPerPc ? `${formatMoneyMax4(costPerPc)}` : "—"}</td> : null}
 
                               <td>
-                                <div style={{ fontWeight: 800 }}>
-                                  {priceInput != null ? `${formatMoneyMax2(priceInput)} JOD/${batch.purchasePriceUom || batch.qtyUom || "unit"}` : "—"}
-                                </div>
-                                <div className="muted" style={{ fontSize: 12 }}>
-                                  {pricePerPiece != null ? `${Number(pricePerPiece).toFixed(4)} JOD/pc` : ""}
-                                </div>
-                              </td>
-
-                              <td>
-                                <span style={{ color: status.color, fontWeight: 800 }}>{status.label}</span>
+                                <span style={{ color: status.color, fontWeight: 800 }}>
+                                  {status.label}
+                                </span>
                               </td>
                               <td>{batch.supplierName || "—"}</td>
                               <td style={{ whiteSpace: "nowrap" }}>
