@@ -3,11 +3,14 @@ import { apiFetch } from "../api.js";
 import { getUser, hasRole } from "../auth";
 
 /**
- * ProductsPage.jsx — Updated (ZOMOROD CRM)
- * Adds packaging units on Receive Batch:
- * - Piece, Dozen (12), Pack of 10/20/25/50/100, Custom pack size
- * - Qty field becomes "Packs received" when unit != piece
- * - Purchase price entered per selected unit; stored as per-piece in DB
+ * ProductsPage.jsx — UOM-enabled receiving
+ * - Receive batches in piece / dozen / pack10..pack100 / custom pack size
+ * - Sends qtyUom + customPackSize to /api/batches
+ * - Shows batch "input units" + converted pieces + per-piece cost
+ *
+ * Notes:
+ * - Inventory & sales remain in BASE UNITS (pieces). No sales changes required.
+ * - React controlled <select> should have value + onChange (we do). :contentReference[oaicite:2]{index=2}
  */
 
 function formatDateTime(value) {
@@ -28,7 +31,7 @@ function formatMoneyMax2(value) {
   if (!Number.isFinite(n)) return "";
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 4,
   }).format(n);
 }
 
@@ -39,35 +42,73 @@ function expiryBadge(status) {
   return { label: "No expiry", color: "#94a3b8" };
 }
 
-/** ---------- Packaging helpers ---------- */
+/* ---------------- UOM helpers (mirror server behavior) ---------------- */
 
-const PACK_UOMS = [
-  { value: "piece", label: "Piece", packSize: 1 },
-  { value: "dozen", label: "Dozen (12)", packSize: 12 },
-  { value: "pack10", label: "Pack of 10", packSize: 10 },
-  { value: "pack20", label: "Pack of 20", packSize: 20 },
-  { value: "pack25", label: "Pack of 25", packSize: 25 },
-  { value: "pack50", label: "Pack of 50", packSize: 50 },
-  { value: "pack100", label: "Pack of 100", packSize: 100 },
-  { value: "custom", label: "Custom pack size", packSize: null },
+function n(v) {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
+}
+
+function s(v) {
+  return String(v ?? "").trim();
+}
+
+function normalizeUom(raw) {
+  const u = s(raw).toLowerCase();
+  if (!u || u === "piece" || u === "pcs" || u === "pc" || u === "unit") return "piece";
+  if (u === "dozen" || u === "dz") return "dozen";
+
+  // pack10 / box10 / pack-10 / box_10 / carton12 etc
+  const m = u.match(/^(pack|box|carton|case)[-_ ]?(\d+)$/);
+  if (m) return `pack${m[2]}`;
+
+  const m2 = u.match(/^pack(\d+)$/);
+  if (m2) return `pack${m2[1]}`;
+
+  if (u === "custom") return "custom";
+  return u;
+}
+
+function uomMultiplier(uomRaw, customPackSizeRaw) {
+  const uom = normalizeUom(uomRaw);
+
+  if (uom === "piece") return 1;
+  if (uom === "dozen") return 12;
+
+  const m = uom.match(/^pack(\d+)$/);
+  if (m) {
+    const k = Math.floor(n(m[1]));
+    return k > 0 ? k : 0;
+  }
+
+  if (uom === "custom") {
+    const k = Math.floor(n(customPackSizeRaw));
+    return k > 0 ? k : 0;
+  }
+
+  return 0;
+}
+
+function prettyUom(uomRaw, customPackSizeRaw) {
+  const u = normalizeUom(uomRaw);
+  if (u === "piece") return "piece";
+  if (u === "dozen") return "dozen";
+  const m = u.match(/^pack(\d+)$/);
+  if (m) return `pack of ${m[1]}`;
+  if (u === "custom") return `pack of ${Math.floor(n(customPackSizeRaw)) || "?"}`;
+  return u || "piece";
+}
+
+const UOM_OPTIONS = [
+  { value: "piece", label: "Piece (1)" },
+  { value: "dozen", label: "Dozen (12)" },
+  { value: "pack10", label: "Pack/Box of 10" },
+  { value: "pack20", label: "Pack/Box of 20" },
+  { value: "pack25", label: "Pack/Box of 25" },
+  { value: "pack50", label: "Pack/Box of 50" },
+  { value: "pack100", label: "Pack/Box of 100" },
+  { value: "custom", label: "Custom pack size…" },
 ];
-
-function getPackSize(uom, customPackSize) {
-  const found = PACK_UOMS.find((x) => x.value === uom);
-  if (!found) return 1;
-  if (found.packSize != null) return found.packSize;
-
-  const n = Number(customPackSize);
-  if (!Number.isFinite(n)) return 0;
-  return Math.floor(n);
-}
-
-function uomLabel(uom, packSize) {
-  const found = PACK_UOMS.find((x) => x.value === uom);
-  if (!found) return "Piece";
-  if (found.value === "custom") return packSize > 1 ? `Pack of ${packSize}` : "Custom";
-  return found.label;
-}
 
 export default function ProductsPage() {
   const user = getUser();
@@ -100,13 +141,10 @@ export default function ProductsPage() {
     lotNumber: "",
     purchaseDate: "",
     expiryDate: "",
-    purchasePriceJod: "",
-    qtyReceived: "",
-
-    // NEW: packaging/unit fields
     qtyUom: "piece",
     customPackSize: "",
-
+    purchasePriceJod: "",
+    qtyReceived: "",
     supplierId: "",
     supplierName: "",
     supplierInvoiceNo: "",
@@ -124,31 +162,12 @@ export default function ProductsPage() {
     }));
   }, [products]);
 
-  /** Derived values so user clearly sees what will be stored */
-  const derived = useMemo(() => {
-    const uom = String(bForm.qtyUom || "piece");
-    const packSize = getPackSize(uom, bForm.customPackSize);
+  const mult = useMemo(() => uomMultiplier(bForm.qtyUom, bForm.customPackSize), [bForm.qtyUom, bForm.customPackSize]);
+  const qtyInputNum = useMemo(() => Math.floor(n(bForm.qtyReceived)), [bForm.qtyReceived]);
+  const priceInputNum = useMemo(() => n(bForm.purchasePriceJod), [bForm.purchasePriceJod]);
 
-    const packs = Number(bForm.qtyReceived || 0);
-    const pricePerUnit = Number(bForm.purchasePriceJod || 0);
-
-    const qtyPieces =
-      Number.isFinite(packs) && packs > 0 && packSize > 0 ? Math.floor(packs * packSize) : 0;
-
-    const pricePerPiece =
-      Number.isFinite(pricePerUnit) && pricePerUnit > 0 && packSize > 0
-        ? pricePerUnit / packSize
-        : 0;
-
-    return {
-      uom,
-      packSize,
-      packs,
-      qtyPieces,
-      pricePerUnit,
-      pricePerPiece,
-    };
-  }, [bForm.qtyUom, bForm.customPackSize, bForm.qtyReceived, bForm.purchasePriceJod]);
+  const qtyBasePieces = useMemo(() => (mult > 0 ? qtyInputNum * mult : 0), [qtyInputNum, mult]);
+  const pricePerPiece = useMemo(() => (mult > 0 ? priceInputNum / mult : 0), [priceInputNum, mult]);
 
   async function loadProducts() {
     setLoading(true);
@@ -267,9 +286,7 @@ export default function ProductsPage() {
     e.preventDefault();
     setErr("");
 
-    // Interpret UI input as "packs" (or pieces when uom=piece),
-    // store qtyReceived as pieces; store purchasePriceJod as per-piece.
-    const packSize = derived.packSize;
+    const qtyUomNorm = normalizeUom(bForm.qtyUom);
 
     const payload = {
       productId: Number(bForm.productId),
@@ -277,15 +294,15 @@ export default function ProductsPage() {
       purchaseDate: String(bForm.purchaseDate || "").trim(),
       expiryDate: String(bForm.expiryDate || "").trim() || null,
 
-      // Stored per-piece
-      purchasePriceJod: Number(derived.pricePerPiece || 0),
+      // NEW: UOM metadata
+      qtyUom: qtyUomNorm,
+      customPackSize: qtyUomNorm === "custom" ? Math.floor(n(bForm.customPackSize)) : null,
 
-      // Stored pieces
-      qtyReceived: Number(derived.qtyPieces || 0),
+      // Interpreted by API as "price per selected unit"
+      purchasePriceJod: Number(bForm.purchasePriceJod || 0),
 
-      // NEW fields to persist packaging context
-      qtyUom: String(derived.uom || "piece"),
-      packSize: Number(packSize || 1),
+      // Interpreted by API as "count of selected units"
+      qtyReceived: Math.floor(Number(bForm.qtyReceived || 0)),
 
       supplierId: bForm.supplierId ? Number(bForm.supplierId) : null,
       supplierName: String(bForm.supplierName || "").trim() || null,
@@ -296,17 +313,12 @@ export default function ProductsPage() {
     if (!payload.lotNumber) return setErr("Lot Number is required.");
     if (!payload.purchaseDate) return setErr("Purchase Date is required.");
 
-    // Validate pack size and qty
-    if (!Number.isFinite(payload.packSize) || payload.packSize <= 0) {
-      return setErr("Pack size must be a valid number (> 0).");
-    }
-    if (!Number.isFinite(payload.qtyReceived) || payload.qtyReceived <= 0) {
-      return setErr("Quantity Received must be > 0.");
-    }
-    // Price per-piece after conversion must be > 0
-    if (!Number.isFinite(payload.purchasePriceJod) || payload.purchasePriceJod <= 0) {
-      return setErr("Purchase Price must be > 0 (after conversion to per-piece).");
-    }
+    const m = uomMultiplier(payload.qtyUom, payload.customPackSize);
+    if (!payload.qtyUom) return setErr("Unit (UOM) is required.");
+    if (!m || m <= 0) return setErr("Invalid unit multiplier. Fix Unit / Custom pack size.");
+
+    if (!Number.isFinite(payload.qtyReceived) || payload.qtyReceived <= 0) return setErr("Quantity Received must be > 0.");
+    if (!Number.isFinite(payload.purchasePriceJod) || payload.purchasePriceJod <= 0) return setErr("Purchase Price must be > 0.");
 
     try {
       const res = await apiFetch("/api/batches", { method: "POST", body: payload });
@@ -315,7 +327,7 @@ export default function ProductsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
-      // Keep product + unit selection; clear other fields
+      // Keep selected product + selected UOM; clear rest
       setBForm((s) => ({
         ...s,
         lotNumber: "",
@@ -326,7 +338,6 @@ export default function ProductsPage() {
         supplierId: "",
         supplierName: "",
         supplierInvoiceNo: "",
-        // keep qtyUom/customPackSize as-is for faster repeated entry
       }));
 
       await loadProducts();
@@ -387,6 +398,11 @@ export default function ProductsPage() {
     }
   }
 
+  const selectedOnHandPieces = Number(selectedProduct?.onHandQty || 0);
+  const selectedUomMult = mult > 0 ? mult : 1;
+  const onHandInUom = Math.floor(selectedOnHandPieces / selectedUomMult);
+  const onHandRemainder = selectedOnHandPieces % selectedUomMult;
+
   return (
     <div className="crm-content">
       {/* Products table */}
@@ -420,9 +436,9 @@ export default function ProductsPage() {
                 <th>Category</th>
                 <th>Official</th>
                 <th>Market</th>
-                <th>On-hand</th>
+                <th>On-hand (pcs)</th>
                 <th>Sell Price (JOD)</th>
-                {canSeePurchase ? <th>Avg Purchase (JOD)</th> : null}
+                {canSeePurchase ? <th>Avg Purchase (JOD/pc)</th> : null}
                 {canSeePurchase ? <th>Last Purchase Date</th> : null}
                 <th>Tiers</th>
                 {isMain ? <th>Actions</th> : null}
@@ -565,11 +581,15 @@ export default function ProductsPage() {
                   Selected: {selectedProduct.productCode} — {selectedProduct.officialName}
                 </div>
                 <div className="muted" style={{ marginTop: 6 }}>
-                  On-hand: <b>{Number(selectedProduct.onHandQty || 0)}</b>
+                  On-hand: <b>{selectedOnHandPieces}</b> pcs
+                  {" "}
+                  • As {prettyUom(bForm.qtyUom, bForm.customPackSize)}:{" "}
+                  <b>{onHandInUom}</b>
+                  {onHandRemainder ? <span className="muted"> (remainder {onHandRemainder} pcs)</span> : null}
                   {canSeePurchase && selectedProduct.avgPurchasePriceJod != null ? (
                     <>
                       {" "}
-                      • Avg purchase: <b>{formatMoneyMax2(selectedProduct.avgPurchasePriceJod)}</b>
+                      • Avg purchase: <b>{formatMoneyMax2(selectedProduct.avgPurchasePriceJod)}</b> / pc
                     </>
                   ) : null}
                 </div>
@@ -622,41 +642,47 @@ export default function ProductsPage() {
                   />
                 </div>
 
-                {/* NEW: Unit */}
                 <div className="field">
-                  <label>Unit</label>
+                  <label>Unit (how this batch is packed)</label>
                   <select
                     value={bForm.qtyUom}
-                    onChange={(e) => setBForm((s) => ({ ...s, qtyUom: e.target.value }))}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setBForm((s) => ({
+                        ...s,
+                        qtyUom: v,
+                        customPackSize: v === "custom" ? s.customPackSize : "",
+                      }));
+                    }}
                   >
-                    {PACK_UOMS.map((u) => (
-                      <option key={u.value} value={u.value}>
-                        {u.label}
+                    {UOM_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
                       </option>
                     ))}
                   </select>
 
-                  {bForm.qtyUom === "custom" ? (
+                  {normalizeUom(bForm.qtyUom) === "custom" ? (
                     <input
                       className="input"
+                      style={{ marginTop: 10 }}
                       type="number"
                       min="1"
                       step="1"
+                      placeholder="Custom pack size (pieces per pack)"
                       value={bForm.customPackSize}
                       onChange={(e) => setBForm((s) => ({ ...s, customPackSize: e.target.value }))}
-                      placeholder="Custom pack size (e.g., 30)"
-                      style={{ marginTop: 10 }}
                     />
-                  ) : (
-                    <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                      Pack size: <b>{derived.packSize}</b> piece(s)
-                    </div>
-                  )}
+                  ) : null}
+
+                  <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+                    Conversion: 1 {prettyUom(bForm.qtyUom, bForm.customPackSize)} ={" "}
+                    <b>{mult || "?"}</b> pcs
+                  </div>
                 </div>
 
-                {/* Purchase price entered per selected unit */}
                 <div className="field">
-                  <label>Purchase Price (JOD) per {uomLabel(derived.uom, derived.packSize)}</label>
+                  <label>Purchase Price (JOD per selected unit)</label>
                   <input
                     className="input"
                     type="number"
@@ -664,17 +690,16 @@ export default function ProductsPage() {
                     step="0.0001"
                     value={bForm.purchasePriceJod}
                     onChange={(e) => setBForm((s) => ({ ...s, purchasePriceJod: e.target.value }))}
+                    placeholder="e.g., 2.500 (per pack/dozen)"
                   />
                   <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                    Stored as per-piece: <b>{derived.pricePerPiece ? derived.pricePerPiece.toFixed(6) : "—"}</b> JOD / piece
+                    Estimated per-piece cost:{" "}
+                    <b>{mult > 0 && priceInputNum > 0 ? formatMoneyMax2(pricePerPiece) : "—"}</b> JOD / pc
                   </div>
                 </div>
 
-                {/* Qty entered as packs unless piece */}
                 <div className="field">
-                  <label>
-                    {derived.uom === "piece" ? "Quantity Received (pieces)" : "Quantity Received (packs)"}
-                  </label>
+                  <label>Quantity Received (count of selected units)</label>
                   <input
                     className="input"
                     type="number"
@@ -682,9 +707,11 @@ export default function ProductsPage() {
                     step="1"
                     value={bForm.qtyReceived}
                     onChange={(e) => setBForm((s) => ({ ...s, qtyReceived: e.target.value }))}
+                    placeholder="e.g., 5 (packs/dozens)"
                   />
                   <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                    Will add to stock: <b>{derived.qtyPieces || 0}</b> piece(s)
+                    Converted to base stock:{" "}
+                    <b>{qtyBasePieces > 0 ? qtyBasePieces : "—"}</b> pcs
                   </div>
                 </div>
 
@@ -695,9 +722,9 @@ export default function ProductsPage() {
                     onChange={(e) => setBForm((s) => ({ ...s, supplierId: e.target.value }))}
                   >
                     <option value="">Select supplier…</option>
-                    {suppliers.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
+                    {suppliers.map((s0) => (
+                      <option key={s0.id} value={s0.id}>
+                        {s0.name}
                       </option>
                     ))}
                   </select>
@@ -743,10 +770,8 @@ export default function ProductsPage() {
                           <th>Lot</th>
                           <th>Date</th>
                           <th>Expiry</th>
-                          <th>Unit</th>
-                          <th>Qty</th>
-                          <th>Remaining</th>
-                          <th>Price (JOD / piece)</th>
+                          <th>Received</th>
+                          <th>Cost</th>
                           <th>Status</th>
                           <th>Supplier</th>
                           <th></th>
@@ -756,16 +781,12 @@ export default function ProductsPage() {
                         {batches.map((batch) => {
                           const status = expiryBadge(batch.expiryStatus);
 
-                          const packSize =
-                            Number(batch.packSize ?? batch.pack_size ?? 1) || 1;
-                          const qtyUom = String(batch.qtyUom ?? batch.qty_uom ?? "piece");
-                          const label = uomLabel(qtyUom, packSize);
+                          const qUom = batch.qtyUom || "piece";
+                          const qMult = Number(batch.qtyUomMultiplier || 1) || 1;
+                          const qInput = Number(batch.qtyInput ?? 0) || 0;
 
-                          const pcs = Number(batch.qtyReceived || 0);
-                          const packs = packSize > 1 ? Math.round(pcs / packSize) : pcs;
-
-                          const rem = Number(batch.qtyRemaining ?? batch.qtyReceived ?? 0);
-                          const remPacks = packSize > 1 ? Math.round(rem / packSize) : rem;
+                          const pInput = batch.purchasePriceInputJod;
+                          const pPerPc = batch.purchasePriceJod;
 
                           return (
                             <tr key={batch.id}>
@@ -774,41 +795,31 @@ export default function ProductsPage() {
                               <td>{formatDateTime(batch.expiryDate)}</td>
 
                               <td>
-                                {label}
-                                {packSize > 1 ? (
-                                  <div className="muted" style={{ fontSize: 12 }}>
-                                    {packSize} pcs / pack
-                                  </div>
-                                ) : null}
+                                <div style={{ fontWeight: 800 }}>
+                                  {qInput} × {prettyUom(qUom, qMult)}{" "}
+                                  <span className="muted">
+                                    ({Number(batch.qtyReceived || 0)} pcs)
+                                  </span>
+                                </div>
+                                <div className="muted" style={{ fontSize: 12 }}>
+                                  1 {prettyUom(qUom, qMult)} = {qMult} pcs
+                                </div>
                               </td>
 
                               <td>
-                                {packSize > 1 ? (
+                                {canSeePurchase ? (
                                   <>
-                                    <b>{packs}</b> pack(s)
+                                    <div style={{ fontWeight: 800 }}>
+                                      {pInput != null ? `${formatMoneyMax2(pInput)} / ${prettyUom(batch.purchasePriceUom || qUom, qMult)}` : "—"}
+                                    </div>
                                     <div className="muted" style={{ fontSize: 12 }}>
-                                      {pcs} pcs
+                                      {pPerPc != null ? `${formatMoneyMax2(pPerPc)} / pc` : "—"}
                                     </div>
                                   </>
                                 ) : (
-                                  <b>{pcs}</b>
+                                  <span className="muted">—</span>
                                 )}
                               </td>
-
-                              <td>
-                                {packSize > 1 ? (
-                                  <>
-                                    <b>{remPacks}</b> pack(s)
-                                    <div className="muted" style={{ fontSize: 12 }}>
-                                      {rem} pcs
-                                    </div>
-                                  </>
-                                ) : (
-                                  <b>{rem}</b>
-                                )}
-                              </td>
-
-                              <td>{formatMoneyMax2(batch.purchasePriceJod)}</td>
 
                               <td>
                                 <span style={{ color: status.color, fontWeight: 800 }}>
