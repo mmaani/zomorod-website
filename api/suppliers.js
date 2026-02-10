@@ -6,13 +6,13 @@ function send(res, status, payload) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
 
-  // Important for APIs in SPA/PWA environments:
-  // avoid caching JSON responses by browser/SW/CDN.
+  // avoid caching JSON responses by browser/SW/CDN
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Pragma", "no-cache");
 
   res.end(JSON.stringify(payload));
 }
+
 function n(v) {
   const x = Number(v);
   return Number.isFinite(x) ? x : 0;
@@ -29,7 +29,6 @@ function cleanEmail(v) {
   const s = cleanStr(v, 254);
   if (!s) return null;
   const lower = s.toLowerCase();
-  // Very lightweight sanity check
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lower)) return null;
   return lower;
 }
@@ -38,12 +37,9 @@ function cleanUrl(v) {
   const s = cleanStr(v, 2048);
   if (!s) return null;
 
-  // Allow users to type "example.com" and make it valid
   const candidate = s.startsWith("http://") || s.startsWith("https://") ? s : `https://${s}`;
-
   try {
     const u = new URL(candidate);
-    // Only allow http/https
     if (u.protocol !== "http:" && u.protocol !== "https:") return null;
     return u.toString();
   } catch {
@@ -98,7 +94,6 @@ async function loadCategories(sql) {
 }
 
 function getReqUrl(req) {
-  // Works on Vercel + local Node, even if req.url is relative
   const host = req.headers?.host || "localhost";
   const proto = (req.headers?.["x-forwarded-proto"] || "http").toString();
   return new URL(req.url || "/", `${proto}://${host}`);
@@ -106,80 +101,70 @@ function getReqUrl(req) {
 
 export default async function handler(req, res) {
   try {
-  
-
     const method = req.method || "GET";
     const sql = getSql();
     const url = getReqUrl(req);
 
     // -------------------------
     // GET /api/suppliers
-    // returns: suppliers + categories
     // supports:
-    //   ?q=term   (search business/name/contact)
-    //   ?limit=200 (default 500)
+    //   ?q=term
+    //   ?limit=500
+    //   ?categoryId=123
+    // returns: suppliers + categories
     // -------------------------
     if (method === "GET") {
       const auth = await requireUserFromReq(req, res);
       if (!auth) return;
 
       const q = cleanStr(url.searchParams.get("q"), 80);
+      const categoryId = n(url.searchParams.get("categoryId")); // 0 => no filter
       const limitRaw = n(url.searchParams.get("limit"));
       const limit = Math.min(Math.max(limitRaw || 500, 1), 2000);
 
-      const suppliers = q
-        ? await sql`
-            SELECT
-              s.id,
-              s.name,
-              s.business_name,
-              s.contact_name,
-              s.phone,
-              s.email,
-              s.website,
-              s.supplier_country,
-              s.supplier_city,
-              s.created_at,
-              s.updated_at,
-              COALESCE(
-                ARRAY_AGG(DISTINCT sc.category_id)
-                  FILTER (WHERE sc.category_id IS NOT NULL),
-                '{}'::int[]
-              ) AS category_ids
-            FROM suppliers s
-            LEFT JOIN supplier_categories sc ON sc.supplier_id = s.id
-            WHERE
-              COALESCE(NULLIF(s.business_name, ''), '') ILIKE ${"%" + q + "%"}
-              OR COALESCE(NULLIF(s.name, ''), '') ILIKE ${"%" + q + "%"}
-              OR COALESCE(NULLIF(s.contact_name, ''), '') ILIKE ${"%" + q + "%"}
-            GROUP BY s.id
-            ORDER BY COALESCE(NULLIF(s.business_name, ''), s.name) ASC, s.id ASC
-            LIMIT ${limit}
-          `
-        : await sql`
-            SELECT
-              s.id,
-              s.name,
-              s.business_name,
-              s.contact_name,
-              s.phone,
-              s.email,
-              s.website,
-              s.supplier_country,
-              s.supplier_city,
-              s.created_at,
-              s.updated_at,
-              COALESCE(
-                ARRAY_AGG(DISTINCT sc.category_id)
-                  FILTER (WHERE sc.category_id IS NOT NULL),
-                '{}'::int[]
-              ) AS category_ids
-            FROM suppliers s
-            LEFT JOIN supplier_categories sc ON sc.supplier_id = s.id
-            GROUP BY s.id
-            ORDER BY COALESCE(NULLIF(s.business_name, ''), s.name) ASC, s.id ASC
-            LIMIT ${limit}
-          `;
+      const qLike = q ? `%${q}%` : null;
+
+      const suppliers = await sql`
+        SELECT
+          s.id,
+          s.name,
+          s.business_name,
+          s.contact_name,
+          s.phone,
+          s.email,
+          s.website,
+          s.supplier_country,
+          s.supplier_city,
+          s.created_at,
+          s.updated_at,
+          COALESCE(
+            ARRAY_AGG(DISTINCT sc.category_id)
+              FILTER (WHERE sc.category_id IS NOT NULL),
+            '{}'::int[]
+          ) AS category_ids
+        FROM suppliers s
+        LEFT JOIN supplier_categories sc ON sc.supplier_id = s.id
+        WHERE
+          (${categoryId} = 0 OR EXISTS (
+            SELECT 1
+            FROM supplier_categories sc2
+            WHERE sc2.supplier_id = s.id AND sc2.category_id = ${categoryId}
+          ))
+          AND (
+            ${qLike} IS NULL
+            OR COALESCE(NULLIF(s.business_name, ''), '') ILIKE ${qLike}
+            OR COALESCE(NULLIF(s.name, ''), '') ILIKE ${qLike}
+            OR COALESCE(NULLIF(s.contact_name, ''), '') ILIKE ${qLike}
+            OR COALESCE(NULLIF(s.phone, ''), '') ILIKE ${qLike}
+            OR COALESCE(NULLIF(s.email, ''), '') ILIKE ${qLike}
+            OR COALESCE(NULLIF(s.website, ''), '') ILIKE ${qLike}
+            OR COALESCE(NULLIF(s.supplier_country, ''), '') ILIKE ${qLike}
+            OR COALESCE(NULLIF(s.supplier_city, ''), '') ILIKE ${qLike}
+          )
+        GROUP BY s.id
+        ORDER BY COALESCE(NULLIF(s.business_name, ''), s.name) ASC, s.id ASC
+        LIMIT ${limit}
+      `;
 
       const categories = await loadCategories(sql);
 
@@ -196,6 +181,8 @@ export default async function handler(req, res) {
           supplierCountry: r.supplier_country ?? "",
           supplierCity: r.supplier_city ?? "",
           categoryIds: Array.isArray(r.category_ids) ? r.category_ids : [],
+          createdAt: r.created_at ?? null,
+          updatedAt: r.updated_at ?? null,
         })),
         categories: categories.map((c) => ({ id: c.id, name: c.name })),
       });
@@ -218,8 +205,19 @@ export default async function handler(req, res) {
       const businessNameRaw = cleanStr(body?.businessName, 200);
       const contactName = cleanStr(body?.contactName, 200);
       const phone = cleanStr(body?.phone, 50);
-      const email = cleanEmail(body?.email);
-      const website = cleanUrl(body?.website);
+
+      const emailRaw = cleanStr(body?.email, 254);
+      const email = emailRaw ? cleanEmail(emailRaw) : null;
+      if (emailRaw && !email) {
+        return send(res, 400, { ok: false, error: "Invalid email format" });
+      }
+
+      const websiteRaw = cleanStr(body?.website, 2048);
+      const website = websiteRaw ? cleanUrl(websiteRaw) : null;
+      if (websiteRaw && !website) {
+        return send(res, 400, { ok: false, error: "Invalid website URL" });
+      }
+
       const supplierCountry = cleanStr(body?.supplierCountry, 120);
       const supplierCity = cleanStr(body?.supplierCity, 120);
 
@@ -230,10 +228,7 @@ export default async function handler(req, res) {
       const name = cleanStr(body?.name, 200) || businessName || contactName;
 
       if (!name) {
-        return send(res, 400, {
-          ok: false,
-          error: "Business Name (or Contact Name) is required",
-        });
+        return send(res, 400, { ok: false, error: "Business Name (or Contact Name) is required" });
       }
 
       const categoryIds = uniqPositiveInts(body?.categoryIds);
@@ -294,8 +289,19 @@ export default async function handler(req, res) {
       const businessNameRaw = cleanStr(body?.businessName, 200);
       const contactName = cleanStr(body?.contactName, 200);
       const phone = cleanStr(body?.phone, 50);
-      const email = cleanEmail(body?.email);
-      const website = cleanUrl(body?.website);
+
+      const emailRaw = cleanStr(body?.email, 254);
+      const email = emailRaw ? cleanEmail(emailRaw) : null;
+      if (emailRaw && !email) {
+        return send(res, 400, { ok: false, error: "Invalid email format" });
+      }
+
+      const websiteRaw = cleanStr(body?.website, 2048);
+      const website = websiteRaw ? cleanUrl(websiteRaw) : null;
+      if (websiteRaw && !website) {
+        return send(res, 400, { ok: false, error: "Invalid website URL" });
+      }
+
       const supplierCountry = cleanStr(body?.supplierCountry, 120);
       const supplierCity = cleanStr(body?.supplierCity, 120);
 
@@ -303,10 +309,7 @@ export default async function handler(req, res) {
       const name = cleanStr(body?.name, 200) || businessName || contactName;
 
       if (!name) {
-        return send(res, 400, {
-          ok: false,
-          error: "Business Name (or Contact Name) is required",
-        });
+        return send(res, 400, { ok: false, error: "Business Name (or Contact Name) is required" });
       }
 
       const categoryIds = uniqPositiveInts(body?.categoryIds);
@@ -327,7 +330,6 @@ export default async function handler(req, res) {
           WHERE id = ${id}
         `;
 
-        // Replace category assignments (simple + reliable)
         await tx`DELETE FROM supplier_categories WHERE supplier_id = ${id}`;
 
         if (categoryIds.length) {
@@ -362,10 +364,7 @@ export default async function handler(req, res) {
       `;
 
       if (Number(references?.[0]?.count || 0) > 0) {
-        return send(res, 400, {
-          ok: false,
-          error: "Cannot delete supplier with existing batches",
-        });
+        return send(res, 400, { ok: false, error: "Cannot delete supplier with existing batches" });
       }
 
       await sql.begin(async (tx) => {
