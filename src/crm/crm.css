@@ -816,3 +816,163 @@ select option{
 @media (max-width: 900px){
   .crm-grid-2col, .crm-grid-2{ grid-template-columns: 1fr; }
 }
+/* =========================================================
+   SAFE PATCH — Utilities used by CRM pages (Suppliers etc.)
+   Paste at END of CRM.css
+   ========================================================= */
+
+/* 1) Form layout helpers (many pages use these) */
+.field{
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.field > label{
+  font-weight: 800;
+  color: var(--z-text-strong);
+  font-size: 13px;
+  letter-spacing: .01em;
+  margin: 0;
+}
+
+/* Many pages use className="input" but only input/select/textarea were styled.
+   This makes .input consistent and full-width */
+.input{
+  width: 100%;
+  min-height: 44px;
+  color: var(--z-text);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--z-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  outline: none;
+}
+.input::placeholder{ color: rgba(255,255,255,0.50); }
+.input:focus{
+  box-shadow: var(--z-focus);
+  border-color: rgba(14,142,50,0.42);
+}
+
+/* 2) Grid helpers used in pages (SuppliersPage uses grid/grid-2/grid-3) */
+.grid{
+  display: grid;
+  gap: 12px;
+  align-items: start;
+}
+
+.grid-2{
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-3{
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 900px){
+  .grid-3{ grid-template-columns: 1fr; }
+}
+@media (max-width: 760px){
+  .grid-2{ grid-template-columns: 1fr; }
+}
+
+/* 3) Fix the “helper text makes boxes different heights” problem
+   Use by adding className="help" on those lines OR keep your inline clamp in JSX */
+.help{
+  color: var(--z-muted);
+  font-size: 12px;
+  line-height: 16px;
+
+  /* Force consistent height so alignment stays perfect */
+  min-height: 32px;
+  max-height: 32px;
+  overflow: hidden;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* 4) Button classes used in your pages (btn, btn-primary, btn-ghost, btn-danger) */
+.btn{
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 900;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font: inherit;
+  background: rgba(255,255,255,0.06);
+  border-color: var(--z-border);
+  color: var(--z-text);
+}
+.btn:hover{ filter: brightness(1.05); }
+
+.btn-primary{
+  background: linear-gradient(180deg, rgba(14,142,50,1), rgba(3,82,30,1));
+  color: rgba(255,255,255,0.96);
+  box-shadow: var(--z-shadow);
+  border-color: rgba(14,142,50,0.38);
+}
+.btn-primary:hover{ filter: brightness(1.06); }
+
+.btn-ghost{
+  background: rgba(255,255,255,0.06);
+  border-color: var(--z-border);
+  color: var(--z-text);
+}
+.btn-ghost:hover{
+  border-color: rgba(14,142,50,0.34);
+  background: rgba(14,142,50,0.12);
+}
+
+.btn-danger{
+  background: rgba(239,68,68,0.12);
+  border-color: rgba(239,68,68,0.35);
+  color: rgba(255,255,255,0.94);
+}
+.btn-danger:hover{ filter: brightness(1.08); }
+
+/* 5) Suppliers page uses <div class="table-wrap"><table>...</table></div>
+   But your CSS styles .table (different structure). This makes table-wrap look great too. */
+.table-wrap{
+  width: 100%;
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid var(--z-border);
+  background: rgba(255,255,255,0.03);
+}
+
+.table-wrap table{
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.table-wrap th,
+.table-wrap td{
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--z-border-2);
+  text-align: left;
+  vertical-align: top;
+  color: var(--z-text);
+}
+
+.table-wrap th{
+  font-size: 12px;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--z-muted);
+  background: rgba(255,255,255,0.04);
+}
+
+.table-wrap tr:hover td{
+  background: rgba(14,142,50,0.08);
+}
+
+/* 6) Small polish: links in tables */
+.table-wrap a{
+  color: var(--z-accent);
+  font-weight: 800;
+}
+.table-wrap a:hover{ text-decoration: underline; }
