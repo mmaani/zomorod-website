@@ -2,17 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../api.js";
 import { getUser, hasRole } from "../auth";
 
-/**
- * ProductsPage.jsx — UOM-enabled receiving
- * - Receive batches in piece / dozen / pack10..pack100 / custom pack size
- * - Sends qtyUom + customPackSize to /api/batches
- * - Shows batch "input units" + converted pieces + per-piece cost
- *
- * Notes:
- * - Inventory & sales remain in BASE UNITS (pieces). No sales changes required.
- * - React controlled <select> should have value + onChange (we do). :contentReference[oaicite:2]{index=2}
- */
-
 function formatDateTime(value) {
   if (!value) return "—";
   const d = new Date(value);
@@ -31,6 +20,15 @@ function formatMoneyMax2(value) {
   if (!Number.isFinite(n)) return "";
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
+function formatMoneyMax4(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "";
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
     maximumFractionDigits: 4,
   }).format(n);
 }
@@ -40,63 +38,6 @@ function expiryBadge(status) {
   if (status === "EXPIRING_SOON") return { label: "Expiring soon", color: "#f59e0b" };
   if (status === "GOOD") return { label: "Good", color: "#22c55e" };
   return { label: "No expiry", color: "#94a3b8" };
-}
-
-/* ---------------- UOM helpers (mirror server behavior) ---------------- */
-
-function n(v) {
-  const x = Number(v);
-  return Number.isFinite(x) ? x : 0;
-}
-
-function s(v) {
-  return String(v ?? "").trim();
-}
-
-function normalizeUom(raw) {
-  const u = s(raw).toLowerCase();
-  if (!u || u === "piece" || u === "pcs" || u === "pc" || u === "unit") return "piece";
-  if (u === "dozen" || u === "dz") return "dozen";
-
-  // pack10 / box10 / pack-10 / box_10 / carton12 etc
-  const m = u.match(/^(pack|box|carton|case)[-_ ]?(\d+)$/);
-  if (m) return `pack${m[2]}`;
-
-  const m2 = u.match(/^pack(\d+)$/);
-  if (m2) return `pack${m2[1]}`;
-
-  if (u === "custom") return "custom";
-  return u;
-}
-
-function uomMultiplier(uomRaw, customPackSizeRaw) {
-  const uom = normalizeUom(uomRaw);
-
-  if (uom === "piece") return 1;
-  if (uom === "dozen") return 12;
-
-  const m = uom.match(/^pack(\d+)$/);
-  if (m) {
-    const k = Math.floor(n(m[1]));
-    return k > 0 ? k : 0;
-  }
-
-  if (uom === "custom") {
-    const k = Math.floor(n(customPackSizeRaw));
-    return k > 0 ? k : 0;
-  }
-
-  return 0;
-}
-
-function prettyUom(uomRaw, customPackSizeRaw) {
-  const u = normalizeUom(uomRaw);
-  if (u === "piece") return "piece";
-  if (u === "dozen") return "dozen";
-  const m = u.match(/^pack(\d+)$/);
-  if (m) return `pack of ${m[1]}`;
-  if (u === "custom") return `pack of ${Math.floor(n(customPackSizeRaw)) || "?"}`;
-  return u || "piece";
 }
 
 const UOM_OPTIONS = [
@@ -109,6 +50,27 @@ const UOM_OPTIONS = [
   { value: "pack100", label: "Pack/Box of 100" },
   { value: "custom", label: "Custom pack size…" },
 ];
+
+function n(v) {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
+}
+
+function getUomMultiplier(qtyUom, customPackSize) {
+  const u = String(qtyUom || "piece").trim().toLowerCase();
+  if (u === "piece") return 1;
+  if (u === "dozen") return 12;
+  const m = u.match(/^pack(\d+)$/);
+  if (m) {
+    const k = Math.floor(n(m[1]));
+    return k > 0 ? k : 0;
+  }
+  if (u === "custom") {
+    const k = Math.floor(n(customPackSize));
+    return k > 0 ? k : 0;
+  }
+  return 0;
+}
 
 export default function ProductsPage() {
   const user = getUser();
@@ -141,10 +103,12 @@ export default function ProductsPage() {
     lotNumber: "",
     purchaseDate: "",
     expiryDate: "",
-    qtyUom: "piece",
-    customPackSize: "",
     purchasePriceJod: "",
     qtyReceived: "",
+
+    qtyUom: "piece",
+    customPackSize: "",
+
     supplierId: "",
     supplierName: "",
     supplierInvoiceNo: "",
@@ -162,12 +126,24 @@ export default function ProductsPage() {
     }));
   }, [products]);
 
-  const mult = useMemo(() => uomMultiplier(bForm.qtyUom, bForm.customPackSize), [bForm.qtyUom, bForm.customPackSize]);
-  const qtyInputNum = useMemo(() => Math.floor(n(bForm.qtyReceived)), [bForm.qtyReceived]);
-  const priceInputNum = useMemo(() => n(bForm.purchasePriceJod), [bForm.purchasePriceJod]);
+  // Live preview for UOM conversion and per-piece cost
+  const uomMult = useMemo(() => {
+    return getUomMultiplier(bForm.qtyUom, bForm.customPackSize);
+  }, [bForm.qtyUom, bForm.customPackSize]);
 
-  const qtyBasePieces = useMemo(() => (mult > 0 ? qtyInputNum * mult : 0), [qtyInputNum, mult]);
-  const pricePerPiece = useMemo(() => (mult > 0 ? priceInputNum / mult : 0), [priceInputNum, mult]);
+  const qtyInputPreview = useMemo(() => Math.floor(n(bForm.qtyReceived)), [bForm.qtyReceived]);
+  const qtyBasePreview = useMemo(() => {
+    if (!uomMult || uomMult <= 0) return 0;
+    if (!qtyInputPreview || qtyInputPreview <= 0) return 0;
+    return qtyInputPreview * uomMult;
+  }, [qtyInputPreview, uomMult]);
+
+  const priceInputPreview = useMemo(() => n(bForm.purchasePriceJod), [bForm.purchasePriceJod]);
+  const pricePerPiecePreview = useMemo(() => {
+    if (!uomMult || uomMult <= 0) return 0;
+    if (!priceInputPreview || priceInputPreview <= 0) return 0;
+    return priceInputPreview / uomMult;
+  }, [priceInputPreview, uomMult]);
 
   async function loadProducts() {
     setLoading(true);
@@ -286,7 +262,8 @@ export default function ProductsPage() {
     e.preventDefault();
     setErr("");
 
-    const qtyUomNorm = normalizeUom(bForm.qtyUom);
+    const qtyUom = String(bForm.qtyUom || "piece");
+    const mult = getUomMultiplier(qtyUom, bForm.customPackSize);
 
     const payload = {
       productId: Number(bForm.productId),
@@ -294,15 +271,14 @@ export default function ProductsPage() {
       purchaseDate: String(bForm.purchaseDate || "").trim(),
       expiryDate: String(bForm.expiryDate || "").trim() || null,
 
-      // NEW: UOM metadata
-      qtyUom: qtyUomNorm,
-      customPackSize: qtyUomNorm === "custom" ? Math.floor(n(bForm.customPackSize)) : null,
+      // IMPORTANT: qtyReceived is the INPUT QTY in selected UOM
+      qtyReceived: Math.floor(Number(bForm.qtyReceived || 0)),
 
-      // Interpreted by API as "price per selected unit"
+      // IMPORTANT: purchasePriceJod is price PER selected UOM
       purchasePriceJod: Number(bForm.purchasePriceJod || 0),
 
-      // Interpreted by API as "count of selected units"
-      qtyReceived: Math.floor(Number(bForm.qtyReceived || 0)),
+      qtyUom,
+      customPackSize: qtyUom === "custom" ? Math.floor(Number(bForm.customPackSize || 0)) : null,
 
       supplierId: bForm.supplierId ? Number(bForm.supplierId) : null,
       supplierName: String(bForm.supplierName || "").trim() || null,
@@ -313,12 +289,21 @@ export default function ProductsPage() {
     if (!payload.lotNumber) return setErr("Lot Number is required.");
     if (!payload.purchaseDate) return setErr("Purchase Date is required.");
 
-    const m = uomMultiplier(payload.qtyUom, payload.customPackSize);
-    if (!payload.qtyUom) return setErr("Unit (UOM) is required.");
-    if (!m || m <= 0) return setErr("Invalid unit multiplier. Fix Unit / Custom pack size.");
+    if (!payload.qtyUom) return setErr("Please select a unit (UOM).");
+    if (!mult || mult <= 0) return setErr("Invalid unit multiplier (check UOM/custom pack size).");
 
-    if (!Number.isFinite(payload.qtyReceived) || payload.qtyReceived <= 0) return setErr("Quantity Received must be > 0.");
-    if (!Number.isFinite(payload.purchasePriceJod) || payload.purchasePriceJod <= 0) return setErr("Purchase Price must be > 0.");
+    if (!Number.isFinite(payload.qtyReceived) || payload.qtyReceived <= 0) {
+      return setErr("Quantity Received must be > 0.");
+    }
+
+    if (!Number.isFinite(payload.purchasePriceJod) || payload.purchasePriceJod <= 0) {
+      return setErr("Purchase Price must be > 0.");
+    }
+
+    if (payload.qtyUom === "custom") {
+      const cps = Math.floor(Number(payload.customPackSize || 0));
+      if (!Number.isFinite(cps) || cps <= 0) return setErr("Custom pack size must be > 0.");
+    }
 
     try {
       const res = await apiFetch("/api/batches", { method: "POST", body: payload });
@@ -327,7 +312,7 @@ export default function ProductsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
-      // Keep selected product + selected UOM; clear rest
+      // Keep selected product; clear other fields (keep qtyUom for faster entry)
       setBForm((s) => ({
         ...s,
         lotNumber: "",
@@ -398,11 +383,6 @@ export default function ProductsPage() {
     }
   }
 
-  const selectedOnHandPieces = Number(selectedProduct?.onHandQty || 0);
-  const selectedUomMult = mult > 0 ? mult : 1;
-  const onHandInUom = Math.floor(selectedOnHandPieces / selectedUomMult);
-  const onHandRemainder = selectedOnHandPieces % selectedUomMult;
-
   return (
     <div className="crm-content">
       {/* Products table */}
@@ -436,9 +416,9 @@ export default function ProductsPage() {
                 <th>Category</th>
                 <th>Official</th>
                 <th>Market</th>
-                <th>On-hand (pcs)</th>
+                <th>On-hand</th>
                 <th>Sell Price (JOD)</th>
-                {canSeePurchase ? <th>Avg Purchase (JOD/pc)</th> : null}
+                {canSeePurchase ? <th>Avg Purchase (JOD)</th> : null}
                 {canSeePurchase ? <th>Last Purchase Date</th> : null}
                 <th>Tiers</th>
                 {isMain ? <th>Actions</th> : null}
@@ -581,15 +561,11 @@ export default function ProductsPage() {
                   Selected: {selectedProduct.productCode} — {selectedProduct.officialName}
                 </div>
                 <div className="muted" style={{ marginTop: 6 }}>
-                  On-hand: <b>{selectedOnHandPieces}</b> pcs
-                  {" "}
-                  • As {prettyUom(bForm.qtyUom, bForm.customPackSize)}:{" "}
-                  <b>{onHandInUom}</b>
-                  {onHandRemainder ? <span className="muted"> (remainder {onHandRemainder} pcs)</span> : null}
+                  On-hand: <b>{Number(selectedProduct.onHandQty || 0)}</b>
                   {canSeePurchase && selectedProduct.avgPurchasePriceJod != null ? (
                     <>
                       {" "}
-                      • Avg purchase: <b>{formatMoneyMax2(selectedProduct.avgPurchasePriceJod)}</b> / pc
+                      • Avg purchase: <b>{formatMoneyMax2(selectedProduct.avgPurchasePriceJod)}</b>
                     </>
                   ) : null}
                 </div>
@@ -643,17 +619,10 @@ export default function ProductsPage() {
                 </div>
 
                 <div className="field">
-                  <label>Unit (how this batch is packed)</label>
+                  <label>Unit (UOM)</label>
                   <select
                     value={bForm.qtyUom}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setBForm((s) => ({
-                        ...s,
-                        qtyUom: v,
-                        customPackSize: v === "custom" ? s.customPackSize : "",
-                      }));
-                    }}
+                    onChange={(e) => setBForm((s) => ({ ...s, qtyUom: e.target.value }))}
                   >
                     {UOM_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>
@@ -662,44 +631,22 @@ export default function ProductsPage() {
                     ))}
                   </select>
 
-                  {normalizeUom(bForm.qtyUom) === "custom" ? (
+                  {String(bForm.qtyUom) === "custom" ? (
                     <input
                       className="input"
-                      style={{ marginTop: 10 }}
                       type="number"
                       min="1"
                       step="1"
                       placeholder="Custom pack size (pieces per pack)"
                       value={bForm.customPackSize}
                       onChange={(e) => setBForm((s) => ({ ...s, customPackSize: e.target.value }))}
+                      style={{ marginTop: 10 }}
                     />
                   ) : null}
-
-                  <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                    Conversion: 1 {prettyUom(bForm.qtyUom, bForm.customPackSize)} ={" "}
-                    <b>{mult || "?"}</b> pcs
-                  </div>
                 </div>
 
                 <div className="field">
-                  <label>Purchase Price (JOD per selected unit)</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="0.0001"
-                    step="0.0001"
-                    value={bForm.purchasePriceJod}
-                    onChange={(e) => setBForm((s) => ({ ...s, purchasePriceJod: e.target.value }))}
-                    placeholder="e.g., 2.500 (per pack/dozen)"
-                  />
-                  <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                    Estimated per-piece cost:{" "}
-                    <b>{mult > 0 && priceInputNum > 0 ? formatMoneyMax2(pricePerPiece) : "—"}</b> JOD / pc
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label>Quantity Received (count of selected units)</label>
+                  <label>Quantity Received (in selected UOM)</label>
                   <input
                     className="input"
                     type="number"
@@ -707,11 +654,34 @@ export default function ProductsPage() {
                     step="1"
                     value={bForm.qtyReceived}
                     onChange={(e) => setBForm((s) => ({ ...s, qtyReceived: e.target.value }))}
-                    placeholder="e.g., 5 (packs/dozens)"
                   />
-                  <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                    Converted to base stock:{" "}
-                    <b>{qtyBasePieces > 0 ? qtyBasePieces : "—"}</b> pcs
+
+                  <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                    Adds to stock as pieces. Preview:{" "}
+                    <b>{qtyBasePreview || 0}</b> pieces
+                    {uomMult > 0 ? (
+                      <>
+                        {" "}
+                        (Multiplier: <b>{uomMult}</b>)
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label>Purchase Price (per selected UOM) — JOD</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0.0001"
+                    step="0.0001"
+                    value={bForm.purchasePriceJod}
+                    onChange={(e) => setBForm((s) => ({ ...s, purchasePriceJod: e.target.value }))}
+                  />
+
+                  <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                    Preview: Price per piece ≈{" "}
+                    <b>{formatMoneyMax4(pricePerPiecePreview || 0)}</b> JOD
                   </div>
                 </div>
 
@@ -722,9 +692,9 @@ export default function ProductsPage() {
                     onChange={(e) => setBForm((s) => ({ ...s, supplierId: e.target.value }))}
                   >
                     <option value="">Select supplier…</option>
-                    {suppliers.map((s0) => (
-                      <option key={s0.id} value={s0.id}>
-                        {s0.name}
+                    {suppliers.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
                       </option>
                     ))}
                   </select>
@@ -770,8 +740,14 @@ export default function ProductsPage() {
                           <th>Lot</th>
                           <th>Date</th>
                           <th>Expiry</th>
-                          <th>Received</th>
-                          <th>Cost</th>
+
+                          <th>Qty (Input)</th>
+                          <th>UOM</th>
+                          <th>Qty (Pieces)</th>
+
+                          {canSeePurchase ? <th>Price (Input)</th> : null}
+                          {canSeePurchase ? <th>Price/pc</th> : null}
+
                           <th>Status</th>
                           <th>Supplier</th>
                           <th></th>
@@ -781,12 +757,13 @@ export default function ProductsPage() {
                         {batches.map((batch) => {
                           const status = expiryBadge(batch.expiryStatus);
 
-                          const qUom = batch.qtyUom || "piece";
-                          const qMult = Number(batch.qtyUomMultiplier || 1) || 1;
-                          const qInput = Number(batch.qtyInput ?? 0) || 0;
+                          const qtyInput = Number(batch.qtyInput ?? 0);
+                          const qtyUom = batch.qtyUom || "piece";
+                          const mult = Number(batch.qtyUomMultiplier ?? 1) || 1;
+                          const qtyPieces = Number(batch.qtyReceived ?? 0);
 
-                          const pInput = batch.purchasePriceInputJod;
-                          const pPerPc = batch.purchasePriceJod;
+                          const priceInput = batch.purchasePriceInputJod;
+                          const pricePerPiece = batch.purchasePriceJod;
 
                           return (
                             <tr key={batch.id}>
@@ -794,32 +771,23 @@ export default function ProductsPage() {
                               <td>{formatDateTime(batch.purchaseDate)}</td>
                               <td>{formatDateTime(batch.expiryDate)}</td>
 
+                              <td>{qtyInput || "—"}</td>
                               <td>
-                                <div style={{ fontWeight: 800 }}>
-                                  {qInput} × {prettyUom(qUom, qMult)}{" "}
-                                  <span className="muted">
-                                    ({Number(batch.qtyReceived || 0)} pcs)
-                                  </span>
-                                </div>
+                                <span style={{ fontWeight: 800 }}>
+                                  {qtyUom}
+                                </span>
                                 <div className="muted" style={{ fontSize: 12 }}>
-                                  1 {prettyUom(qUom, qMult)} = {qMult} pcs
+                                  ×{mult}
                                 </div>
                               </td>
+                              <td style={{ fontWeight: 900 }}>{qtyPieces}</td>
 
-                              <td>
-                                {canSeePurchase ? (
-                                  <>
-                                    <div style={{ fontWeight: 800 }}>
-                                      {pInput != null ? `${formatMoneyMax2(pInput)} / ${prettyUom(batch.purchasePriceUom || qUom, qMult)}` : "—"}
-                                    </div>
-                                    <div className="muted" style={{ fontSize: 12 }}>
-                                      {pPerPc != null ? `${formatMoneyMax2(pPerPc)} / pc` : "—"}
-                                    </div>
-                                  </>
-                                ) : (
-                                  <span className="muted">—</span>
-                                )}
-                              </td>
+                              {canSeePurchase ? (
+                                <td>{priceInput != null ? formatMoneyMax2(priceInput) : "—"}</td>
+                              ) : null}
+                              {canSeePurchase ? (
+                                <td>{pricePerPiece != null ? formatMoneyMax4(pricePerPiece) : "—"}</td>
+                              ) : null}
 
                               <td>
                                 <span style={{ color: status.color, fontWeight: 800 }}>
