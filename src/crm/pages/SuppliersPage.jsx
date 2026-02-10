@@ -2,8 +2,16 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../api.js";
 import { hasRole } from "../auth";
 
+/*
+  Improvements (safe, no DB changes):
+  - Better layout alignment (helper text is clamped + fixed height)
+  - Category picker scales to many categories (search + chips + scroll)
+  - Server-side search + category filter (calls /api/suppliers?q=&categoryId=)
+*/
+
 const PINNED = ["Jordan", "China", "Malaysia", "Turkey", "Syria"];
 
+// Small safe list (you can expand anytime)
 const COUNTRY_LIST = [
   ...PINNED,
   "United Arab Emirates",
@@ -46,252 +54,199 @@ function normalize(v) {
   return String(v ?? "").trim();
 }
 
-function hostOnly(url) {
-  try {
-    const u = new URL(url);
-    return u.host;
-  } catch {
-    return url;
-  }
+function useDebounced(value, delay = 250) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return v;
 }
 
-/** Small pill/tag */
-function Tag({ children, onRemove }) {
+function Chip({ label, onRemove, title }) {
   return (
     <span
+      title={title || label}
       style={{
         display: "inline-flex",
         alignItems: "center",
         gap: 8,
-        padding: "4px 10px",
+        padding: "6px 10px",
         borderRadius: 999,
         border: "1px solid var(--border)",
-        background: "rgba(255,255,255,.05)",
-        fontSize: 12,
-        fontWeight: 700,
-        lineHeight: 1.2,
-        maxWidth: "100%",
+        background: "rgba(255,255,255,.06)",
+        fontSize: 13,
+        fontWeight: 800,
+        lineHeight: "14px",
+        maxWidth: 260,
       }}
-      title={typeof children === "string" ? children : undefined}
     >
-      <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-        {children}
+      <span
+        style={{
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          maxWidth: 210,
+          display: "inline-block",
+        }}
+      >
+        {label}
       </span>
+
       {onRemove ? (
         <button
           type="button"
-          onClick={onRemove}
           className="btn btn-ghost"
-          style={{
-            padding: 0,
-            width: 18,
-            height: 18,
-            borderRadius: 999,
-            lineHeight: "18px",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          aria-label="Remove"
+          onClick={onRemove}
+          style={{ padding: "2px 8px", borderRadius: 999 }}
+          aria-label={`Remove ${label}`}
           title="Remove"
         >
-          ×
+          ✕
         </button>
       ) : null}
     </span>
   );
 }
 
-/**
- * Category multi-select:
- * - search box
- * - scroll list
- * - chips for selected
- */
-function CategoryMultiSelect({
-  label = "Product Categories (supplier can provide)",
-  categories,
-  valueIds,
-  onChangeIds,
-}) {
+/** Scalable multi-select category picker */
+function CategoryPicker({ categories, valueIds, onChange }) {
   const [open, setOpen] = useState(false);
-  const [term, setTerm] = useState("");
-  const rootRef = useRef(null);
+  const [q, setQ] = useState("");
+  const boxRef = useRef(null);
 
-  const categoriesById = useMemo(() => {
+  const byId = useMemo(() => {
     const m = new Map();
-    for (const c of categories || []) m.set(c.id, c);
+    for (const c of categories || []) m.set(Number(c.id), c);
     return m;
   }, [categories]);
 
   const selected = useMemo(() => {
-    return (valueIds || [])
-      .map((id) => categoriesById.get(id))
-      .filter(Boolean);
-  }, [valueIds, categoriesById]);
+    return (valueIds || []).map((id) => byId.get(Number(id))).filter(Boolean);
+  }, [valueIds, byId]);
 
   const filtered = useMemo(() => {
-    const t = term.toLowerCase().trim();
-    if (!t) return categories || [];
-    return (categories || []).filter((c) => String(c.name || "").toLowerCase().includes(t));
-  }, [term, categories]);
+    const term = normalize(q).toLowerCase();
+    const list = categories || [];
+    if (!term) return list;
+    return list.filter((c) => String(c.name || "").toLowerCase().includes(term));
+  }, [categories, q]);
 
-  // close on outside click + ESC
   useEffect(() => {
     function onDoc(e) {
       if (!open) return;
-      const el = rootRef.current;
-      if (el && !el.contains(e.target)) setOpen(false);
-    }
-    function onKey(e) {
-      if (!open) return;
-      if (e.key === "Escape") setOpen(false);
+      if (!boxRef.current) return;
+      if (!boxRef.current.contains(e.target)) setOpen(false);
     }
     document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-    };
+    return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
   function toggle(id) {
-    const has = (valueIds || []).includes(id);
-    const next = has ? valueIds.filter((x) => x !== id) : [...valueIds, id];
-    onChangeIds(next);
-  }
-
-  function clear() {
-    onChangeIds([]);
-  }
-
-  function selectAllFiltered() {
-    const ids = new Set(valueIds || []);
-    for (const c of filtered) ids.add(c.id);
-    onChangeIds(Array.from(ids));
-  }
-
-  function removeSelected(id) {
-    onChangeIds((valueIds || []).filter((x) => x !== id));
+    const cid = Number(id);
+    const has = (valueIds || []).includes(cid);
+    const next = has ? (valueIds || []).filter((x) => x !== cid) : [...(valueIds || []), cid];
+    onChange(next);
   }
 
   return (
-    <div ref={rootRef} style={{ position: "relative" }}>
-      <label style={{ display: "block", fontWeight: 800, marginBottom: 6 }}>
-        {label}
-      </label>
-
+    <div ref={boxRef} style={{ position: "relative" }}>
       {/* Selected chips */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
         {selected.length ? (
           selected.map((c) => (
-            <Tag key={c.id} onRemove={() => removeSelected(c.id)}>
-              {c.name}
-            </Tag>
+            <Chip
+              key={c.id}
+              label={c.name}
+              onRemove={() => onChange((valueIds || []).filter((x) => x !== Number(c.id)))}
+            />
           ))
         ) : (
-          <span className="muted">None selected</span>
+          <span className="muted" style={{ fontSize: 13 }}>
+            No categories selected.
+          </span>
         )}
       </div>
 
-      {/* Controls */}
-      <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? "Close" : "Select categories"}
+      <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+        <button type="button" className="btn btn-ghost" onClick={() => setOpen((s) => !s)}>
+          {open ? "Close categories" : "Choose categories"}
         </button>
 
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={clear}
-          disabled={!valueIds?.length}
-        >
-          Clear
-        </button>
-
-        <span className="muted">{(valueIds || []).length} selected</span>
+        {selected.length ? (
+          <button type="button" className="btn btn-ghost" onClick={() => onChange([])}>
+            Clear
+          </button>
+        ) : null}
       </div>
 
-      {/* Dropdown */}
       {open ? (
         <div
           style={{
             position: "absolute",
-            zIndex: 50,
+            top: "calc(100% + 10px)",
             left: 0,
             right: 0,
-            marginTop: 10,
+            zIndex: 30,
             borderRadius: 14,
             border: "1px solid var(--border)",
-            background: "var(--card-bg, rgba(20,20,20,.96))",
-            boxShadow: "0 20px 50px rgba(0,0,0,.45)",
+            background: "rgba(10, 20, 18, 0.92)",
+            backdropFilter: "blur(10px)",
             padding: 12,
+            boxShadow: "0 18px 50px rgba(0,0,0,.35)",
           }}
         >
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
             <input
               className="input"
               placeholder="Search categories…"
-              value={term}
-              onChange={(e) => setTerm(e.target.value)}
-              style={{ flex: "1 1 240px" }}
-              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              style={{ flex: 1 }}
             />
-            <button type="button" className="btn btn-ghost" onClick={selectAllFiltered}>
-              Select filtered
+            <button type="button" className="btn btn-ghost" onClick={() => setQ("")}>
+              Reset
             </button>
           </div>
 
           <div
             style={{
-              marginTop: 10,
               maxHeight: 260,
               overflowY: "auto",
               borderRadius: 12,
-              border: "1px solid var(--border)",
-              background: "rgba(255,255,255,.03)",
+              border: "1px solid rgba(255,255,255,.08)",
             }}
           >
-            {(filtered || []).length ? (
+            {filtered.length === 0 ? (
+              <div className="muted" style={{ padding: 12 }}>
+                No matches.
+              </div>
+            ) : (
               filtered.map((c) => {
-                const checked = (valueIds || []).includes(c.id);
+                const checked = (valueIds || []).includes(Number(c.id));
                 return (
                   <label
                     key={c.id}
                     style={{
                       display: "flex",
-                      alignItems: "center",
                       gap: 10,
+                      alignItems: "center",
                       padding: "10px 12px",
                       borderBottom: "1px solid rgba(255,255,255,.06)",
                       cursor: "pointer",
                       userSelect: "none",
                     }}
                   >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggle(c.id)}
-                    />
+                    <input type="checkbox" checked={checked} onChange={() => toggle(c.id)} />
                     <span style={{ fontWeight: 800 }}>{c.name}</span>
                   </label>
                 );
               })
-            ) : (
-              <div className="muted" style={{ padding: 12 }}>
-                No categories match.
-              </div>
             )}
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
-            <button type="button" className="btn btn-primary" onClick={() => setOpen(false)}>
-              Done
-            </button>
+          <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
+            Tip: search + check, then close.
           </div>
         </div>
       ) : null}
@@ -305,9 +260,12 @@ export default function SuppliersPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  // Search/filter
-  const [q, setQ] = useState("");
-  const [categoryFilterId, setCategoryFilterId] = useState(0);
+  // Filters
+  const [searchQ, setSearchQ] = useState("");
+  const [categoryFilterId, setCategoryFilterId] = useState("");
+
+  const dSearchQ = useDebounced(searchQ, 250);
+  const dCategoryFilterId = useDebounced(categoryFilterId, 250);
 
   const emptyForm = {
     id: null,
@@ -321,14 +279,19 @@ export default function SuppliersPage() {
     categoryIds: [],
     supplierCountryOther: "",
   };
+
   const [form, setForm] = useState(emptyForm);
 
   const countriesSorted = useMemo(() => {
     const set = new Set(COUNTRY_LIST.map((x) => normalize(x)).filter(Boolean));
     const all = Array.from(set);
+
     const pinned = [];
     const rest = [];
-    for (const name of all) (PINNED.includes(name) ? pinned : rest).push(name);
+    for (const name of all) {
+      if (PINNED.includes(name)) pinned.push(name);
+      else rest.push(name);
+    }
     pinned.sort((a, b) => PINNED.indexOf(a) - PINNED.indexOf(b));
     rest.sort((a, b) => a.localeCompare(b));
     return [...pinned, ...rest];
@@ -342,32 +305,44 @@ export default function SuppliersPage() {
 
   const categoriesById = useMemo(() => {
     const m = new Map();
-    for (const c of categories || []) m.set(c.id, c);
+    for (const c of categories) m.set(Number(c.id), c);
     return m;
   }, [categories]);
 
-  async function load(opts = {}) {
-    const q0 = normalize(opts.q ?? q);
-    const catId = Number(opts.categoryId ?? categoryFilterId) || 0;
+  const hintStyle = {
+    marginTop: 6,
+    fontSize: 12,
+    opacity: 0.75,
 
+    // IMPORTANT: keep alignment + prevent box growth
+    lineHeight: "16px",
+    minHeight: 32,
+    maxHeight: 32,
+    overflow: "hidden",
+
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical",
+  };
+
+  async function load(q = dSearchQ, categoryId = dCategoryFilterId) {
     setLoading(true);
     setErr("");
 
     const qs = new URLSearchParams();
-    if (q0) qs.set("q", q0);
-    if (catId > 0) qs.set("categoryId", String(catId));
+    const qq = normalize(q);
+    const cc = normalize(categoryId);
 
-    const url = `/api/suppliers${qs.toString() ? `?${qs.toString()}` : ""}`;
+    if (qq) qs.set("q", qq);
+    if (cc) qs.set("categoryId", cc);
 
-    const res = await apiFetch(url).catch((e) => {
-      setErr(e?.message || "Network error");
-      return null;
-    });
+    const url = `/api/suppliers${qs.toString() ? "?" + qs.toString() : ""}`;
 
+    const res = await apiFetch(url);
     const data = await res?.json().catch(() => ({}));
 
     if (!res?.ok || !data?.ok) {
-      setErr(data?.error || data?.detail || `HTTP ${res?.status || ""}`);
+      setErr(data?.error || data?.detail || `Failed to load suppliers (${res?.status || "?"})`);
       setLoading(false);
       return;
     }
@@ -377,17 +352,11 @@ export default function SuppliersPage() {
     setLoading(false);
   }
 
+  // Single effect => no double load
   useEffect(() => {
-    load();
+    load(dSearchQ, dCategoryFilterId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Debounced reload for search/filter
-  useEffect(() => {
-    const t = setTimeout(() => load({ q, categoryId: categoryFilterId }), 250);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, categoryFilterId]);
+  }, [dSearchQ, dCategoryFilterId]);
 
   const handleEdit = (s) => {
     const storedCountry = normalize(s.supplierCountry);
@@ -406,24 +375,20 @@ export default function SuppliersPage() {
       categoryIds: Array.isArray(s.categoryIds) ? s.categoryIds : [],
     });
 
-    // scroll to form (nice UX)
     try {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
-      /* ignore */
+      // ignore
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this supplier?")) return;
 
-    const res = await apiFetch(`/api/suppliers?id=${id}`, { method: "DELETE" }).catch((e) => {
-      alert(e?.message || "Network error");
-      return null;
-    });
+    const res = await apiFetch(`/api/suppliers?id=${id}`, { method: "DELETE" });
     const data = await res?.json().catch(() => ({}));
     if (!res?.ok || !data?.ok) {
-      alert(data?.error || data?.detail || "Failed to delete supplier");
+      alert(data?.error || "Failed to delete supplier");
       return;
     }
     load();
@@ -431,7 +396,6 @@ export default function SuppliersPage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    setErr("");
 
     if (!normalize(form.businessName) && !normalize(form.contactName)) {
       alert("Business Name or Contact Name is required");
@@ -456,15 +420,11 @@ export default function SuppliersPage() {
     };
 
     const method = form.id ? "PATCH" : "POST";
-
-    const res = await apiFetch("/api/suppliers", { method, body: payload }).catch((e) => {
-      setErr(e?.message || "Network error");
-      return null;
-    });
-
+    const res = await apiFetch("/api/suppliers", { method, body: payload });
     const data = await res?.json().catch(() => ({}));
+
     if (!res?.ok || !data?.ok) {
-      setErr(data?.error || data?.detail || "Failed to save supplier");
+      alert(data?.error || data?.detail || "Failed to save supplier");
       return;
     }
 
@@ -472,123 +432,128 @@ export default function SuppliersPage() {
     load();
   };
 
-  // Layout styles that do NOT depend on your CSS helpers
-  const grid2 = {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: 12,
-  };
-  const grid3 = {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: 12,
-  };
-
   return (
     <div className="container">
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0 }}>Suppliers</h2>
-        <div className="muted" style={{ fontWeight: 700 }}>
-          {loading ? "Loading…" : `${suppliers.length} suppliers`}
-        </div>
-      </div>
+      <h2>Suppliers</h2>
 
-      {err ? (
-        <div className="banner" style={{ marginTop: 10 }}>
-          {err}
-        </div>
-      ) : null}
-
-      {/* Search + Filter */}
-      <div className="card" style={{ padding: 14, marginTop: 12, marginBottom: 12 }}>
-        <div style={{ ...grid3 }}>
-          <div style={{ minWidth: 240 }}>
-            <label style={{ fontWeight: 800, display: "block", marginBottom: 6 }}>Search</label>
+      {/* Filters */}
+      <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: 12,
+            alignItems: "end",
+          }}
+        >
+          <div className="field">
+            <label>Search</label>
             <input
               className="input"
               placeholder="Name, business, email, phone, country..."
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
+              value={searchQ}
+              onChange={(e) => setSearchQ(e.target.value)}
             />
-            <div className="small muted" style={{ marginTop: 6 }}>
+            <div className="muted" style={hintStyle}>
               Searches across name/business/contact/email/phone/website/country/city.
             </div>
           </div>
 
-          <div style={{ minWidth: 220 }}>
-            <label style={{ fontWeight: 800, display: "block", marginBottom: 6 }}>Category filter</label>
+          <div className="field">
+            <label>Category filter</label>
             <select
               value={categoryFilterId}
-              onChange={(e) => setCategoryFilterId(Number(e.target.value) || 0)}
+              onChange={(e) => setCategoryFilterId(e.target.value)}
+              className="input"
             >
-              <option value={0}>All categories</option>
+              <option value="">All categories</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
             </select>
+            <div className="muted" style={hintStyle}>
+              Filters suppliers who can provide this category.
+            </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "end", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
-              className="btn btn-ghost"
               type="button"
+              className="btn btn-ghost"
               onClick={() => {
-                setQ("");
-                setCategoryFilterId(0);
+                setSearchQ("");
+                setCategoryFilterId("");
               }}
             >
               Clear
             </button>
-            <button className="btn btn-ghost" type="button" onClick={() => load()}>
+
+            <button type="button" className="btn btn-ghost" onClick={() => load()}>
               Refresh
             </button>
           </div>
         </div>
+
+        {err ? (
+          <div className="banner" style={{ marginTop: 12 }}>
+            {err}
+          </div>
+        ) : null}
       </div>
 
+      {/* Form */}
       {hasRole("main") && (
         <form onSubmit={onSubmit} className="card" style={{ padding: 16, marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-            <h3 style={{ margin: 0 }}>{form.id ? "Edit Supplier" : "Add Supplier"}</h3>
-            {form.id ? (
-              <button className="btn btn-ghost" type="button" onClick={() => setForm(emptyForm)}>
-                Cancel edit
-              </button>
-            ) : null}
-          </div>
+          <h3 style={{ marginTop: 0 }}>{form.id ? "Edit Supplier" : "Add Supplier"}</h3>
 
-          {/* Business + Contact */}
-          <div style={{ ...grid2, marginTop: 12 }}>
-            <div>
-              <label style={{ fontWeight: 800, display: "block", marginBottom: 6 }}>Business Name</label>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: 12,
+              marginBottom: 12,
+              alignItems: "start",
+            }}
+          >
+            <div className="field">
+              <label>Business Name</label>
               <input
                 className="input"
                 placeholder="Company / Business name"
                 value={form.businessName}
                 onChange={(e) => setForm((s) => ({ ...s, businessName: e.target.value }))}
               />
-              <div className="small muted" style={{ marginTop: 6 }}>
+              <div className="muted" style={hintStyle}>
                 If empty, Business Name will be set to Contact Name automatically.
               </div>
             </div>
 
-            <div>
-              <label style={{ fontWeight: 800, display: "block", marginBottom: 6 }}>Contact Name</label>
+            <div className="field">
+              <label>Contact Name</label>
               <input
                 className="input"
                 placeholder="Person name"
                 value={form.contactName}
                 onChange={(e) => setForm((s) => ({ ...s, contactName: e.target.value }))}
               />
+              <div className="muted" style={hintStyle}>
+                {/* keep height aligned */}
+              </div>
             </div>
           </div>
 
-          {/* Phone / Email / Website */}
-          <div style={{ ...grid3, marginTop: 12 }}>
-            <div>
-              <label style={{ fontWeight: 800, display: "block", marginBottom: 6 }}>Phone</label>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: 12,
+              marginBottom: 12,
+            }}
+          >
+            <div className="field">
+              <label>Phone</label>
               <input
                 className="input"
                 placeholder="+962..."
@@ -597,8 +562,8 @@ export default function SuppliersPage() {
               />
             </div>
 
-            <div>
-              <label style={{ fontWeight: 800, display: "block", marginBottom: 6 }}>Email</label>
+            <div className="field">
+              <label>Email</label>
               <input
                 className="input"
                 placeholder="name@company.com"
@@ -607,8 +572,8 @@ export default function SuppliersPage() {
               />
             </div>
 
-            <div>
-              <label style={{ fontWeight: 800, display: "block", marginBottom: 6 }}>Website (optional)</label>
+            <div className="field">
+              <label>Website (optional)</label>
               <input
                 className="input"
                 placeholder="https://... or example.com"
@@ -618,10 +583,16 @@ export default function SuppliersPage() {
             </div>
           </div>
 
-          {/* Country / City */}
-          <div style={{ ...grid2, marginTop: 12 }}>
-            <div>
-              <label style={{ fontWeight: 800, display: "block", marginBottom: 6 }}>Country</label>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: 12,
+              marginBottom: 12,
+            }}
+          >
+            <div className="field">
+              <label>Country</label>
               <select
                 value={form.supplierCountry}
                 onChange={(e) => {
@@ -632,6 +603,7 @@ export default function SuppliersPage() {
                     supplierCountryOther: v === "Other" ? s.supplierCountryOther : "",
                   }));
                 }}
+                className="input"
               >
                 <option value="">Select country…</option>
                 {countriesSorted.map((name) => (
@@ -653,8 +625,8 @@ export default function SuppliersPage() {
               ) : null}
             </div>
 
-            <div>
-              <label style={{ fontWeight: 800, display: "block", marginBottom: 6 }}>City</label>
+            <div className="field">
+              <label>City</label>
               <input
                 className="input"
                 placeholder={effectiveCountry ? "City (free text)" : "Select country first…"}
@@ -665,30 +637,37 @@ export default function SuppliersPage() {
             </div>
           </div>
 
-          {/* Categories (searchable multi select) */}
-          <div style={{ marginTop: 12 }}>
+          <div className="field" style={{ marginBottom: 12 }}>
+            <label>Product Categories (supplier can provide)</label>
             {categories.length === 0 ? (
-              <div className="muted">No categories found. Add categories via Products first.</div>
+              <div className="muted" style={{ marginTop: 8 }}>
+                No categories found. Add categories via Products first.
+              </div>
             ) : (
-              <CategoryMultiSelect
+              <CategoryPicker
                 categories={categories}
                 valueIds={form.categoryIds}
-                onChangeIds={(ids) => setForm((s) => ({ ...s, categoryIds: ids }))}
+                onChange={(ids) => setForm((s) => ({ ...s, categoryIds: ids }))}
               />
             )}
           </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button className="btn btn-primary" type="submit">
               {form.id ? "Update Supplier" : "Add Supplier"}
             </button>
+            {form.id && (
+              <button className="btn btn-ghost" type="button" onClick={() => setForm(emptyForm)}>
+                Cancel
+              </button>
+            )}
           </div>
         </form>
       )}
 
       {/* Table */}
-      <div className="table-wrap">
-        <table>
+      <div className="table-wrap" style={{ overflowX: "auto" }}>
+        <table className="table">
           <thead>
             <tr>
               <th>Business Name</th>
@@ -706,62 +685,55 @@ export default function SuppliersPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} className="muted">Loading…</td>
+                <td colSpan={9} className="muted">
+                  Loading…
+                </td>
               </tr>
             ) : null}
 
             {!loading && suppliers.length === 0 ? (
               <tr>
-                <td colSpan={9} className="muted">No suppliers yet.</td>
+                <td colSpan={9} className="muted">
+                  No suppliers yet.
+                </td>
               </tr>
             ) : null}
 
             {suppliers.map((s) => {
-              const catObjs = (s.categoryIds || [])
-                .map((id) => categoriesById.get(id))
+              const catNames = (s.categoryIds || [])
+                .map((id) => categoriesById.get(Number(id))?.name)
                 .filter(Boolean);
 
-              const displayBusiness = s.businessName || s.contactName || s.name;
+              const business = s.businessName || s.contactName || s.name;
 
               return (
                 <tr key={s.id}>
-                  <td style={{ fontWeight: 800 }}>{displayBusiness}</td>
+                  <td style={{ fontWeight: 900 }}>{business}</td>
                   <td>{s.contactName || <span className="muted">—</span>}</td>
                   <td>{s.supplierCountry || <span className="muted">—</span>}</td>
                   <td>{s.supplierCity || <span className="muted">—</span>}</td>
-                  <td>
-                    {s.phone ? (
-                      <a href={`tel:${s.phone}`} rel="noreferrer">{s.phone}</a>
-                    ) : (
-                      <span className="muted">—</span>
-                    )}
-                  </td>
-                  <td>
-                    {s.email ? (
-                      <a href={`mailto:${s.email}`} rel="noreferrer">{s.email}</a>
-                    ) : (
-                      <span className="muted">—</span>
-                    )}
-                  </td>
+                  <td>{s.phone || <span className="muted">—</span>}</td>
+                  <td>{s.email || <span className="muted">—</span>}</td>
+
                   <td>
                     {s.website ? (
                       <a href={s.website} target="_blank" rel="noreferrer">
-                        {hostOnly(s.website)}
+                        Open
                       </a>
                     ) : (
                       <span className="muted">—</span>
                     )}
                   </td>
 
-                  <td style={{ maxWidth: 360 }}>
-                    {catObjs.length ? (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                        {catObjs.slice(0, 6).map((c) => (
-                          <Tag key={c.id}>{c.name}</Tag>
+                  <td>
+                    {catNames.length ? (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {catNames.slice(0, 6).map((name) => (
+                          <Chip key={name} label={name} title={name} />
                         ))}
-                        {catObjs.length > 6 ? (
-                          <span className="muted" style={{ fontWeight: 800 }}>
-                            +{catObjs.length - 6} more
+                        {catNames.length > 6 ? (
+                          <span className="muted" style={{ fontSize: 12 }}>
+                            +{catNames.length - 6} more
                           </span>
                         ) : null}
                       </div>
@@ -790,18 +762,6 @@ export default function SuppliersPage() {
           </tbody>
         </table>
       </div>
-
-      {/* Simple responsive fallback for narrow screens */}
-      <style>{`
-        @media (max-width: 900px) {
-          table { font-size: 13px; }
-          th:nth-child(7), td:nth-child(7) { display: none; } /* hide Website column on small screens */
-        }
-        @media (max-width: 700px) {
-          th:nth-child(5), td:nth-child(5) { display: none; } /* hide Phone */
-          th:nth-child(6), td:nth-child(6) { display: none; } /* hide Email */
-        }
-      `}</style>
     </div>
   );
 }

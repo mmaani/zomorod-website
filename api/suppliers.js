@@ -6,14 +6,11 @@ function send(res, status, payload) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
 
-  // Avoid caching JSON responses
+  // Avoid caching JSON responses by browser/SW/CDN
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Pragma", "no-cache");
 
-  // BigInt-safe JSON (COUNT(*) can be bigint in some queries)
-  res.end(
-    JSON.stringify(payload, (_k, v) => (typeof v === "bigint" ? v.toString() : v))
-  );
+  res.end(JSON.stringify(payload));
 }
 
 function n(v) {
@@ -27,31 +24,25 @@ function cleanStr(v, maxLen = 255) {
   return s.length > maxLen ? s.slice(0, maxLen) : s;
 }
 
-function cleanEmailStrict(v) {
-  const raw = cleanStr(v, 254);
-  if (!raw) return { value: null, error: null }; // empty is allowed => NULL
-  const lower = raw.toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lower)) {
-    return { value: null, error: "Invalid email format" };
-  }
-  return { value: lower, error: null };
+function cleanEmail(v) {
+  const s = cleanStr(v, 254);
+  if (!s) return null;
+  const lower = s.toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lower)) return null;
+  return lower;
 }
 
-function cleanUrlStrict(v) {
-  const raw = cleanStr(v, 2048);
-  if (!raw) return { value: null, error: null }; // empty is allowed => NULL
+function cleanUrl(v) {
+  const s = cleanStr(v, 2048);
+  if (!s) return null;
 
-  const candidate =
-    raw.startsWith("http://") || raw.startsWith("https://") ? raw : `https://${raw}`;
-
+  const candidate = s.startsWith("http://") || s.startsWith("https://") ? s : `https://${s}`;
   try {
     const u = new URL(candidate);
-    if (u.protocol !== "http:" && u.protocol !== "https:") {
-      return { value: null, error: "Website must be http(s)" };
-    }
-    return { value: u.toString(), error: null };
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    return u.toString();
   } catch {
-    return { value: null, error: "Invalid website URL" };
+    return null;
   }
 }
 
@@ -102,7 +93,6 @@ async function loadCategories(sql) {
 }
 
 function getReqUrl(req) {
-  // Works on Vercel + local Node (req.url is relative)
   const host = req.headers?.host || "localhost";
   const proto = (req.headers?.["x-forwarded-proto"] || "http").toString();
   return new URL(req.url || "/", `${proto}://${host}`);
@@ -118,18 +108,20 @@ export default async function handler(req, res) {
     // GET /api/suppliers
     // supports:
     //   ?q=term
-    //   ?limit=...
-    //   ?categoryId=...
-    // returns: suppliers + categories
+    //   ?categoryId=7
+    //   ?limit=500 (default 500, max 2000)
     // -------------------------
     if (method === "GET") {
       const auth = await requireUserFromReq(req, res);
       if (!auth) return;
 
-      const q = cleanStr(url.searchParams.get("q"), 80);
+      const q = cleanStr(url.searchParams.get("q"), 120);
+      const categoryId = n(url.searchParams.get("categoryId")) || 0;
+
       const limitRaw = n(url.searchParams.get("limit"));
       const limit = Math.min(Math.max(limitRaw || 500, 1), 2000);
-      const categoryId = n(url.searchParams.get("categoryId")) || 0;
+
+      const like = q ? `%${q}%` : null;
 
       const suppliers = await sql`
         SELECT
@@ -152,16 +144,17 @@ export default async function handler(req, res) {
         FROM suppliers s
         LEFT JOIN supplier_categories sc ON sc.supplier_id = s.id
         WHERE
-          (${q}::text IS NULL OR (
-            COALESCE(NULLIF(s.business_name, ''), '') ILIKE ${"%" + q + "%"}
-            OR COALESCE(NULLIF(s.name, ''), '') ILIKE ${"%" + q + "%"}
-            OR COALESCE(NULLIF(s.contact_name, ''), '') ILIKE ${"%" + q + "%"}
-            OR COALESCE(NULLIF(s.email, ''), '') ILIKE ${"%" + q + "%"}
-            OR COALESCE(NULLIF(s.phone, ''), '') ILIKE ${"%" + q + "%"}
-            OR COALESCE(NULLIF(s.website, ''), '') ILIKE ${"%" + q + "%"}
-            OR COALESCE(NULLIF(s.supplier_country, ''), '') ILIKE ${"%" + q + "%"}
-            OR COALESCE(NULLIF(s.supplier_city, ''), '') ILIKE ${"%" + q + "%"}
-          ))
+          (
+            ${q}::text IS NULL
+            OR COALESCE(NULLIF(s.business_name, ''), '') ILIKE ${like}
+            OR COALESCE(NULLIF(s.name, ''), '') ILIKE ${like}
+            OR COALESCE(NULLIF(s.contact_name, ''), '') ILIKE ${like}
+            OR COALESCE(NULLIF(s.email, ''), '') ILIKE ${like}
+            OR COALESCE(NULLIF(s.phone, ''), '') ILIKE ${like}
+            OR COALESCE(NULLIF(s.website, ''), '') ILIKE ${like}
+            OR COALESCE(NULLIF(s.supplier_country, ''), '') ILIKE ${like}
+            OR COALESCE(NULLIF(s.supplier_city, ''), '') ILIKE ${like}
+          )
           AND (
             ${categoryId}::int = 0
             OR EXISTS (
@@ -197,7 +190,7 @@ export default async function handler(req, res) {
     }
 
     // -------------------------
-    // POST /api/suppliers (main only)
+    // POST /api/suppliers
     // -------------------------
     if (method === "POST") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
@@ -213,22 +206,12 @@ export default async function handler(req, res) {
       const businessNameRaw = cleanStr(body?.businessName, 200);
       const contactName = cleanStr(body?.contactName, 200);
       const phone = cleanStr(body?.phone, 50);
-
-      const emailCheck = cleanEmailStrict(body?.email);
-      if (emailCheck.error) return send(res, 400, { ok: false, error: emailCheck.error });
-      const email = emailCheck.value;
-
-      const websiteCheck = cleanUrlStrict(body?.website);
-      if (websiteCheck.error) return send(res, 400, { ok: false, error: websiteCheck.error });
-      const website = websiteCheck.value;
-
+      const email = cleanEmail(body?.email);
+      const website = cleanUrl(body?.website);
       const supplierCountry = cleanStr(body?.supplierCountry, 120);
       const supplierCity = cleanStr(body?.supplierCity, 120);
 
-      // If business name empty => set it to contact name
       const businessName = businessNameRaw || contactName || null;
-
-      // DB NOT NULL
       const name = cleanStr(body?.name, 200) || businessName || contactName;
 
       if (!name) {
@@ -266,7 +249,6 @@ export default async function handler(req, res) {
             `;
           }
         }
-
         return id;
       });
 
@@ -274,7 +256,7 @@ export default async function handler(req, res) {
     }
 
     // -------------------------
-    // PATCH /api/suppliers (main only)
+    // PATCH /api/suppliers
     // -------------------------
     if (method === "PATCH") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
@@ -293,15 +275,8 @@ export default async function handler(req, res) {
       const businessNameRaw = cleanStr(body?.businessName, 200);
       const contactName = cleanStr(body?.contactName, 200);
       const phone = cleanStr(body?.phone, 50);
-
-      const emailCheck = cleanEmailStrict(body?.email);
-      if (emailCheck.error) return send(res, 400, { ok: false, error: emailCheck.error });
-      const email = emailCheck.value;
-
-      const websiteCheck = cleanUrlStrict(body?.website);
-      if (websiteCheck.error) return send(res, 400, { ok: false, error: websiteCheck.error });
-      const website = websiteCheck.value;
-
+      const email = cleanEmail(body?.email);
+      const website = cleanUrl(body?.website);
       const supplierCountry = cleanStr(body?.supplierCountry, 120);
       const supplierCity = cleanStr(body?.supplierCity, 120);
 
@@ -314,8 +289,8 @@ export default async function handler(req, res) {
 
       const categoryIds = uniqPositiveInts(body?.categoryIds);
 
-      const updated = await sql.begin(async (tx) => {
-        const upd = await tx`
+      await sql.begin(async (tx) => {
+        await tx`
           UPDATE suppliers
           SET
             name = ${name},
@@ -328,10 +303,7 @@ export default async function handler(req, res) {
             supplier_city = ${supplierCity},
             updated_at = NOW()
           WHERE id = ${id}
-          RETURNING id
         `;
-
-        if (!upd.length) return false;
 
         await tx`DELETE FROM supplier_categories WHERE supplier_id = ${id}`;
 
@@ -344,17 +316,13 @@ export default async function handler(req, res) {
             `;
           }
         }
-
-        return true;
       });
-
-      if (!updated) return send(res, 404, { ok: false, error: "Supplier not found" });
 
       return send(res, 200, { ok: true });
     }
 
     // -------------------------
-    // DELETE /api/suppliers?id=123 (main only)
+    // DELETE /api/suppliers?id=123
     // -------------------------
     if (method === "DELETE") {
       const auth = await requireUserFromReq(req, res, { rolesAny: ["main"] });
@@ -374,13 +342,10 @@ export default async function handler(req, res) {
         return send(res, 400, { ok: false, error: "Cannot delete supplier with existing batches" });
       }
 
-      const deleted = await sql.begin(async (tx) => {
+      await sql.begin(async (tx) => {
         await tx`DELETE FROM supplier_categories WHERE supplier_id = ${id}`;
-        const d = await tx`DELETE FROM suppliers WHERE id = ${id} RETURNING id`;
-        return d.length ? true : false;
+        await tx`DELETE FROM suppliers WHERE id = ${id}`;
       });
-
-      if (!deleted) return send(res, 404, { ok: false, error: "Supplier not found" });
 
       return send(res, 200, { ok: true });
     }
