@@ -54,6 +54,24 @@ function normalize(v) {
   return String(v ?? "").trim();
 }
 
+function toInt(v) {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
+}
+
+function uniqInts(arr) {
+  const out = [];
+  const seen = new Set();
+  for (const v of Array.isArray(arr) ? arr : []) {
+    const x = toInt(v);
+    if (x > 0 && !seen.has(x)) {
+      seen.add(x);
+      out.push(x);
+    }
+  }
+  return out;
+}
+
 function useDebounced(value, delay = 250) {
   const [v, setV] = useState(value);
   useEffect(() => {
@@ -73,7 +91,7 @@ function Chip({ label, onRemove, title }) {
         gap: 8,
         padding: "6px 10px",
         borderRadius: 999,
-        border: "1px solid var(--border)",
+        border: "1px solid var(--z-border)",
         background: "rgba(255,255,255,.06)",
         fontSize: 13,
         fontWeight: 800,
@@ -96,9 +114,16 @@ function Chip({ label, onRemove, title }) {
       {onRemove ? (
         <button
           type="button"
-          className="btn btn-ghost"
           onClick={onRemove}
-          style={{ padding: "2px 8px", borderRadius: 999 }}
+          style={{
+            padding: "2px 8px",
+            borderRadius: 999,
+            border: "1px solid var(--z-border)",
+            background: "rgba(255,255,255,0.06)",
+            color: "inherit",
+            cursor: "pointer",
+            fontWeight: 900,
+          }}
           aria-label={`Remove ${label}`}
           title="Remove"
         >
@@ -115,15 +140,18 @@ function CategoryPicker({ categories, valueIds, onChange }) {
   const [q, setQ] = useState("");
   const boxRef = useRef(null);
 
+  // Normalize incoming ids to clean numeric array
+  const ids = useMemo(() => uniqInts(valueIds), [valueIds]);
+
   const byId = useMemo(() => {
     const m = new Map();
-    for (const c of categories || []) m.set(Number(c.id), c);
+    for (const c of categories || []) m.set(toInt(c.id), c);
     return m;
   }, [categories]);
 
   const selected = useMemo(() => {
-    return (valueIds || []).map((id) => byId.get(Number(id))).filter(Boolean);
-  }, [valueIds, byId]);
+    return ids.map((id) => byId.get(id)).filter(Boolean);
+  }, [ids, byId]);
 
   const filtered = useMemo(() => {
     const term = normalize(q).toLowerCase();
@@ -142,11 +170,13 @@ function CategoryPicker({ categories, valueIds, onChange }) {
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
-  function toggle(id) {
-    const cid = Number(id);
-    const has = (valueIds || []).includes(cid);
-    const next = has ? (valueIds || []).filter((x) => x !== cid) : [...(valueIds || []), cid];
-    onChange(next);
+  function toggle(idRaw) {
+    const cid = toInt(idRaw);
+    if (!cid) return;
+
+    const has = ids.includes(cid);
+    const next = has ? ids.filter((x) => x !== cid) : [...ids, cid];
+    onChange(next); // always numbers
   }
 
   return (
@@ -156,9 +186,9 @@ function CategoryPicker({ categories, valueIds, onChange }) {
         {selected.length ? (
           selected.map((c) => (
             <Chip
-              key={c.id}
+              key={toInt(c.id)}
               label={c.name}
-              onRemove={() => onChange((valueIds || []).filter((x) => x !== Number(c.id)))}
+              onRemove={() => onChange(ids.filter((x) => x !== toInt(c.id)))}
             />
           ))
         ) : (
@@ -169,12 +199,12 @@ function CategoryPicker({ categories, valueIds, onChange }) {
       </div>
 
       <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
-        <button type="button" className="btn btn-ghost" onClick={() => setOpen((s) => !s)}>
+        <button type="button" onClick={() => setOpen((s) => !s)}>
           {open ? "Close categories" : "Choose categories"}
         </button>
 
-        {selected.length ? (
-          <button type="button" className="btn btn-ghost" onClick={() => onChange([])}>
+        {ids.length ? (
+          <button type="button" onClick={() => onChange([])}>
             Clear
           </button>
         ) : null}
@@ -189,7 +219,7 @@ function CategoryPicker({ categories, valueIds, onChange }) {
             right: 0,
             zIndex: 30,
             borderRadius: 14,
-            border: "1px solid var(--border)",
+            border: "1px solid var(--z-border)",
             background: "rgba(10, 20, 18, 0.92)",
             backdropFilter: "blur(10px)",
             padding: 12,
@@ -204,7 +234,7 @@ function CategoryPicker({ categories, valueIds, onChange }) {
               onChange={(e) => setQ(e.target.value)}
               style={{ flex: 1 }}
             />
-            <button type="button" className="btn btn-ghost" onClick={() => setQ("")}>
+            <button type="button" onClick={() => setQ("")}>
               Reset
             </button>
           </div>
@@ -223,10 +253,11 @@ function CategoryPicker({ categories, valueIds, onChange }) {
               </div>
             ) : (
               filtered.map((c) => {
-                const checked = (valueIds || []).includes(Number(c.id));
+                const cid = toInt(c.id);
+                const checked = ids.includes(cid);
                 return (
                   <label
-                    key={c.id}
+                    key={cid}
                     style={{
                       display: "flex",
                       gap: 10,
@@ -237,7 +268,7 @@ function CategoryPicker({ categories, valueIds, onChange }) {
                       userSelect: "none",
                     }}
                   >
-                    <input type="checkbox" checked={checked} onChange={() => toggle(c.id)} />
+                    <input type="checkbox" checked={checked} onChange={() => toggle(cid)} />
                     <span style={{ fontWeight: 800 }}>{c.name}</span>
                   </label>
                 );
@@ -305,7 +336,7 @@ export default function SuppliersPage() {
 
   const categoriesById = useMemo(() => {
     const m = new Map();
-    for (const c of categories) m.set(Number(c.id), c);
+    for (const c of categories) m.set(toInt(c.id), c);
     return m;
   }, [categories]);
 
@@ -314,7 +345,7 @@ export default function SuppliersPage() {
     fontSize: 12,
     opacity: 0.75,
 
-    // IMPORTANT: keep alignment + prevent box growth
+    // keep alignment + prevent box growth
     lineHeight: "16px",
     minHeight: 32,
     maxHeight: 32,
@@ -352,7 +383,6 @@ export default function SuppliersPage() {
     setLoading(false);
   }
 
-  // Single effect => no double load
   useEffect(() => {
     load(dSearchQ, dCategoryFilterId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -372,7 +402,8 @@ export default function SuppliersPage() {
       supplierCountry: inList ? storedCountry : storedCountry ? "Other" : "",
       supplierCountryOther: inList ? "" : storedCountry,
       supplierCity: s.supplierCity || "",
-      categoryIds: Array.isArray(s.categoryIds) ? s.categoryIds : [],
+      // IMPORTANT: normalize to number array
+      categoryIds: uniqInts(s.categoryIds),
     });
 
     try {
@@ -416,7 +447,8 @@ export default function SuppliersPage() {
       website: normalize(form.website),
       supplierCountry: effectiveCountry,
       supplierCity: normalize(form.supplierCity),
-      categoryIds: form.categoryIds,
+      // IMPORTANT: always send numbers
+      categoryIds: uniqInts(form.categoryIds),
     };
 
     const method = form.id ? "PATCH" : "POST";
@@ -481,7 +513,6 @@ export default function SuppliersPage() {
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               type="button"
-              className="btn btn-ghost"
               onClick={() => {
                 setSearchQ("");
                 setCategoryFilterId("");
@@ -490,7 +521,7 @@ export default function SuppliersPage() {
               Clear
             </button>
 
-            <button type="button" className="btn btn-ghost" onClick={() => load()}>
+            <button type="button" onClick={() => load()}>
               Refresh
             </button>
           </div>
@@ -538,9 +569,7 @@ export default function SuppliersPage() {
                 value={form.contactName}
                 onChange={(e) => setForm((s) => ({ ...s, contactName: e.target.value }))}
               />
-              <div className="muted" style={hintStyle}>
-                {/* keep height aligned */}
-              </div>
+              <div className="muted" style={hintStyle} />
             </div>
           </div>
 
@@ -647,17 +676,15 @@ export default function SuppliersPage() {
               <CategoryPicker
                 categories={categories}
                 valueIds={form.categoryIds}
-                onChange={(ids) => setForm((s) => ({ ...s, categoryIds: ids }))}
+                onChange={(ids) => setForm((s) => ({ ...s, categoryIds: uniqInts(ids) }))}
               />
             )}
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button className="btn btn-primary" type="submit">
-              {form.id ? "Update Supplier" : "Add Supplier"}
-            </button>
+            <button type="submit">{form.id ? "Update Supplier" : "Add Supplier"}</button>
             {form.id && (
-              <button className="btn btn-ghost" type="button" onClick={() => setForm(emptyForm)}>
+              <button type="button" onClick={() => setForm(emptyForm)}>
                 Cancel
               </button>
             )}
@@ -666,7 +693,7 @@ export default function SuppliersPage() {
       )}
 
       {/* Table */}
-      <div className="table-wrap" style={{ overflowX: "auto" }}>
+      <div style={{ overflowX: "auto" }}>
         <table className="table">
           <thead>
             <tr>
@@ -700,8 +727,8 @@ export default function SuppliersPage() {
             ) : null}
 
             {suppliers.map((s) => {
-              const catNames = (s.categoryIds || [])
-                .map((id) => categoriesById.get(Number(id))?.name)
+              const catNames = uniqInts(s.categoryIds)
+                .map((id) => categoriesById.get(id)?.name)
                 .filter(Boolean);
 
               const business = s.businessName || s.contactName || s.name;
@@ -745,10 +772,10 @@ export default function SuppliersPage() {
                   <td style={{ whiteSpace: "nowrap" }}>
                     {hasRole("main") ? (
                       <>
-                        <button className="btn btn-ghost" type="button" onClick={() => handleEdit(s)}>
+                        <button type="button" onClick={() => handleEdit(s)}>
                           Edit
                         </button>{" "}
-                        <button className="btn btn-danger" type="button" onClick={() => handleDelete(s.id)}>
+                        <button type="button" onClick={() => handleDelete(s.id)}>
                           Delete
                         </button>
                       </>
