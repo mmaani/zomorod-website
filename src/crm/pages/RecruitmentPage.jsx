@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../api.js";
 import { hasRole } from "../auth.js";
 
@@ -32,50 +32,49 @@ function fromHtml(html) {
 
 export default function RecruitmentPage() {
   const isMain = hasRole("main");
+
   const [jobs, setJobs] = useState([]);
 
-  // Applications (paginated)
+  // Applications (server-side pagination + server-side search)
   const [applications, setApplications] = useState([]);
   const [appsPage, setAppsPage] = useState(1);
   const [appsTotal, setAppsTotal] = useState(0);
   const [appsLoading, setAppsLoading] = useState(false);
 
-  const [loading, setLoading] = useState(true); // initial page load (jobs + first apps page)
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
+
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+
   const [searchTerm, setSearchTerm] = useState("");
+  const didInitSearchRef = useRef(false);
 
   const publishedCount = useMemo(() => jobs.filter((j) => j.is_published).length, [jobs]);
 
-  const filteredApplications = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
-    if (!q) return applications;
-    return applications.filter((a) => {
-      const value = [a.first_name, a.last_name, a.job_title, a.email, a.phone, a.city, a.country]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return value.includes(q);
-    });
-  }, [applications, searchTerm]);
+  const hasNextPage = useMemo(() => appsPage * APP_LIMIT < appsTotal, [appsPage, appsTotal]);
+  const canLoadMore = useMemo(() => applications.length < appsTotal, [applications.length, appsTotal]);
 
-  const hasNextPage = useMemo(() => {
-    return appsPage * APP_LIMIT < appsTotal;
-  }, [appsPage, appsTotal]);
+  function buildAppsUrl(page, { q } = {}) {
+    const qs = new URLSearchParams();
+    qs.set("resource", "applications");
+    qs.set("page", String(page));
+    qs.set("limit", String(APP_LIMIT));
 
-  const canLoadMore = useMemo(() => {
-    return applications.length < appsTotal;
-  }, [applications.length, appsTotal]);
+    const trimmed = String(q || "").trim();
+    if (trimmed) qs.set("q", trimmed);
 
-  async function loadApplicationsPage(nextPage, { append = false } = {}) {
+    return `/recruitment?${qs.toString()}`;
+  }
+
+  async function loadApplicationsPage(nextPage, { append = false, q = searchTerm } = {}) {
     setAppsLoading(true);
     setError("");
 
     try {
-      const res = await apiFetch(`/recruitment?resource=applications&page=${nextPage}&limit=${APP_LIMIT}`);
+      const res = await apiFetch(buildAppsUrl(nextPage, { q }));
       if (!res) return;
 
       const data = await res.json().catch(() => ({}));
@@ -113,7 +112,7 @@ export default function RecruitmentPage() {
     try {
       const [jobsRes, appsRes] = await Promise.all([
         apiFetch("/recruitment?resource=jobs_admin"),
-        apiFetch(`/recruitment?resource=applications&page=1&limit=${APP_LIMIT}`),
+        apiFetch(buildAppsUrl(1, { q: "" })), // first 10 most recent
       ]);
       if (!jobsRes || !appsRes) return;
 
@@ -140,6 +139,25 @@ export default function RecruitmentPage() {
     if (isMain) loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMain]);
+
+  // Debounced server-side search
+  useEffect(() => {
+    if (!isMain) return;
+
+    // skip the first render so we don't double-fetch (loadAll already fetched page 1)
+    if (!didInitSearchRef.current) {
+      didInitSearchRef.current = true;
+      return;
+    }
+
+    const t = setTimeout(() => {
+      // New query => reset to page 1 and replace results
+      loadApplicationsPage(1, { append: false, q: searchTerm });
+    }, 300);
+
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, isMain]);
 
   function startEdit(job) {
     setEditingId(job.id);
@@ -197,7 +215,8 @@ export default function RecruitmentPage() {
       setOk(editingId ? "Job updated." : "Job created.");
       resetForm();
 
-      // Reload jobs + refresh applications back to first 10 (most recent)
+      // reload jobs + reset apps to first page (latest 10)
+      setSearchTerm("");
       await loadAll();
     } catch (e2) {
       setError(e2?.message || "Failed to save job");
@@ -386,15 +405,16 @@ export default function RecruitmentPage() {
 
         <div className="row" style={{ justifyContent: "space-between", marginTop: 8, flexWrap: "wrap", gap: 10 }}>
           <p className="muted" style={{ margin: 0 }}>
-            Loaded {Math.min(applications.length, appsTotal)} of {appsTotal} · Page {appsPage}
-            {searchTerm.trim() ? ` · Filtered ${filteredApplications.length}` : ""}
+            Showing {Math.min(applications.length, appsTotal)} of {appsTotal}
+            {searchTerm.trim() ? ` · Search: “${searchTerm.trim()}”` : ""}
+            {" · "}Page {appsPage}
           </p>
 
           <div className="row" style={{ gap: 8 }}>
             <button
               className="crm-btn crm-btn-outline"
               disabled={appsLoading || appsPage <= 1}
-              onClick={() => loadApplicationsPage(appsPage - 1, { append: false })}
+              onClick={() => loadApplicationsPage(appsPage - 1, { append: false, q: searchTerm })}
               type="button"
             >
               Prev page
@@ -403,7 +423,7 @@ export default function RecruitmentPage() {
             <button
               className="crm-btn crm-btn-outline"
               disabled={appsLoading || !hasNextPage}
-              onClick={() => loadApplicationsPage(appsPage + 1, { append: false })}
+              onClick={() => loadApplicationsPage(appsPage + 1, { append: false, q: searchTerm })}
               type="button"
             >
               Next page
@@ -411,8 +431,8 @@ export default function RecruitmentPage() {
 
             <button
               className="crm-btn crm-btn-primary"
-              disabled={appsLoading || !canLoadMore || !hasNextPage}
-              onClick={() => loadApplicationsPage(appsPage + 1, { append: true })}
+              disabled={appsLoading || !hasNextPage || !canLoadMore}
+              onClick={() => loadApplicationsPage(appsPage + 1, { append: true, q: searchTerm })}
               type="button"
             >
               {appsLoading ? "Loading..." : "Load more"}
@@ -433,35 +453,21 @@ export default function RecruitmentPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredApplications.map((a) => (
+              {applications.map((a) => (
                 <tr key={a.id}>
-                  <td>
-                    {a.first_name} {a.last_name}
-                  </td>
+                  <td>{a.first_name} {a.last_name}</td>
                   <td>{a.job_title}</td>
-                  <td>
-                    {a.city}, {a.country}
-                  </td>
+                  <td>{a.city}, {a.country}</td>
                   <td>{a.phone || "—"}</td>
                   <td>{a.education_level}</td>
                   <td>
-                    <a href={a.cv_drive_link} target="_blank" rel="noreferrer">
-                      CV
-                    </a>
-                    {a.cover_drive_link ? (
-                      <>
-                        {" "}
-                        ·{" "}
-                        <a href={a.cover_drive_link} target="_blank" rel="noreferrer">
-                          Cover
-                        </a>
-                      </>
-                    ) : null}
+                    <a href={a.cv_drive_link} target="_blank" rel="noreferrer">CV</a>
+                    {a.cover_drive_link ? <> · <a href={a.cover_drive_link} target="_blank" rel="noreferrer">Cover</a></> : null}
                   </td>
                 </tr>
               ))}
 
-              {!filteredApplications.length ? (
+              {!applications.length ? (
                 <tr>
                   <td colSpan={6} className="muted">
                     {appsLoading ? "Loading..." : "No applications found."}

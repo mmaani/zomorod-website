@@ -736,10 +736,34 @@ if (req.method === "GET" && resource === "applications") {
 
   const offset = (page - 1) * limit;
 
+  // Server-side search query (q)
+  const qRaw = toStr(params.get("q")).slice(0, 200);
+
+  // Escape LIKE wildcards so searching for "%" or "_" doesn't act as a wildcard
+  // We use ESCAPE '!' and transform:
+  //   ! -> !!
+  //   % -> !%
+  //   _ -> !_
+  // Postgres supports ESCAPE to set the escape character. :contentReference[oaicite:3]{index=3}
+  const qEsc = qRaw ? qRaw.replace(/[!%_]/g, (m) => (m === "!" ? "!!" : `!${m}`)) : "";
+  const qLike = qRaw ? `%${qEsc}%` : null;
+
   const totalRes = await sql`
     SELECT COUNT(*)::int AS count
     FROM job_applications a
+    JOIN jobs j ON j.id = a.job_id
     WHERE (${jobId}::bigint IS NULL OR a.job_id = ${jobId})
+      AND (
+        ${qLike}::text IS NULL OR (
+          a.first_name ILIKE ${qLike} ESCAPE '!' OR
+          a.last_name  ILIKE ${qLike} ESCAPE '!' OR
+          a.email      ILIKE ${qLike} ESCAPE '!' OR
+          a.phone      ILIKE ${qLike} ESCAPE '!' OR
+          a.city       ILIKE ${qLike} ESCAPE '!' OR
+          a.country    ILIKE ${qLike} ESCAPE '!' OR
+          j.title      ILIKE ${qLike} ESCAPE '!'
+        )
+      )
   `;
   const total = Number(totalRes?.[0]?.count || 0);
 
@@ -750,6 +774,17 @@ if (req.method === "GET" && resource === "applications") {
     FROM job_applications a
     JOIN jobs j ON j.id = a.job_id
     WHERE (${jobId}::bigint IS NULL OR a.job_id = ${jobId})
+      AND (
+        ${qLike}::text IS NULL OR (
+          a.first_name ILIKE ${qLike} ESCAPE '!' OR
+          a.last_name  ILIKE ${qLike} ESCAPE '!' OR
+          a.email      ILIKE ${qLike} ESCAPE '!' OR
+          a.phone      ILIKE ${qLike} ESCAPE '!' OR
+          a.city       ILIKE ${qLike} ESCAPE '!' OR
+          a.country    ILIKE ${qLike} ESCAPE '!' OR
+          j.title      ILIKE ${qLike} ESCAPE '!'
+        )
+      )
     ORDER BY a.created_at DESC, a.id DESC
     LIMIT ${limit} OFFSET ${offset}
   `;
@@ -760,6 +795,7 @@ if (req.method === "GET" && resource === "applications") {
     page,
     limit,
     total,
+    q: qRaw,
     hasMore: offset + rows.length < total,
   });
 }
