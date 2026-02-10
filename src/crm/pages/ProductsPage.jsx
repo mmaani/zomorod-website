@@ -2,19 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../api.js";
 import { getUser, hasRole } from "../auth";
 
-/**
- * ProductsPage.jsx — Updated (ZOMOROD CRM)
- * Fixes / improvements:
- * 1) Uses CRM-friendly classes (crm-content, crm-card, etc.) instead of mixed marketing classes.
- * 2) Stronger form validation:
- *    - defaultSellPriceJod cannot be <= 0
- *    - purchasePriceJod cannot be <= 0
- *    - qtyReceived cannot be <= 0
- * 3) Better UX:
- *    - shows selected product on-hand + average purchase info (if permitted) before receiving batch
- *    - batches table stays visible and refreshed after receive/void
- * 4) Supplier dropdown + option readability relies on CRM.CSS select/option rules (make sure you added them).
- */
+/* ---------- helpers ---------- */
 
 function formatDateTime(value) {
   if (!value) return "—";
@@ -38,12 +26,30 @@ function formatMoneyMax2(value) {
   }).format(n);
 }
 
-
 function expiryBadge(status) {
   if (status === "EXPIRED") return { label: "Expired", color: "#ef4444" };
   if (status === "EXPIRING_SOON") return { label: "Expiring soon", color: "#f59e0b" };
   if (status === "GOOD") return { label: "Good", color: "#22c55e" };
   return { label: "No expiry", color: "#94a3b8" };
+}
+
+/* ---------- NEW: Unit presets ---------- */
+
+const UOM_PRESETS = [
+  { value: "piece", label: "Piece (1)", multiplier: 1 },
+  { value: "dozen", label: "Dozen (12)", multiplier: 12 },
+  { value: "pack_10", label: "Pack / Box (10)", multiplier: 10 },
+  { value: "pack_20", label: "Pack / Box (20)", multiplier: 20 },
+  { value: "pack_25", label: "Pack / Box (25)", multiplier: 25 },
+  { value: "pack_50", label: "Pack / Box (50)", multiplier: 50 },
+  { value: "pack_100", label: "Pack / Box (100)", multiplier: 100 },
+  { value: "custom", label: "Custom…", multiplier: 1 },
+];
+
+function uomLabel(value, mult) {
+  const found = UOM_PRESETS.find((x) => x.value === value);
+  if (found && found.value !== "custom") return found.label;
+  return `Custom (${Number(mult) || 1})`;
 }
 
 export default function ProductsPage() {
@@ -72,13 +78,21 @@ export default function ProductsPage() {
     priceTiers: [],
   });
 
+  // ✅ Updated receive-batch form
   const [bForm, setBForm] = useState({
     productId: "",
     lotNumber: "",
     purchaseDate: "",
     expiryDate: "",
-    purchasePriceJod: "",
-    qtyReceived: "",
+
+    // Units/packaging
+    qtyUom: "piece",
+    qtyMultiplier: 1,
+    qtyUnits: "",
+
+    // Price per selected unit
+    unitPriceJod: "",
+
     supplierId: "",
     supplierName: "",
     supplierInvoiceNo: "",
@@ -95,6 +109,26 @@ export default function ProductsPage() {
       label: `${p.productCode} — ${p.officialName}${p.archivedAt ? " (archived)" : ""}`,
     }));
   }, [products]);
+
+  // Derived computations (base is “pieces”)
+  const computed = useMemo(() => {
+    const units = Number(bForm.qtyUnits || 0);
+    const mult = Math.max(1, Math.round(Number(bForm.qtyMultiplier || 1)));
+    const unitPrice = Number(bForm.unitPriceJod || 0);
+
+    const qtyPieces = Number.isFinite(units) ? units * mult : 0;
+    const pricePerPiece = mult > 0 ? unitPrice / mult : 0;
+    const totalCost = units * unitPrice;
+
+    return {
+      units,
+      mult,
+      qtyPieces,
+      unitPrice,
+      pricePerPiece,
+      totalCost,
+    };
+  }, [bForm.qtyUnits, bForm.qtyMultiplier, bForm.unitPriceJod]);
 
   async function loadProducts() {
     setLoading(true);
@@ -213,23 +247,49 @@ export default function ProductsPage() {
     e.preventDefault();
     setErr("");
 
+    const productId = Number(bForm.productId);
+    const lotNumber = String(bForm.lotNumber || "").trim();
+    const purchaseDate = String(bForm.purchaseDate || "").trim();
+    const expiryDate = String(bForm.expiryDate || "").trim() || null;
+
+    const receivedUom = String(bForm.qtyUom || "piece");
+    const receivedUomMultiplier = Math.max(1, Math.round(Number(bForm.qtyMultiplier || 1)));
+    const receivedUomUnits = Number(bForm.qtyUnits || 0);
+    const enteredUnitPriceJod = Number(bForm.unitPriceJod || 0);
+
+    const qtyPieces = computed.qtyPieces; // base pieces
+    const pricePerPiece = computed.pricePerPiece; // base per-piece
+
     const payload = {
-      productId: Number(bForm.productId),
-      lotNumber: String(bForm.lotNumber || "").trim(),
-      purchaseDate: String(bForm.purchaseDate || "").trim(),
-      expiryDate: String(bForm.expiryDate || "").trim() || null,
-      purchasePriceJod: Number(bForm.purchasePriceJod || 0),
-      qtyReceived: Number(bForm.qtyReceived || 0),
+      productId,
+      lotNumber,
+      purchaseDate,
+      expiryDate,
+
+      // ✅ Base values used for stock + avg cost
+      qtyReceived: qtyPieces,
+      purchasePriceJod: pricePerPiece,
+
+      // ✅ Traceability fields (what the user entered)
+      receivedUom,
+      receivedUomMultiplier,
+      receivedUomUnits,
+      enteredUnitPriceJod,
+      enteredUnitPriceUom: receivedUom,
+
       supplierId: bForm.supplierId ? Number(bForm.supplierId) : null,
       supplierName: String(bForm.supplierName || "").trim() || null,
       supplierInvoiceNo: String(bForm.supplierInvoiceNo || "").trim() || null,
     };
 
-    if (!payload.productId) return setErr("Please select a product.");
-    if (!payload.lotNumber) return setErr("Lot Number is required.");
-    if (!payload.purchaseDate) return setErr("Purchase Date is required.");
-    if (!Number.isFinite(payload.qtyReceived) || payload.qtyReceived <= 0) return setErr("Quantity Received must be > 0.");
-    if (!Number.isFinite(payload.purchasePriceJod) || payload.purchasePriceJod <= 0) return setErr("Purchase Price must be > 0.");
+    if (!productId) return setErr("Please select a product.");
+    if (!lotNumber) return setErr("Lot Number is required.");
+    if (!purchaseDate) return setErr("Purchase Date is required.");
+
+    if (!Number.isFinite(receivedUomUnits) || receivedUomUnits <= 0) return setErr("Units received must be > 0.");
+    if (!Number.isFinite(enteredUnitPriceJod) || enteredUnitPriceJod <= 0) return setErr("Price per unit must be > 0.");
+    if (!Number.isFinite(qtyPieces) || qtyPieces <= 0) return setErr("Computed pieces must be > 0.");
+    if (!Number.isFinite(pricePerPiece) || pricePerPiece <= 0) return setErr("Computed per-piece price must be > 0.");
 
     try {
       const res = await apiFetch("/api/batches", { method: "POST", body: payload });
@@ -238,21 +298,21 @@ export default function ProductsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
-      // Keep selected product; clear other fields
+      // Keep selected product and UOM; clear receipt inputs
       setBForm((s) => ({
         ...s,
         lotNumber: "",
         purchaseDate: "",
         expiryDate: "",
-        purchasePriceJod: "",
-        qtyReceived: "",
+        qtyUnits: "",
+        unitPriceJod: "",
         supplierId: "",
         supplierName: "",
         supplierInvoiceNo: "",
       }));
 
       await loadProducts();
-      await loadBatches(payload.productId);
+      await loadBatches(productId);
     } catch (e3) {
       setErr(e3?.message || "Failed to receive batch");
     }
@@ -491,7 +551,7 @@ export default function ProductsPage() {
                   {canSeePurchase && selectedProduct.avgPurchasePriceJod != null ? (
                     <>
                       {" "}
-                      • Avg purchase: <b>{formatMoneyMax2(selectedProduct.avgPurchasePriceJod)}</b>
+                      • Avg purchase (per piece): <b>{formatMoneyMax2(selectedProduct.avgPurchasePriceJod)}</b>
                     </>
                   ) : null}
                 </div>
@@ -544,28 +604,78 @@ export default function ProductsPage() {
                   />
                 </div>
 
+                {/* ✅ NEW: Unit/Pack selector */}
                 <div className="field">
-                  <label>Purchase Price (JOD)</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="0.0001"
-                    step="0.0001"
-                    value={bForm.purchasePriceJod}
-                    onChange={(e) => setBForm((s) => ({ ...s, purchasePriceJod: e.target.value }))}
-                  />
+                  <label>Unit / Pack</label>
+                  <select
+                    value={bForm.qtyUom}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      const preset = UOM_PRESETS.find((x) => x.value === next);
+                      setBForm((s) => ({
+                        ...s,
+                        qtyUom: next,
+                        qtyMultiplier: preset ? preset.multiplier : 1,
+                      }));
+                    }}
+                  >
+                    {UOM_PRESETS.map((u) => (
+                      <option key={u.value} value={u.value}>
+                        {u.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  {bForm.qtyUom === "custom" ? (
+                    <div style={{ marginTop: 10 }}>
+                      <label className="muted" style={{ display: "block", marginBottom: 6 }}>
+                        Pieces per unit (multiplier)
+                      </label>
+                      <input
+                        className="input"
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={bForm.qtyMultiplier}
+                        onChange={(e) => setBForm((s) => ({ ...s, qtyMultiplier: e.target.value }))}
+                      />
+                    </div>
+                  ) : null}
                 </div>
 
+                {/* ✅ NEW: Units received (packs), NOT pieces */}
                 <div className="field">
-                  <label>Quantity Received</label>
+                  <label>Units received</label>
                   <input
                     className="input"
                     type="number"
                     min="1"
                     step="1"
-                    value={bForm.qtyReceived}
-                    onChange={(e) => setBForm((s) => ({ ...s, qtyReceived: e.target.value }))}
+                    value={bForm.qtyUnits}
+                    onChange={(e) => setBForm((s) => ({ ...s, qtyUnits: e.target.value }))}
+                    placeholder="e.g., 5 (means 5 packs)"
                   />
+                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                    Computed pieces: <b>{Number.isFinite(computed.qtyPieces) ? computed.qtyPieces : 0}</b>
+                  </div>
+                </div>
+
+                {/* ✅ NEW: Price per selected unit */}
+                <div className="field">
+                  <label>Purchase price (JOD) per unit</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0.0001"
+                    step="0.0001"
+                    value={bForm.unitPriceJod}
+                    onChange={(e) => setBForm((s) => ({ ...s, unitPriceJod: e.target.value }))}
+                    placeholder="Price per selected unit"
+                  />
+                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                    Per piece: <b>{formatMoneyMax2(computed.pricePerPiece)}</b>{" "}
+                    • Total cost: <b>{formatMoneyMax2(computed.totalCost)}</b>
+                  </div>
                 </div>
 
                 <div className="field">
@@ -620,12 +730,12 @@ export default function ProductsPage() {
                     <table>
                       <thead>
                         <tr>
-                                                    <th>Lot</th>
+                          <th>Lot</th>
                           <th>Date</th>
                           <th>Expiry</th>
-                          <th>Qty</th>
-                          <th>Remaining</th>
-                          <th>Price (JOD)</th>
+                          <th>Qty (received)</th>
+                          <th>Qty (pieces)</th>
+                          <th>Price (per piece)</th>
                           <th>Status</th>
                           <th>Supplier</th>
                           <th></th>
@@ -634,27 +744,35 @@ export default function ProductsPage() {
                       <tbody>
                         {batches.map((batch) => {
                           const status = expiryBadge(batch.expiryStatus);
+
+                          const units = Number(batch.receivedUomUnits || 0);
+                          const mult = Number(batch.receivedUomMultiplier || 1);
+                          const receivedText =
+                            units > 0
+                              ? `${units} × ${uomLabel(batch.receivedUom, mult)}`
+                              : "—";
+
                           return (
-                          <tr key={batch.id}>
-                            <td style={{ fontWeight: 900 }}>{batch.lotNumber}</td>
-                            <td>{formatDateTime(batch.purchaseDate)}</td>
-                            <td>{formatDateTime(batch.expiryDate)}</td>
-                            <td>{batch.qtyReceived}</td>
-                            <td>{batch.qtyRemaining ?? batch.qtyReceived}</td>
-                            <td>{formatMoneyMax2(batch.purchasePriceJod)}</td>
-                            <td>
-                              <span style={{ color: status.color, fontWeight: 800 }}>
-                                {status.label}
-                              </span>
-                            </td>
-                            <td>{batch.supplierName || "—"}</td>
-                            <td style={{ whiteSpace: "nowrap" }}>
-                              <button className="crm-btn crm-btn-outline" type="button" onClick={() => voidBatch(batch.id)}>
-                                void
-                              </button>
-                            </td>
-                          </tr>
-                        );
+                            <tr key={batch.id}>
+                              <td style={{ fontWeight: 900 }}>{batch.lotNumber}</td>
+                              <td>{formatDateTime(batch.purchaseDate)}</td>
+                              <td>{formatDateTime(batch.expiryDate)}</td>
+                              <td>{receivedText}</td>
+                              <td>{batch.qtyReceived}</td>
+                              <td>{formatMoneyMax2(batch.purchasePriceJod)}</td>
+                              <td>
+                                <span style={{ color: status.color, fontWeight: 800 }}>
+                                  {status.label}
+                                </span>
+                              </td>
+                              <td>{batch.supplierName || "—"}</td>
+                              <td style={{ whiteSpace: "nowrap" }}>
+                                <button className="crm-btn crm-btn-outline" type="button" onClick={() => voidBatch(batch.id)}>
+                                  void
+                                </button>
+                              </td>
+                            </tr>
+                          );
                         })}
                       </tbody>
                     </table>
