@@ -154,7 +154,13 @@ function ProductPicker({ products, valueIds, onChange }) {
   }
 
   return (
-    <div ref={boxRef} style={{ position: "relative" }}>
+    <div
+      ref={boxRef}
+      style={{
+        position: "relative",
+        zIndex: open ? 200 : 1, // ✅ helps if table/cards below overlap
+      }}
+    >
       {/* Selected chips */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
         {selected.length ? (
@@ -198,7 +204,7 @@ function ProductPicker({ products, valueIds, onChange }) {
             top: "calc(100% + 10px)",
             left: 0,
             right: 0,
-            zIndex: 30,
+            zIndex: 9999, // ✅ always above siblings
             borderRadius: 14,
             border: "1px solid var(--z-border)",
             background: "rgba(10, 20, 18, 0.92)",
@@ -252,12 +258,7 @@ function ProductPicker({ products, valueIds, onChange }) {
                       userSelect: "none",
                     }}
                   >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggle(pid)}
-                      style={{ marginTop: 3 }}
-                    />
+                    <input type="checkbox" checked={checked} onChange={() => toggle(pid)} style={{ marginTop: 3 }} />
                     <div style={{ display: "grid", gap: 2 }}>
                       <div style={{ fontWeight: 900, lineHeight: "16px" }}>{name || code || "Product"}</div>
                       {code && name ? (
@@ -334,7 +335,13 @@ function ProductFilterPicker({ products, valueId, onChange }) {
   const label = selected ? productLabel(selected) : "All products";
 
   return (
-    <div ref={boxRef} style={{ position: "relative" }}>
+    <div
+      ref={boxRef}
+      style={{
+        position: "relative",
+        zIndex: open ? 200 : 1, // ✅ critical: make this stack above the next card
+      }}
+    >
       <button
         type="button"
         className="btn btn-ghost"
@@ -352,7 +359,7 @@ function ProductFilterPicker({ products, valueId, onChange }) {
             top: "calc(100% + 10px)",
             left: 0,
             right: 0,
-            zIndex: 30,
+            zIndex: 9999, // ✅ ensure above Add Client card
             borderRadius: 14,
             border: "1px solid var(--z-border)",
             background: "rgba(10, 20, 18, 0.92)",
@@ -585,7 +592,6 @@ export default function ClientsPage() {
   };
 
   const handleEdit = (c) => {
-    // ✅ FIX: load interests from the row
     const interestIds = Array.isArray(c?.interests)
       ? c.interests.map((i) => toInt(i?.id)).filter((x) => x > 0)
       : [];
@@ -603,9 +609,7 @@ export default function ClientsPage() {
 
     try {
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch {
-      // ignore
-    }
+    } catch {}
   };
 
   const handleDelete = async (id) => {
@@ -624,7 +628,15 @@ export default function ClientsPage() {
       <h2>Clients</h2>
 
       {/* Filters */}
-      <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+      <div
+        className="card"
+        style={{
+          padding: 16,
+          marginBottom: 16,
+          position: "relative",
+          zIndex: 50, // ✅ makes this card paint above the Add Client card
+        }}
+      >
         <div
           style={{
             display: "grid",
@@ -697,7 +709,16 @@ export default function ClientsPage() {
 
       {/* Form */}
       {hasRole("main") && (
-        <form onSubmit={handleSubmit} className="card" style={{ padding: 16, marginBottom: 16 }}>
+        <form
+          onSubmit={handleSubmit}
+          className="card"
+          style={{
+            padding: 16,
+            marginBottom: 16,
+            position: "relative",
+            zIndex: 1, // ✅ keep below filters popover
+          }}
+        >
           <h3 style={{ marginTop: 0 }}>{form.id ? "Edit Client" : "Add Client"}</h3>
 
           <div
