@@ -12,29 +12,26 @@
   </defs>
 
   <style>
-    :root{--brand:#0ea67a;--ink:#0f172a;--muted:#64748b;--stroke:rgba(15,23,42,.14)}
+    :root{--brand:#0e8e32;--ink:#0f172a;--muted:#64748b;--stroke:rgba(15,23,42,.14)}
     .card{fill:url(#bg);stroke:var(--stroke);stroke-width:2}
     .label{font:800 18px ui-sans-serif,system-ui;fill:var(--ink)}
     .small{font:600 12px ui-sans-serif,system-ui;fill:var(--muted)}
-    .pill{fill:rgba(14,166,122,.10);stroke:rgba(14,166,122,.25);stroke-width:2}
+    .pill{fill:rgba(14,142,50,.10);stroke:rgba(14,142,50,.25);stroke-width:2}
   </style>
 
   <rect x="60" y="50" width="680" height="500" rx="28" class="card" filter="url(#shadow)"/>
   <rect x="92" y="86" width="220" height="44" rx="22" class="pill"/>
   <text x="112" y="115" class="small">BABY CARE • SILICONE</text>
 
-  <!-- Shield -->
   <path d="M230 320c0-80 70-140 170-140h40c100 0 170 60 170 140 0 90-70 150-160 150H390c-90 0-160-60-160-150Z"
         fill="#fff" stroke="rgba(15,23,42,.16)" stroke-width="2"/>
   <path d="M290 330c0-50 44-88 110-88h30c66 0 110 38 110 88 0 58-44 96-104 96h-42c-60 0-104-38-104-96Z"
-        fill="rgba(14,166,122,.10)" stroke="rgba(14,166,122,.25)" stroke-width="2"/>
+        fill="rgba(14,142,50,.10)" stroke="rgba(14,142,50,.25)" stroke-width="2"/>
 
-  <!-- Nipple (orthodontic-ish) -->
   <path d="M380 220c0-28 22-50 50-50s50 22 50 50v38c0 22-10 42-28 54-10 6-22 10-34 10s-24-4-34-10c-18-12-28-32-28-54v-38Z"
         fill="#fff" stroke="rgba(15,23,42,.16)" stroke-width="2"/>
-  <path d="M404 204h72" stroke="rgba(14,166,122,.55)" stroke-width="10" stroke-linecap="round"/>
+  <path d="M404 204h72" stroke="rgba(14,142,50,.55)" stroke-width="10" stroke-linecap="round"/>
 
-  <!-- Ring -->
   <rect x="340" y="420" width="160" height="66" rx="33"
         fill="#fff" stroke="rgba(15,23,42,.16)" stroke-width="2"/>
   <circle cx="420" cy="453" r="22" fill="rgba(15,23,42,.08)" stroke="rgba(15,23,42,.14)" stroke-width="2"/>
