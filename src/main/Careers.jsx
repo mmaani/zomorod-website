@@ -547,7 +547,9 @@ export default function Careers() {
                   {submitting ? t.submitting : t.submit}
                 </button>
 
+                <div className="spacer" />
 
+              </div>
 
               {applyErr ? (
                 <div className="banner" style={{ marginTop: 10 }}>
