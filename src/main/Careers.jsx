@@ -9,7 +9,7 @@ const PREVIEW_WORDS = 28; // ~25–30 words
 const UI_COPY = {
   en: {
     title: "Careers",
-    subtitle: "Open vacancies published from our CRM. Apply directly below.",
+    subtitle: "Open vacancies published. Apply directly below.",
     loading: "Loading opportunities…",
     loadError: "Could not load vacancies. Please refresh and try again.",
     empty: "No openings announced at the moment.",
@@ -62,7 +62,7 @@ const UI_COPY = {
 
   ar: {
     title: "الوظائف",
-    subtitle: "الوظائف المفتوحة المنشورة من CRM. يمكن التقديم مباشرة أدناه.",
+    subtitle: "الوظائف المنشورة. يمكن التقديم مباشرة أدناه.",
     loading: "جاري تحميل الفرص…",
     loadError: "تعذر تحميل الوظائف. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
     empty: "لا توجد وظائف معلنة حالياً.",
