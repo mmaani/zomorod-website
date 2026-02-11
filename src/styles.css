@@ -312,12 +312,15 @@ tr:hover td{ background: rgba(255,255,255,.04); }
 
 .site-body{
   flex: 1;
+  padding-top: 88px;
 }
 
 /* Header */
 .site-header{
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 60;
   width: 100%;
   padding: 14px 16px 0;
@@ -492,6 +495,7 @@ tr:hover td{ background: rgba(255,255,255,.04); }
 }
 
 @media (max-width: 520px){
+  .site-body{ padding-top: 76px; }
   .site-header{ padding-top: 10px; }
   .site-brand-tagline{ display: none; }
   .site-logo{ width: 32px; height: 32px; }

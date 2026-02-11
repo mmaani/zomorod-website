@@ -20,8 +20,6 @@ export default function SiteHeader({
       { to: "/products", label: nav.products || "Products" },
       { to: "/careers", label: nav.careers || "Careers" },
       { to: "/contact", label: nav.contact || "Contact" },
-      // ✅ quality after contact
-      { to: "/quality", label: nav.quality || "Quality & Compliance" },
     ];
   }, [t]);
 
@@ -91,12 +89,7 @@ export default function SiteHeader({
               alt={t?.brandShort ? `${t.brandShort} logo` : "Zomorod logo"}
             />
             <div className="site-brand-text">
-              <div className="site-brand-short">
-                {t?.brandShort || "ZOMOROD"}
-              </div>
-              {t?.tagline ? (
-                <div className="site-brand-tagline">{t.tagline}</div>
-              ) : null}
+              <div className="site-brand-short">{t?.brandShort || "ZOMOROD"}</div>
             </div>
           </Link>
 

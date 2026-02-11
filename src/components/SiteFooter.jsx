@@ -22,11 +22,9 @@ export default function SiteFooter({ lang = "en" }) {
         policiesLabel: "السياسات",
         privacy: "سياسة الخصوصية",
         terms: "شروط الاستخدام",
+        quality: "الجودة والامتثال",
         whatsapp: "واتساب",
         linkedinCompany: "لينكدإن الشركة",
-        disclaimerLabel: "إخلاء مسؤولية (الامتثال)",
-        disclaimer:
-          "قد تختلف متطلبات التصنيف والاستيراد والمستندات حسب الوجهة ونوع المنتج. نوفر المستندات المتاحة وإرشادات عملية عند الطلب؛ وتبقى مسؤولية الامتثال النهائية على المستورد والجهات المختصة.",
         rights: "جميع الحقوق محفوظة",
       }
     : {
@@ -43,11 +41,9 @@ export default function SiteFooter({ lang = "en" }) {
         policiesLabel: "Policies",
         privacy: "Privacy Policy",
         terms: "Terms of Use",
+        quality: "Quality & Compliance",
         whatsapp: "WhatsApp",
         linkedinCompany: "Company LinkedIn",
-        disclaimerLabel: "Compliance disclaimer",
-        disclaimer:
-          "Product classification and import documentation requirements vary by destination and product type. We can share available documentation and practical guidance upon request; final compliance responsibility remains with the importer and applicable authorities.",
         rights: "All rights reserved",
       };
 
@@ -108,12 +104,8 @@ export default function SiteFooter({ lang = "en" }) {
               {/* keep as <a href> so it’s crawlable if you later add SSR/prerender */}
               <a href="/privacy">{data.privacy}</a>
               <a href="/terms">{data.terms}</a>
+              <a href="/quality">{data.quality}</a>
             </div>
-
-            <div className="site-footer-h" style={{ marginTop: 12 }}>
-              {data.disclaimerLabel}
-            </div>
-            <div className="site-footer-small">{data.disclaimer}</div>
           </div>
         </div>
 

@@ -39,14 +39,13 @@ export default function Home() {
 
   const COPY = isAr
     ? {
-        heroTitle: t.brandName,
-        heroSub: t.tagline,
-        sla: t.responseSla,
+        heroTitle: "حلول توريد احترافية للمستلزمات الطبية",
+        heroSub: "",
+        sla: "",
 
         ctaQuote: t.ctaQuote,
         ctaProducts: "تصفح المنتجات",
-        ctaCareers: "الوظائف",
-        ctaQuality: "الجودة والامتثال",
+        ctaCareers: "",
 
         quickTitle: "نظرة سريعة",
         metrics: [
@@ -113,14 +112,13 @@ export default function Home() {
         contactCta: "تواصل معنا",
       }
     : {
-        heroTitle: t.brandName,
-        heroSub: t.tagline,
-        sla: t.responseSla,
+        heroTitle: "Professional medical supply solutions",
+        heroSub: "",
+        sla: "",
 
         ctaQuote: t.ctaQuote,
         ctaProducts: "Browse Products",
-        ctaCareers: "Careers",
-        ctaQuality: "Quality & Compliance",
+        ctaCareers: "",
 
         quickTitle: "At a glance",
         metrics: [
@@ -194,31 +192,10 @@ export default function Home() {
         <div className="page-hero-grid">
           <div className="page-hero-copy">
             <SectionHead title={COPY.heroTitle} subtitle={COPY.heroSub} />
-            <div className="pill">{COPY.sla}</div>
 
             <div className="page-hero-actions">
-              <a
-                className="btn btn-primary"
-                href={whatsappQuoteHref}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {COPY.ctaQuote}
-              </a>
               <Link className="btn btn-ghost" to="/products">
                 {COPY.ctaProducts}
-              </Link>
-            </div>
-
-            <div className="page-hero-links">
-              <Link className="text-link" to="/careers">
-                {COPY.ctaCareers}
-              </Link>
-              <span className="dot" aria-hidden="true">
-                •
-              </span>
-              <Link className="text-link" to="/quality">
-                {COPY.ctaQuality}
               </Link>
             </div>
           </div>
@@ -303,19 +280,6 @@ export default function Home() {
               <div className="muted">{COPY.mdRole}</div>
               <div className="md-body">{COPY.mdBody}</div>
 
-              <div className="md-actions">
-                <Link className="btn btn-ghost" to="/contact">
-                  {COPY.contactCta}
-                </Link>
-                <a
-                  className="btn btn-primary"
-                  href={whatsappQuoteHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {COPY.ctaQuote}
-                </a>
-              </div>
             </div>
           </div>
         </div>

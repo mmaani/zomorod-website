@@ -1,7 +1,6 @@
 // src/main/Products.jsx
 import React, { useMemo, useState } from "react";
-import { Link, useOutletContext } from "react-router-dom";
-import { buildWhatsAppLink } from "./MainLayout.jsx";
+import { useOutletContext } from "react-router-dom";
 
 const UI_COPY = {
   en: {
@@ -14,9 +13,7 @@ const UI_COPY = {
       { key: "ppe", label: "PPE" },
       { key: "baby", label: "Baby care" },
     ],
-    ctaQuote: "Get a Quote",
-    ctaQuality: "Quality & Compliance",
-    note: "For faster quoting, include pack unit (piece/box/carton), specification, quantity, and destination city.",
+    note: "",
   },
   ar: {
     title: "المنتجات",
@@ -28,9 +25,7 @@ const UI_COPY = {
       { key: "ppe", label: "معدات الوقاية" },
       { key: "baby", label: "عناية بالأطفال" },
     ],
-    ctaQuote: "احصل على عرض سعر",
-    ctaQuality: "الجودة والامتثال",
-    note: "لتسعير أسرع، اذكر وحدة التعبئة (قطعة/علبة/كرتون) والمواصفات والكمية ومدينة/وجهة التسليم.",
+    note: "",
   },
 };
 
@@ -174,15 +169,6 @@ export default function Products() {
     return items.filter((x) => x.category === filter);
   }, [items, filter]);
 
-  const quoteBase =
-    lang === "ar"
-      ? "مرحباً، أريد عرض سعر. الرجاء تحديد الفئة، المواصفات، وحدة التعبئة، الكمية، ومدينة التسليم."
-      : "Hi, I'd like a quote. Please specify category, specification, pack unit, quantity, and delivery city.";
-  const whatsappQuoteHref = useMemo(
-    () => buildWhatsAppLink(quoteBase),
-    [quoteBase],
-  );
-
   return (
     <main className="page" dir={t?.dir || "ltr"}>
       <section className="card page-section">
@@ -238,23 +224,11 @@ export default function Products() {
           ))}
         </div>
 
-        <div className="mkt-products-footer card-soft">
-          <div className="mkt-products-note">{ui.note}</div>
-
-          <div className="row">
-            <a
-              className="btn btn-primary"
-              href={whatsappQuoteHref}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {ui.ctaQuote}
-            </a>
-            <Link className="btn btn-ghost" to="/quality">
-              {ui.ctaQuality}
-            </Link>
+        {ui.note ? (
+          <div className="mkt-products-footer card-soft">
+            <div className="mkt-products-note">{ui.note}</div>
           </div>
-        </div>
+        ) : null}
       </section>
     </main>
   );
