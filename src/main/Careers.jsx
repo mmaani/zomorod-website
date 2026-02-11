@@ -57,10 +57,7 @@ const UI_COPY = {
       message: "Hello Zomorod, I want to apply for a vacancy. Please advise the next steps.",
     },
 
-    links: {
-      quality: "Quality & compliance",
-      contact: "Contact",
-    },
+
   },
 
   ar: {
@@ -112,10 +109,6 @@ const UI_COPY = {
       message: "مرحباً زمرد، أريد التقديم على وظيفة. يرجى تزويدي بالخطوات التالية.",
     },
 
-    links: {
-      quality: "الجودة والامتثال",
-      contact: "التواصل",
-    },
   },
 };
 
