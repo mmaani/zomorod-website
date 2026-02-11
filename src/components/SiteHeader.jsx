@@ -86,10 +86,12 @@ export default function SiteHeader({
             <img
               className="site-logo"
               src="/logo.png"
-              alt={t?.brandShort ? `${t.brandShort} logo` : "Zomorod logo"}
+              alt={t?.brandName ? `${t.brandName} logo` : "Zomorod logo"}
             />
             <div className="site-brand-text">
-              <div className="site-brand-short">{t?.brandShort || "ZOMOROD"}</div>
+              <div className="site-brand-short">
+                {t?.brandName || "Zomorod Medical Supplies LLC"}
+              </div>
             </div>
           </Link>
 

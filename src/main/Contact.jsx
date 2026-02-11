@@ -173,6 +173,21 @@ export default function Contact() {
               {copy.note}
             </p>
           </div>
+
+          <div className="card-soft contact-map-card">
+            <div className="contact-label" style={{ marginBottom: 10 }}>
+              {lang === "ar" ? "الموقع على الخريطة" : "Location on map"}
+            </div>
+            <div className="contact-map-frame-wrap">
+              <iframe
+                title={lang === "ar" ? "موقع الشركة" : "Company location"}
+                src="https://www.google.com/maps?q=Sport+City+Circle,+Amman,+Jordan&output=embed"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                className="contact-map-frame"
+              />
+            </div>
+          </div>
         </div>
       </section>
     </main>
