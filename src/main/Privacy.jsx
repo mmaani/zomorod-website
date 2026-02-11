@@ -1,146 +1,78 @@
-// src/main/Privacy.jsx
 import React, { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 
 const PRIVACY_COPY = {
   en: {
     title: "Privacy Policy",
-    updated: "Last updated",
+    updated: "Updated",
+    date: "2026-02-11",
     intro:
-      "This Privacy Policy explains how Zomorod Medical Supplies LLC (“Zomorod”, “we”, “us”) collects, uses, and protects personal data when you use this website.",
+      "This policy explains what personal data we collect through this website and how we handle it.",
     sections: [
       {
-        h: "1) Data controller",
-        body: (
-          <>
-            Zomorod Medical Supplies LLC
-            <br />
-            Sport City Circle, Amman, Jordan
-            <br />
-            Email:{" "}
-            <a className="ltr" href="mailto:info@zomorodmedical.com">
-              <bdi>info@zomorodmedical.com</bdi>
-            </a>
-          </>
-        ),
+        h: "Who controls your data",
+        body: "Zomorod Medical Supplies LLC, Amman, Jordan. For any privacy request, contact info@zomorodmedical.com.",
       },
       {
-        h: "2) Data we collect",
-        list: [
-          {
-            b: "Contact messages:",
-            t: "name, email, phone number, and the content of your request (if you email us).",
-          },
-          {
-            b: "Recruitment applications (if enabled):",
-            t: "name, email, phone, country/city, education level, CV file, and optional cover letter.",
-          },
-          {
-            b: "Technical data:",
-            t: "basic logs needed to operate and secure the site (e.g., IP address, timestamps), collected by hosting and security systems.",
-          },
+        h: "What we collect",
+        items: [
+          "Contact details you submit (name, email, phone, and message).",
+          "Recruitment details if you apply for a job (CV and applicant information).",
+          "Basic technical logs needed for security and website operation.",
         ],
       },
       {
-        h: "3) How we use your data",
-        list: [
-          { t: "To respond to quote requests and business inquiries." },
-          {
-            t: "To process recruitment applications and communicate with applicants.",
-          },
-          {
-            t: "To maintain site security, prevent abuse, and improve reliability.",
-          },
+        h: "How we use data",
+        items: [
+          "To answer business inquiries and quote requests.",
+          "To process recruitment applications.",
+          "To maintain service quality and protect the site from abuse.",
         ],
       },
       {
-        h: "4) Sharing",
-        body: "We do not sell personal data. We may share limited data with service providers that help us run the website (hosting, email delivery, file storage) and only as needed to provide the service.",
+        h: "Sharing and retention",
+        body: "We do not sell personal data. Limited data may be processed by trusted providers (hosting/email/storage) only when needed. Data is kept only for a reasonable operational or legal period.",
       },
       {
-        h: "5) Retention",
-        body: "We retain data only as long as necessary for the purposes described above, unless a longer period is required for legitimate business needs or legal obligations. Recruitment files may be kept for a reasonable period to evaluate candidates and maintain hiring records.",
-      },
-      {
-        h: "6) Security",
-        body: "We use reasonable administrative and technical measures to protect data. However, no system can be guaranteed 100% secure.",
-      },
-      {
-        h: "7) Your choices",
-        body: "You may request access, correction, or deletion of your personal data by emailing us.",
-      },
-      {
-        h: "8) Updates",
-        body: "We may update this policy from time to time. The latest version will be posted on this page.",
+        h: "Your rights",
+        body: "You can request access, correction, or deletion of your personal data by email.",
       },
     ],
   },
-
   ar: {
     title: "سياسة الخصوصية",
     updated: "آخر تحديث",
+    date: "2026-02-11",
     intro:
-      "توضح هذه السياسة كيفية قيام شركة زمرد للمستلزمات الطبية ذ.م.م (“زمرد”، “نحن”) بجمع واستخدام وحماية البيانات الشخصية عند استخدامك لهذا الموقع.",
+      "توضح هذه السياسة البيانات الشخصية التي نجمعها عبر الموقع وكيفية التعامل معها.",
     sections: [
       {
-        h: "1) الجهة المتحكمة بالبيانات",
-        body: (
-          <>
-            شركة زمرد للمستلزمات الطبية ذ.م.م
-            <br />
-            Sport City Circle, Amman, Jordan
-            <br />
-            البريد الإلكتروني:{" "}
-            <a className="ltr" href="mailto:info@zomorodmedical.com">
-              <bdi>info@zomorodmedical.com</bdi>
-            </a>
-          </>
-        ),
+        h: "الجهة المسؤولة عن البيانات",
+        body: "شركة زمرد للمستلزمات الطبية ذ.م.م، عمّان - الأردن. لطلبات الخصوصية: info@zomorodmedical.com",
       },
       {
-        h: "2) البيانات التي نجمعها",
-        list: [
-          {
-            b: "رسائل التواصل:",
-            t: "الاسم والبريد الإلكتروني ورقم الهاتف ومحتوى الطلب (في حال مراسلتنا عبر البريد).",
-          },
-          {
-            b: "طلبات التوظيف (إذا كانت مفعّلة):",
-            t: "الاسم والبريد الإلكتروني ورقم الهاتف والبلد/المدينة والمؤهل العلمي وملف السيرة الذاتية ورسالة تغطية اختيارية.",
-          },
-          {
-            b: "بيانات تقنية:",
-            t: "سجلات تشغيل أساسية لازمة لأمن الموقع وموثوقيته (مثل عنوان IP والطوابع الزمنية)، تجمعها أنظمة الاستضافة والحماية.",
-          },
+        h: "ما الذي نجمعه",
+        items: [
+          "بيانات التواصل التي ترسلها (الاسم، البريد، الهاتف، ومحتوى الرسالة).",
+          "بيانات التوظيف عند التقديم على وظيفة (السيرة الذاتية وبيانات المتقدم).",
+          "سجلات تقنية أساسية لتشغيل الموقع وحمايته.",
         ],
       },
       {
-        h: "3) كيف نستخدم بياناتك",
-        list: [
-          { t: "للرد على طلبات عروض الأسعار والاستفسارات التجارية." },
-          { t: "لمعالجة طلبات التوظيف والتواصل مع المتقدمين." },
-          { t: "لأمن الموقع ومنع إساءة الاستخدام وتحسين الموثوقية." },
+        h: "كيف نستخدم البيانات",
+        items: [
+          "للرد على الاستفسارات وطلبات عروض الأسعار.",
+          "لمعالجة طلبات التوظيف.",
+          "لتحسين الموثوقية وحماية الموقع من إساءة الاستخدام.",
         ],
       },
       {
-        h: "4) مشاركة البيانات",
-        body: "لا نقوم ببيع البيانات الشخصية. قد نشارك بيانات محدودة مع مزودي خدمات يساعدوننا في تشغيل الموقع (الاستضافة، البريد، التخزين) وبالقدر اللازم لتقديم الخدمة.",
+        h: "المشاركة ومدة الاحتفاظ",
+        body: "لا نقوم ببيع البيانات الشخصية. قد تتم معالجة بيانات محدودة عبر مزودين موثوقين (استضافة/بريد/تخزين) عند الحاجة فقط. يتم الاحتفاظ بالبيانات لمدة تشغيلية أو قانونية معقولة.",
       },
       {
-        h: "5) مدة الاحتفاظ",
-        body: "نحتفظ بالبيانات فقط للمدة اللازمة للأغراض المذكورة أعلاه، ما لم تلزم مدة أطول لاحتياجات تشغيلية مشروعة أو التزامات قانونية. قد تُحفظ ملفات التوظيف لمدة معقولة لتقييم المرشحين والاحتفاظ بسجلات التوظيف.",
-      },
-      {
-        h: "6) الأمان",
-        body: "نستخدم تدابير إدارية وتقنية معقولة لحماية البيانات، ومع ذلك لا يمكن ضمان الأمان بنسبة 100%.",
-      },
-      {
-        h: "7) خياراتك",
-        body: "يمكنك طلب الوصول إلى بياناتك أو تصحيحها أو حذفها عبر مراسلتنا بالبريد الإلكتروني.",
-      },
-      {
-        h: "8) التحديثات",
-        body: "قد نقوم بتحديث هذه السياسة من وقت لآخر، وسيتم نشر أحدث نسخة على هذه الصفحة.",
+        h: "حقوقك",
+        body: "يمكنك طلب الوصول أو التصحيح أو الحذف عبر البريد الإلكتروني.",
       },
     ],
   },
@@ -148,63 +80,42 @@ const PRIVACY_COPY = {
 
 export default function Privacy() {
   const { lang } = useOutletContext();
-  const isAr = lang === "ar";
-
-  const c = useMemo(() => (isAr ? PRIVACY_COPY.ar : PRIVACY_COPY.en), [isAr]);
-
-  const today = useMemo(() => {
-    try {
-      return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    } catch {
-      return "";
-    }
-  }, []);
+  const copy = useMemo(() => PRIVACY_COPY[lang] || PRIVACY_COPY.en, [lang]);
 
   return (
-    <div className="page">
-      <section className="card page-section">
-        <div className="page-head">
-          <h1 className="h2">{c.title}</h1>
-          <p className="p">{c.intro}</p>
-
-          <div className="badge" style={{ width: "fit-content" }}>
-            {c.updated}: <bdi style={{ marginInlineStart: 6 }}>{today}</bdi>
+    <main className="page" dir={lang === "ar" ? "rtl" : "ltr"}>
+      <section className="card page-section legal-shell">
+        <div className="page-head legal-head">
+          <h1 className="h2" style={{ margin: 0 }}>
+            {copy.title}
+          </h1>
+          <div className="legal-updated">
+            {copy.updated}: <bdi>{copy.date}</bdi>
           </div>
+          <p className="p" style={{ margin: 0 }}>
+            {copy.intro}
+          </p>
         </div>
 
-        <div className="hr" />
-
-        <div className="grid" style={{ gap: 14 }}>
-          {c.sections.map((s) => (
-            <div
-              key={s.h}
-              className="card"
-              style={{ padding: 16, background: "rgba(255,255,255,.03)" }}
-            >
-              <div className="h2" style={{ fontSize: 16, margin: 0 }}>
-                {s.h}
-              </div>
-
-              {"body" in s ? (
-                <p className="p" style={{ marginTop: 8, marginBottom: 0 }}>
-                  {s.body}
-                </p>
-              ) : null}
-
-              {"list" in s ? (
-                <ul className="mkt-list" style={{ marginTop: 10 }}>
-                  {s.list.map((it, idx) => (
-                    <li key={idx}>
-                      {it.b ? <strong>{it.b} </strong> : null}
-                      {it.t}
-                    </li>
+        <div className="legal-grid">
+          {copy.sections.map((s) => (
+            <article key={s.h} className="card-soft legal-card">
+              <h2 className="legal-card-title">{s.h}</h2>
+              {Array.isArray(s.items) ? (
+                <ul className="legal-list">
+                  {s.items.map((it) => (
+                    <li key={it}>{it}</li>
                   ))}
                 </ul>
-              ) : null}
-            </div>
+              ) : (
+                <p className="p" style={{ margin: 0 }}>
+                  {s.body}
+                </p>
+              )}
+            </article>
           ))}
         </div>
       </section>
-    </div>
+    </main>
   );
 }

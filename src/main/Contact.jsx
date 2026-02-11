@@ -1,10 +1,28 @@
-// src/main/Contact.jsx
 import React, { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 
 const COMPANY_LINKEDIN =
   "https://www.linkedin.com/company/zomorod-medical-supplies";
 const MD_LINKEDIN = "https://www.linkedin.com/in/mohammadamaani/";
+
+function LinkedInIcon({ title = "LinkedIn" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      aria-hidden="true"
+      focusable="false"
+      role="img"
+    >
+      <title>{title}</title>
+      <path
+        fill="currentColor"
+        d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5ZM.5 8.5H4.5V24H.5V8.5ZM8.5 8.5H12.3V10.6H12.36C12.89 9.6 14.2 8.5 16.2 8.5 20.3 8.5 21 11.1 21 14.5V24H17V15.6C17 13.6 17 11.9 15.2 11.9 13.4 11.9 13.1 13.3 13.1 15.5V24H9.1V8.5H8.5Z"
+      />
+    </svg>
+  );
+}
 
 export default function Contact() {
   const { lang, t, whatsappQuoteHref } = useOutletContext();
@@ -15,44 +33,42 @@ export default function Contact() {
       ? {
           title: "التواصل",
           subtitle:
-            "للطلبات وعروض الأسعار: أسرع طريقة هي إرسال التفاصيل عبر واتساب (الفئة، المواصفات، وحدة التعبئة، الكمية، ومدينة/وجهة التسليم).",
-          cards: {
+            "يمكنكم التواصل معنا مباشرة عبر البريد أو الهاتف أو واتساب. سنرد خلال يومي عمل عادةً.",
+          labels: {
             email: "البريد الإلكتروني",
             phone: "الهاتف",
-            address: "العنوان",
             whatsapp: "واتساب",
+            address: "العنوان",
             linkedin: "لينكدإن",
+            businessHours: "ساعات العمل",
           },
           address: "Sport City Circle, Amman, Jordan",
-          noteTitle: "ملاحظة (الامتثال)",
-          note: "قد تختلف متطلبات التصنيف والاستيراد والمستندات حسب الوجهة ونوع المنتج. نوفر المستندات المتاحة وإرشادات عملية عند الطلب؛ وتبقى مسؤولية الامتثال النهائية على المستورد ومتطلبات الجهات المختصة.",
-          ctas: {
-            quote: "احصل على عرض سعر",
-            staff: "دخول الموظفين",
-            companyLinkedIn: "صفحة الشركة على لينكدإن",
-            mdLinkedIn: "لينكدإن المدير العام",
-          },
+          hours: "الأحد–الخميس | 9:00 ص – 5:00 م",
+          companyLinkedIn: "صفحة الشركة",
+          mdLinkedIn: "المدير العام",
+          noteTitle: "قبل إرسال الطلب",
+          note:
+            "لتحصل على رد أسرع، أرسل الفئة + المواصفات + وحدة التعبئة + الكمية + مدينة التسليم.",
         }
       : {
           title: "Contact",
           subtitle:
-            "For quotes and orders, the fastest way is WhatsApp with: category, specification, pack unit, quantity, and delivery city/destination.",
-          cards: {
+            "You can reach us directly by email, phone, or WhatsApp. Typical response time is within two business days.",
+          labels: {
             email: "Email",
             phone: "Phone",
-            address: "Address",
             whatsapp: "WhatsApp",
+            address: "Address",
             linkedin: "LinkedIn",
+            businessHours: "Business hours",
           },
           address: "Sport City Circle, Amman, Jordan",
-          noteTitle: "Compliance note",
-          note: "Product classification and import documentation requirements vary by destination and product type. We can share available documentation and practical guidance upon request; final compliance responsibility remains with the importer and applicable authorities.",
-          ctas: {
-            quote: "Get a Quote",
-            staff: "Staff Login",
-            companyLinkedIn: "Company LinkedIn",
-            mdLinkedIn: "Managing Director LinkedIn",
-          },
+          hours: "Sunday–Thursday | 9:00 AM – 5:00 PM",
+          companyLinkedIn: "Company page",
+          mdLinkedIn: "Managing Director",
+          noteTitle: "Before you send a request",
+          note:
+            "For faster handling, include category + specification + pack unit + quantity + destination city.",
         };
   }, [lang]);
 
@@ -66,136 +82,96 @@ export default function Contact() {
           <p className="p" style={{ margin: 0 }}>
             {copy.subtitle}
           </p>
-
-          <div className="row" style={{ marginTop: 12 }}>
-            <a
-              className="btn btn-primary"
-              href={whatsappQuoteHref}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {copy.ctas.quote}
-            </a>
-            <a className="btn btn-ghost" href="/crm/login">
-              {copy.ctas.staff}
-            </a>
-          </div>
         </div>
 
         <div className="hr" />
 
-        <div className="grid grid-2">
-          <div className="card" style={{ background: "rgba(255,255,255,.04)" }}>
-            <div className="card-pad">
-              <div className="mkt-contact">
-                <div className="mkt-contact-row">
-                  <div className="mkt-contact-label">{copy.cards.email}</div>
-                  <div>
-                    <a className="ltr" href="mailto:info@zomorodmedical.com">
-                      <bdi>info@zomorodmedical.com</bdi>
-                    </a>
-                  </div>
-                </div>
-
-                <div className="mkt-contact-row">
-                  <div className="mkt-contact-label">{copy.cards.phone}</div>
-                  <div>
-                    <a className="ltr" href="tel:+962791752686">
-                      <bdi>+962 79 175 2686</bdi>
-                    </a>
-                  </div>
-                </div>
-
-                <div className="mkt-contact-row">
-                  <div className="mkt-contact-label">{copy.cards.address}</div>
-                  <div className="ltr">
-                    <bdi>{copy.address}</bdi>
-                  </div>
-                </div>
-
-                <div className="mkt-contact-row">
-                  <div className="mkt-contact-label">{copy.cards.whatsapp}</div>
-                  <div>
-                    <a
-                      className="ltr"
-                      href={whatsappQuoteHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <bdi>wa.me/962791752686</bdi>
-                    </a>
-                  </div>
-                </div>
-
-                <div className="mkt-contact-row">
-                  <div className="mkt-contact-label">{copy.cards.linkedin}</div>
-                  <div className="row" style={{ gap: 10 }}>
-                    <a
-                      className="ltr"
-                      href={COMPANY_LINKEDIN}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <bdi>{copy.ctas.companyLinkedIn}</bdi>
-                    </a>
-                    <span className="muted">•</span>
-                    <a
-                      className="ltr"
-                      href={MD_LINKEDIN}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <bdi>{copy.ctas.mdLinkedIn}</bdi>
-                    </a>
-                  </div>
-                </div>
+        <div className="contact-grid">
+          <div className="card-soft">
+            <div className="contact-item">
+              <div className="contact-label">{copy.labels.email}</div>
+              <div className="contact-value">
+                <a className="ltr" href="mailto:info@zomorodmedical.com">
+                  <bdi>info@zomorodmedical.com</bdi>
+                </a>
               </div>
+            </div>
 
-              <div className="row" style={{ marginTop: 14 }}>
+            <div className="contact-item">
+              <div className="contact-label">{copy.labels.phone}</div>
+              <div className="contact-value">
+                <a className="ltr" href="tel:+962791752686">
+                  <bdi>+962 79 175 2686</bdi>
+                </a>
+              </div>
+            </div>
+
+            <div className="contact-item">
+              <div className="contact-label">{copy.labels.whatsapp}</div>
+              <div className="contact-value">
                 <a
-                  className="btn btn-primary"
+                  className="ltr"
                   href={whatsappQuoteHref}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  {copy.ctas.quote}
-                </a>
-                <a
-                  className="btn btn-ghost"
-                  href={COMPANY_LINKEDIN}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {copy.ctas.companyLinkedIn}
+                  <bdi>wa.me/962791752686</bdi>
                 </a>
               </div>
+            </div>
+
+            <div className="contact-item">
+              <div className="contact-label">{copy.labels.address}</div>
+              <div className="contact-value ltr">
+                <bdi>{copy.address}</bdi>
+              </div>
+            </div>
+
+            <div className="contact-item">
+              <div className="contact-label">{copy.labels.businessHours}</div>
+              <div className="contact-value">{copy.hours}</div>
             </div>
           </div>
 
-          <div className="card" style={{ background: "rgba(255,255,255,.04)" }}>
-            <div className="card-pad">
-              <div className="h2" style={{ fontSize: 16, margin: "0 0 8px 0" }}>
-                {copy.noteTitle}
-              </div>
-              <p className="p" style={{ margin: 0 }}>
-                {copy.note}
-              </p>
-
-              <div className="hr" />
-
-              <div className="grid" style={{ gap: 10 }}>
-                <div className="badge badge-strong">
-                  {lang === "ar"
-                    ? "نصيحة للعرض السريع"
-                    : "Tip for fastest quote"}
-                </div>
-                <div className="muted" style={{ fontSize: 13 }}>
-                  {lang === "ar"
-                    ? "أرسل: الفئة + المواصفات + وحدة التعبئة + الكمية + مدينة/وجهة التسليم."
-                    : "Send: category + specification + pack unit + quantity + delivery city/destination."}
-                </div>
-              </div>
+          <div className="card-soft">
+            <div className="contact-label" style={{ marginBottom: 10 }}>
+              {copy.labels.linkedin}
             </div>
+
+            <div className="contact-links-stack">
+              <a
+                className="contact-link-chip ltr"
+                href={COMPANY_LINKEDIN}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span className="contact-link-icon" aria-hidden="true">
+                  <LinkedInIcon title="LinkedIn" />
+                </span>
+                <bdi>{copy.companyLinkedIn}</bdi>
+              </a>
+
+              <a
+                className="contact-link-chip ltr"
+                href={MD_LINKEDIN}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span className="contact-link-icon" aria-hidden="true">
+                  <LinkedInIcon title="LinkedIn" />
+                </span>
+                <bdi>{copy.mdLinkedIn}</bdi>
+              </a>
+            </div>
+
+            <div className="hr" />
+
+            <div className="contact-label" style={{ marginBottom: 8 }}>
+              {copy.noteTitle}
+            </div>
+            <p className="p" style={{ margin: 0 }}>
+              {copy.note}
+            </p>
           </div>
         </div>
       </section>

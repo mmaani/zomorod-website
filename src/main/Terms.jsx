@@ -1,168 +1,103 @@
-// src/main/Terms.jsx
 import React, { useMemo } from "react";
-import { Link, useOutletContext } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
+
+const TERMS_COPY = {
+  en: {
+    title: "Terms of Use",
+    updated: "Updated",
+    date: "2026-02-11",
+    intro:
+      "These terms govern the use of the Zomorod website. By using the site, you agree to these terms.",
+    sections: [
+      {
+        h: "Website purpose",
+        body: "This website provides general company, product-category, and contact information. Product availability and commercial terms are confirmed only through direct communication.",
+      },
+      {
+        h: "Accuracy of information",
+        body: "We aim to keep content accurate and up to date, but we do not guarantee that all details are complete at all times.",
+      },
+      {
+        h: "Intellectual property",
+        body: "All website content (text, design, logos, and media) is owned by Zomorod or used with permission and may not be copied or reused without authorization.",
+      },
+      {
+        h: "External links",
+        body: "The site may include links to third-party services. We are not responsible for the content or policies of those external websites.",
+      },
+      {
+        h: "Limitation of liability",
+        body: "Zomorod is not liable for indirect losses resulting from website use, interruptions, or technical issues.",
+      },
+      {
+        h: "Updates to terms",
+        body: "We may revise these terms when needed. The latest version on this page is the applicable version.",
+      },
+    ],
+  },
+  ar: {
+    title: "شروط الاستخدام",
+    updated: "آخر تحديث",
+    date: "2026-02-11",
+    intro:
+      "تحكم هذه الشروط استخدام موقع زمرد. باستخدامك للموقع فأنت توافق على هذه الشروط.",
+    sections: [
+      {
+        h: "غرض الموقع",
+        body: "يوفر هذا الموقع معلومات عامة عن الشركة وفئات المنتجات ووسائل التواصل. تأكيد التوفر والشروط التجارية يتم عبر التواصل المباشر فقط.",
+      },
+      {
+        h: "دقة المعلومات",
+        body: "نسعى لتحديث المحتوى باستمرار، لكن لا نضمن اكتمال جميع التفاصيل في كل وقت.",
+      },
+      {
+        h: "الملكية الفكرية",
+        body: "جميع محتويات الموقع (النصوص، التصميم، الشعارات، والوسائط) مملوكة لزمرد أو مستخدمة بتصريح ولا يجوز نسخها أو إعادة استخدامها دون إذن.",
+      },
+      {
+        h: "الروابط الخارجية",
+        body: "قد يحتوي الموقع على روابط لجهات خارجية. لسنا مسؤولين عن محتوى أو سياسات تلك المواقع.",
+      },
+      {
+        h: "حدود المسؤولية",
+        body: "لا تتحمل زمرد أي خسائر غير مباشرة ناتجة عن استخدام الموقع أو انقطاعه أو أي مشكلات تقنية.",
+      },
+      {
+        h: "تحديث الشروط",
+        body: "قد نقوم بتعديل هذه الشروط عند الحاجة. وتعد النسخة المنشورة في هذه الصفحة هي المعتمدة.",
+      },
+    ],
+  },
+};
 
 export default function Terms() {
-  const outlet = useOutletContext() || {};
-  const lang = outlet.lang || "en";
-  const isAr = lang === "ar";
-
-  const c = useMemo(() => {
-    if (isAr) {
-      return {
-        title: "شروط الاستخدام",
-        intro:
-          "تحكم هذه الشروط استخدامك لهذا الموقع الذي تديره شركة زمرد للمستلزمات الطبية ذ.م.م (“زمرد”). باستخدامك للموقع، فإنك توافق على هذه الشروط.",
-        sections: [
-          {
-            h: "1) معلومات الشركة",
-            body: (
-              <>
-                <b>شركة زمرد للمستلزمات الطبيه ذ.م.م</b>
-                <br />
-                العنوان:{" "}
-                <span className="ltr">Sport City Circle, Amman, Jordan</span>
-                <br />
-                الرقم الوطني: <bdi>200182261</bdi> • رقم التسجيل:{" "}
-                <bdi>60228</bdi>
-                <br />
-                البريد:{" "}
-                <a className="ltr" href="mailto:info@zomorodmedical.com">
-                  <bdi>info@zomorodmedical.com</bdi>
-                </a>
-              </>
-            ),
-          },
-          {
-            h: "2) طبيعة المعلومات (لا تُعد استشارة)",
-            body: "المحتوى المعروض على هذا الموقع لأغراض معلوماتية وتجارية عامة فقط، ولا يشكل استشارة طبية أو تنظيمية أو قانونية.",
-          },
-          {
-            h: "3) عروض الأسعار والتوفر والمستندات",
-            body: "عروض الأسعار والتوفر خاضعة للتأكيد عند الطلب. قد تختلف متطلبات تصنيف المنتج والاستيراد والمستندات حسب الوجهة ونوع المنتج. قد نوفر المستندات المتاحة وإرشادات عملية عند الطلب؛ وتبقى مسؤولية الامتثال النهائية على المستورد والجهات المختصة في بلد الوجهة.",
-          },
-          {
-            h: "4) الاستخدام المقبول",
-            body: "توافق على عدم إساءة استخدام الموقع أو محاولة الوصول غير المصرح به إلى أي جزء منه أو تعطيل خدماته أو نسخ محتواه بشكل غير قانوني.",
-          },
-          {
-            h: "5) الملكية الفكرية",
-            body: "جميع العلامات التجارية والشعارات والمحتوى على هذا الموقع مملوكة لزمرد أو مستخدمة بإذن. لا يجوز نسخها أو إعادة استخدامها دون موافقة خطية مسبقة.",
-          },
-          {
-            h: "6) حدود المسؤولية",
-            body: "إلى الحد الأقصى الذي يسمح به القانون، لا تتحمل زمرد المسؤولية عن أي خسائر غير مباشرة أو تبعية ناتجة عن استخدام الموقع.",
-          },
-          {
-            h: "7) القانون الناظم والاختصاص القضائي",
-            body: "تخضع هذه الشروط للقوانين المعمول بها في الزرقاء – الأردن، وتكون المحاكم المختصة في تلك الولاية القضائية مختصة بأي نزاع.",
-          },
-          {
-            h: "8) التحديثات",
-            body: "قد نقوم بتحديث هذه الشروط من وقت لآخر. سيتم نشر أحدث نسخة على هذه الصفحة.",
-          },
-        ],
-        linksTitle: "روابط",
-        links: {
-          privacy: "سياسة الخصوصية",
-          contact: "التواصل",
-        },
-      };
-    }
-
-    return {
-      title: "Terms of Use",
-      intro:
-        "These Terms govern your use of this website operated by Zomorod Medical Supplies LLC (“Zomorod”, “we”, “us”). By accessing the site, you agree to these Terms.",
-      sections: [
-        {
-          h: "1) Business information",
-          body: (
-            <>
-              <b>Zomorod Medical Supplies LLC</b>
-              <br />
-              Address:{" "}
-              <span className="ltr">Sport City Circle, Amman, Jordan</span>
-              <br />
-              National ID: <bdi>200182261</bdi> • Registration No.:{" "}
-              <bdi>60228</bdi>
-              <br />
-              Email:{" "}
-              <a className="ltr" href="mailto:info@zomorodmedical.com">
-                <bdi>info@zomorodmedical.com</bdi>
-              </a>
-            </>
-          ),
-        },
-        {
-          h: "2) No professional advice",
-          body: "Information on this website is for general business purposes only and does not constitute medical, regulatory, or legal advice.",
-        },
-        {
-          h: "3) Quotes, availability, and documentation",
-          body: "Quotes and availability are subject to confirmation. Product classification and import documentation requirements vary by destination and product type. We can share available documentation and practical guidance upon request; final compliance responsibility remains with the importer and applicable authorities.",
-        },
-        {
-          h: "4) Acceptable use",
-          body: "You agree not to misuse the website, attempt unauthorized access, disrupt services, or copy/redistribute content unlawfully.",
-        },
-        {
-          h: "5) Intellectual property",
-          body: "All trademarks, logos, and website content are owned by Zomorod or used with permission. You may not copy or reuse them without written approval.",
-        },
-        {
-          h: "6) Limitation of liability",
-          body: "To the maximum extent permitted by law, Zomorod is not liable for indirect or consequential losses arising from use of this website.",
-        },
-        {
-          h: "7) Governing law and jurisdiction",
-          body: "These Terms are governed by the laws applicable in Zarqa, Jordan, and disputes shall be subject to the competent courts in that jurisdiction.",
-        },
-        {
-          h: "8) Updates",
-          body: "We may update these Terms from time to time. The latest version will be posted on this page.",
-        },
-      ],
-      linksTitle: "Links",
-      links: {
-        privacy: "Privacy Policy",
-        contact: "Contact",
-      },
-    };
-  }, [isAr]);
+  const { lang } = useOutletContext();
+  const copy = useMemo(() => TERMS_COPY[lang] || TERMS_COPY.en, [lang]);
 
   return (
-    <main className="page">
-      <section className="card page-section">
-        <div className="page-head">
+    <main className="page" dir={lang === "ar" ? "rtl" : "ltr"}>
+      <section className="card page-section legal-shell">
+        <div className="page-head legal-head">
           <h1 className="h2" style={{ margin: 0 }}>
-            {c.title}
+            {copy.title}
           </h1>
+          <div className="legal-updated">
+            {copy.updated}: <bdi>{copy.date}</bdi>
+          </div>
           <p className="p" style={{ margin: 0 }}>
-            {c.intro}
+            {copy.intro}
           </p>
         </div>
 
-        <div className="hr" />
-
-        <div className="grid" style={{ gap: 12 }}>
-          {c.sections.map((s) => (
-            <div key={s.h} className="card-soft">
-              <div className="mkt-card-title">{s.h}</div>
-              <div className="mkt-card-body">{s.body}</div>
-            </div>
+        <div className="legal-grid">
+          {copy.sections.map((s) => (
+            <article key={s.h} className="card-soft legal-card">
+              <h2 className="legal-card-title">{s.h}</h2>
+              <p className="p" style={{ margin: 0 }}>
+                {s.body}
+              </p>
+            </article>
           ))}
-        </div>
-
-        <div className="hr" />
-
-        <div className="row">
-          <div className="muted" style={{ fontWeight: 800 }}>
-            {c.linksTitle}:
-          </div>
-          <Link to="/privacy">{c.links.privacy}</Link>
-          <span className="muted">•</span>
-          <Link to="/contact">{c.links.contact}</Link>
         </div>
       </section>
     </main>

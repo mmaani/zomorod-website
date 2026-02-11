@@ -402,7 +402,7 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   background: transparent;
   cursor: pointer;
   font-weight: 800;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .site-navlink:hover{
@@ -551,6 +551,34 @@ tr:hover td{ background: rgba(255,255,255,.04); }
 }
 
 .page-intro{ max-width: 78ch; }
+
+.legal-shell{ display: grid; gap: 16px; }
+.legal-head{ gap: 10px; }
+.legal-updated{
+  font-size: 12px;
+  color: var(--muted-2);
+  font-weight: 700;
+}
+
+.legal-grid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.legal-card{ display: grid; gap: 8px; }
+.legal-card-title{ margin: 0; font-size: 18px; }
+
+.legal-list{
+  margin: 0;
+  padding-inline-start: 18px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+@media (max-width: 860px){
+  .legal-grid{ grid-template-columns: 1fr; }
+}
 
 /* Home hero */
 .page-hero{
@@ -1085,6 +1113,34 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.contact-links-stack{
+  display: grid;
+  gap: 10px;
+}
+
+.contact-link-chip{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--text);
+  text-decoration: none;
+  background: rgba(255,255,255,0.04);
+}
+.contact-link-chip:hover{ background: rgba(255,255,255,0.08); text-decoration: none; }
+
+.contact-link-icon{
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #7dd3fc;
 }
 
 /* ================================
