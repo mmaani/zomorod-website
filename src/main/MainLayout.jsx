@@ -39,7 +39,8 @@ const COPY = {
     mdLinkedInLabel: "LinkedIn",
     mdLinkedInUrl: "https://www.linkedin.com/in/mohammadamaani/",
     companyLinkedInLabel: "Company LinkedIn",
-    companyLinkedInUrl: "https://www.linkedin.com/company/zomorod-medical-supplies",
+    companyLinkedInUrl:
+      "https://www.linkedin.com/company/zomorod-medical-supplies",
   },
 
   ar: {
@@ -67,7 +68,8 @@ const COPY = {
     mdLinkedInLabel: "لينكدإن",
     mdLinkedInUrl: "https://www.linkedin.com/in/mohammadamaani/",
     companyLinkedInLabel: "لينكدإن الشركة",
-    companyLinkedInUrl: "https://www.linkedin.com/company/zomorod-medical-supplies",
+    companyLinkedInUrl:
+      "https://www.linkedin.com/company/zomorod-medical-supplies",
   },
 };
 
@@ -75,7 +77,10 @@ export default function MainLayout() {
   const [lang, setLang] = useState("en");
   const t = useMemo(() => COPY[lang] || COPY.en, [lang]);
 
-  const whatsappQuoteHref = useMemo(() => buildWhatsAppLink(t.quoteBase), [t.quoteBase]);
+  const whatsappQuoteHref = useMemo(
+    () => buildWhatsAppLink(t.quoteBase),
+    [t.quoteBase],
+  );
 
   return (
     <div className="site" dir={t.dir}>

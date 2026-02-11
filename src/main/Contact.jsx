@@ -2,7 +2,8 @@
 import React, { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 
-const COMPANY_LINKEDIN = "https://www.linkedin.com/company/zomorod-medical-supplies";
+const COMPANY_LINKEDIN =
+  "https://www.linkedin.com/company/zomorod-medical-supplies";
 const MD_LINKEDIN = "https://www.linkedin.com/in/mohammadamaani/";
 
 export default function Contact() {
@@ -24,8 +25,7 @@ export default function Contact() {
           },
           address: "Sport City Circle, Amman, Jordan",
           noteTitle: "ملاحظة (الامتثال)",
-          note:
-            "قد تختلف متطلبات التصنيف والاستيراد والمستندات حسب الوجهة ونوع المنتج. نوفر المستندات المتاحة وإرشادات عملية عند الطلب؛ وتبقى مسؤولية الامتثال النهائية على المستورد ومتطلبات الجهات المختصة.",
+          note: "قد تختلف متطلبات التصنيف والاستيراد والمستندات حسب الوجهة ونوع المنتج. نوفر المستندات المتاحة وإرشادات عملية عند الطلب؛ وتبقى مسؤولية الامتثال النهائية على المستورد ومتطلبات الجهات المختصة.",
           ctas: {
             quote: "احصل على عرض سعر",
             staff: "دخول الموظفين",
@@ -46,8 +46,7 @@ export default function Contact() {
           },
           address: "Sport City Circle, Amman, Jordan",
           noteTitle: "Compliance note",
-          note:
-            "Product classification and import documentation requirements vary by destination and product type. We can share available documentation and practical guidance upon request; final compliance responsibility remains with the importer and applicable authorities.",
+          note: "Product classification and import documentation requirements vary by destination and product type. We can share available documentation and practical guidance upon request; final compliance responsibility remains with the importer and applicable authorities.",
           ctas: {
             quote: "Get a Quote",
             staff: "Staff Login",
@@ -69,7 +68,12 @@ export default function Contact() {
           </p>
 
           <div className="row" style={{ marginTop: 12 }}>
-            <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+            <a
+              className="btn btn-primary"
+              href={whatsappQuoteHref}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               {copy.ctas.quote}
             </a>
             <a className="btn btn-ghost" href="/crm/login">
@@ -112,7 +116,12 @@ export default function Contact() {
                 <div className="mkt-contact-row">
                   <div className="mkt-contact-label">{copy.cards.whatsapp}</div>
                   <div>
-                    <a className="ltr" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+                    <a
+                      className="ltr"
+                      href={whatsappQuoteHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <bdi>wa.me/962791752686</bdi>
                     </a>
                   </div>
@@ -121,11 +130,21 @@ export default function Contact() {
                 <div className="mkt-contact-row">
                   <div className="mkt-contact-label">{copy.cards.linkedin}</div>
                   <div className="row" style={{ gap: 10 }}>
-                    <a className="ltr" href={COMPANY_LINKEDIN} target="_blank" rel="noopener noreferrer">
+                    <a
+                      className="ltr"
+                      href={COMPANY_LINKEDIN}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <bdi>{copy.ctas.companyLinkedIn}</bdi>
                     </a>
                     <span className="muted">•</span>
-                    <a className="ltr" href={MD_LINKEDIN} target="_blank" rel="noopener noreferrer">
+                    <a
+                      className="ltr"
+                      href={MD_LINKEDIN}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <bdi>{copy.ctas.mdLinkedIn}</bdi>
                     </a>
                   </div>
@@ -133,10 +152,20 @@ export default function Contact() {
               </div>
 
               <div className="row" style={{ marginTop: 14 }}>
-                <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+                <a
+                  className="btn btn-primary"
+                  href={whatsappQuoteHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {copy.ctas.quote}
                 </a>
-                <a className="btn btn-ghost" href={COMPANY_LINKEDIN} target="_blank" rel="noopener noreferrer">
+                <a
+                  className="btn btn-ghost"
+                  href={COMPANY_LINKEDIN}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {copy.ctas.companyLinkedIn}
                 </a>
               </div>
@@ -156,7 +185,9 @@ export default function Contact() {
 
               <div className="grid" style={{ gap: 10 }}>
                 <div className="badge badge-strong">
-                  {lang === "ar" ? "نصيحة للعرض السريع" : "Tip for fastest quote"}
+                  {lang === "ar"
+                    ? "نصيحة للعرض السريع"
+                    : "Tip for fastest quote"}
                 </div>
                 <div className="muted" style={{ fontSize: 13 }}>
                   {lang === "ar"

@@ -91,7 +91,9 @@ export default function SiteHeader({
               alt={t?.brandShort ? `${t.brandShort} logo` : "Zomorod logo"}
             />
             <div className="site-brand-text">
-              <div className="site-brand-short">{t?.brandShort || "ZOMOROD"}</div>
+              <div className="site-brand-short">
+                {t?.brandShort || "ZOMOROD"}
+              </div>
               {t?.tagline ? (
                 <div className="site-brand-tagline">{t.tagline}</div>
               ) : null}
@@ -99,7 +101,10 @@ export default function SiteHeader({
           </Link>
 
           {/* Desktop nav */}
-          <nav className="site-nav desktop-only" aria-label="Primary navigation">
+          <nav
+            className="site-nav desktop-only"
+            aria-label="Primary navigation"
+          >
             {navItems.map((it) => (
               <NavLink
                 key={it.to}
@@ -130,14 +135,22 @@ export default function SiteHeader({
               {t?.ctaQuote || "Get a Quote"}
             </a>
 
-            <button type="button" className="btn btn-ghost" onClick={handleToggleLang}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={handleToggleLang}
+            >
               {t?.langLabel || (lang === "ar" ? "EN" : "عربي")}
             </button>
           </div>
 
           {/* Mobile actions */}
           <div className="site-actions mobile-only">
-            <button type="button" className="btn btn-ghost" onClick={handleToggleLang}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={handleToggleLang}
+            >
               {t?.langLabel || (lang === "ar" ? "EN" : "عربي")}
             </button>
 
@@ -176,7 +189,11 @@ export default function SiteHeader({
           </div>
 
           <div className="site-mobile-actions">
-            <Link to="/login" className="btn btn-ghost w-full" onClick={() => setMenuOpen(false)}>
+            <Link
+              to="/login"
+              className="btn btn-ghost w-full"
+              onClick={() => setMenuOpen(false)}
+            >
               {t?.ctaStaff || "Staff Login"}
             </Link>
 

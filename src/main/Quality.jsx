@@ -161,7 +161,8 @@ export default function Quality() {
             href: "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:52013XC1123(01)",
           },
           {
-            label: "ISO 13485:2016 — Quality management systems for medical devices",
+            label:
+              "ISO 13485:2016 — Quality management systems for medical devices",
             href: "https://www.iso.org/standard/59752.html",
           },
         ],
@@ -321,7 +322,8 @@ export default function Quality() {
           href: "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:52013XC1123(01)",
         },
         {
-          label: "ISO 13485:2016 — Quality management systems for medical devices",
+          label:
+            "ISO 13485:2016 — Quality management systems for medical devices",
           href: "https://www.iso.org/standard/59752.html",
         },
       ],
@@ -352,7 +354,12 @@ export default function Quality() {
               {copy.ctaContact}
             </Link>
             <span className="spacer" />
-            <span className="badge">{t?.responseSla || (isAr ? "الرد خلال 48 ساعة عمل." : "Reply within 48 business hours.")}</span>
+            <span className="badge">
+              {t?.responseSla ||
+                (isAr
+                  ? "الرد خلال 48 ساعة عمل."
+                  : "Reply within 48 business hours.")}
+            </span>
           </div>
         </div>
       </section>
@@ -411,7 +418,12 @@ export default function Quality() {
             <ul className="mkt-list" style={{ margin: 0 }}>
               {copy.refs.map((r) => (
                 <li key={r.href}>
-                  <a className="ltr" href={r.href} target="_blank" rel="noopener noreferrer">
+                  <a
+                    className="ltr"
+                    href={r.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <bdi>{r.label}</bdi>
                   </a>
                 </li>
