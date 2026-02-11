@@ -109,6 +109,7 @@ const UI_COPY = {
       message: "مرحباً زمرد، أريد التقديم على وظيفة. يرجى تزويدي بالخطوات التالية.",
     },
 
+
   },
 };
 
@@ -546,15 +547,7 @@ export default function Careers() {
                   {submitting ? t.submitting : t.submit}
                 </button>
 
-                <div className="spacer" />
 
-                <Link className="btn btn-ghost" to="/quality">
-                  {t.links.quality}
-                </Link>
-                <Link className="btn btn-ghost" to="/contact">
-                  {t.links.contact}
-                </Link>
-              </div>
 
               {applyErr ? (
                 <div className="banner" style={{ marginTop: 10 }}>
