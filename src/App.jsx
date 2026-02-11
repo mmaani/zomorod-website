@@ -1,7 +1,18 @@
+// src/App.jsx
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import MarketingPage from "./marketing/MarketingPage.jsx";
+/* ===== Public site (main) ===== */
+import MainLayout from "./main/MainLayout.jsx";
+import Home from "./main/Home.jsx";
+import Products from "./main/Products.jsx";
+import Quality from "./main/Quality.jsx";
+import Careers from "./main/Careers.jsx";
+import Contact from "./main/Contact.jsx";
+import Privacy from "./main/Privacy.jsx";
+import Terms from "./main/Terms.jsx";
+
+/* ===== CRM ===== */
 import CRMLayout from "./crm/CRMLayout.jsx";
 import LoginPage from "./crm/LoginPage.jsx";
 import ProtectedRoute from "./crm/ProtectedRoute.jsx";
@@ -21,11 +32,22 @@ export default function App() {
     <BrowserRouter>
       <Suspense fallback={<div style={{ padding: 16 }}>Loading...</div>}>
         <Routes>
-          <Route path="/" element={<MarketingPage />} />
+          {/* Public site */}
+          <Route path="/" element={<MainLayout />}>
+            <Route index element={<Home />} />
+            <Route path="products" element={<Products />} />
+            <Route path="quality" element={<Quality />} />
+            <Route path="careers" element={<Careers />} />
+            <Route path="contact" element={<Contact />} />
+            <Route path="privacy" element={<Privacy />} />
+            <Route path="terms" element={<Terms />} />
+          </Route>
+
+          {/* Backward-compat (old marketing path if it existed) */}
+          <Route path="/marketing" element={<Navigate to="/" replace />} />
 
           {/* keep old login working */}
           <Route path="/login" element={<Navigate to="/crm/login" replace />} />
-
           <Route path="/crm/login" element={<LoginPage />} />
 
           <Route
@@ -45,11 +67,10 @@ export default function App() {
             <Route path="salespersons" element={<SalespersonsPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="recruitment" element={<RecruitmentPage />} />
-
-            {/* optional: keep CRM unknown paths inside CRM */}
             <Route path="*" element={<Navigate to="/crm/dashboard" replace />} />
           </Route>
 
+          {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
