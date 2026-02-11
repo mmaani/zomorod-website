@@ -1,115 +1,151 @@
 // src/main/Careers.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
+import { buildWhatsAppLink } from "./MainLayout.jsx";
 
-const PREVIEW_WORDS = 28; // 25–30 words as requested
+const JOBS_PER_PAGE = 5;
+const PREVIEW_WORDS = 28; // ~25–30 words
 
-const COPY = {
+const UI_COPY = {
   en: {
     title: "Careers",
-    subtitle: "Open vacancies published from CRM. Select a vacancy and apply below.",
-    jobsLoading: "Loading opportunities...",
-    jobsEmpty: "No openings announced at the moment.",
-    jobsErrorTitle: "Couldn’t load openings.",
-    retry: "Retry",
-
-    selectJob: "Select this job",
-    selectedJobLabel: "Selected job",
-    applyTitle: "Apply now",
-    applyHint: "Fill in the form and upload your CV. Optional: upload a cover letter file.",
-    submitting: "Submitting...",
-    apply: "Submit application",
-    applySuccess: "Your application has been submitted successfully.",
-    applySuccessWithWarning: "Your application was saved. (Note: Sheet sync issue on our side.)",
-    applyError: "Please select a job and fill all required fields before submitting.",
-    readMore: "Show more",
+    subtitle: "Open vacancies published from our CRM. Apply directly below.",
+    loading: "Loading opportunities…",
+    loadError: "Could not load vacancies. Please refresh and try again.",
+    empty: "No openings announced at the moment.",
+    readMore: "Read more",
     readLess: "Show less",
-
-    fields: {
-      firstName: "First Name*",
-      lastName: "Last Name*",
-      email: "Email*",
-      phone: "Phone*",
-      education: "Education level*",
-      country: "Country*",
-      city: "City*",
-      cv: "CV (required)*",
-      cover: "Cover letter file (optional)",
+    selectJob: "Select this job",
+    selectedJob: "Selected job",
+    selectPlaceholder: "Select a job…",
+    selectHint: "You must select a vacancy before applying.",
+    pagination: {
+      prev: "Previous",
+      next: "Next",
+      page: "Page",
+      of: "of",
+      showing: "Showing",
+      jobs: "jobs",
     },
 
-    educationOptions: [
-      "High School",
-      "Diploma",
-      "Bachelor's Degree",
-      "Master's Degree",
-      "PhD",
-      "Other",
-    ],
-    dash: "—",
-    cvHint: "Accepted: PDF, DOC, DOCX, images (max 15 MB)",
-    coverHint: "Accepted: PDF, DOC, DOCX, images (max 15 MB)",
-    pickJobHint: "Please select a vacancy above.",
+    applyTitle: "Apply now",
+    applySubtitle: "Submit your information and upload your CV.",
+    submit: "Submit application",
+    submitting: "Submitting…",
+    success: "Your application has been submitted successfully.",
+    validationError: "Please select a job and fill all required fields before submitting.",
+
+    fields: {
+      firstName: "First name",
+      lastName: "Last name",
+      email: "Email",
+      phone: "Phone number",
+      education: "Education level",
+      country: "Country",
+      city: "City",
+      cv: "CV (required)",
+      cover: "Cover letter (optional file)",
+    },
+
+    educationOptions: ["High School", "Diploma", "Bachelor's Degree", "Master's Degree", "PhD", "Other"],
+
+    whatsapp: {
+      title: "Prefer WhatsApp?",
+      body:
+        "You can also send a short message on WhatsApp and we’ll respond with next steps.",
+      cta: "WhatsApp us",
+      message: "Hello Zomorod, I want to apply for a vacancy. Please advise the next steps.",
+    },
+
+    links: {
+      quality: "Quality & compliance",
+      contact: "Contact",
+    },
   },
 
   ar: {
     title: "الوظائف",
-    subtitle: "الوظائف المفتوحة منشورة من CRM. اختر الوظيفة ثم قدّم أدناه.",
-    jobsLoading: "جاري تحميل الفرص...",
-    jobsEmpty: "لا توجد وظائف معلنة حالياً.",
-    jobsErrorTitle: "تعذر تحميل الوظائف.",
-    retry: "إعادة المحاولة",
-
-    selectJob: "اختيار هذه الوظيفة",
-    selectedJobLabel: "الوظيفة المختارة",
-    applyTitle: "قدّم الآن",
-    applyHint: "يرجى تعبئة النموذج ورفع السيرة الذاتية. اختياري: رفع ملف رسالة تغطية.",
-    submitting: "جاري الإرسال...",
-    apply: "إرسال الطلب",
-    applySuccess: "تم إرسال طلبك بنجاح.",
-    applySuccessWithWarning: "تم حفظ طلبك. (ملاحظة: مشكلة في مزامنة Google Sheet لدينا.)",
-    applyError: "يرجى اختيار وظيفة ثم تعبئة جميع الحقول المطلوبة.",
-    readMore: "عرض المزيد",
+    subtitle: "الوظائف المفتوحة المنشورة من CRM. يمكن التقديم مباشرة أدناه.",
+    loading: "جاري تحميل الفرص…",
+    loadError: "تعذر تحميل الوظائف. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
+    empty: "لا توجد وظائف معلنة حالياً.",
+    readMore: "اقرأ المزيد",
     readLess: "عرض أقل",
+    selectJob: "اختيار هذه الوظيفة",
+    selectedJob: "الوظيفة المختارة",
+    selectPlaceholder: "اختر وظيفة…",
+    selectHint: "يجب اختيار وظيفة قبل التقديم.",
+    pagination: {
+      prev: "السابق",
+      next: "التالي",
+      page: "صفحة",
+      of: "من",
+      showing: "عرض",
+      jobs: "وظائف",
+    },
+
+    applyTitle: "قدّم الآن",
+    applySubtitle: "أدخل معلوماتك وارفع السيرة الذاتية.",
+    submit: "إرسال الطلب",
+    submitting: "جاري الإرسال…",
+    success: "تم إرسال طلبك بنجاح.",
+    validationError: "يرجى اختيار وظيفة ثم تعبئة جميع الحقول المطلوبة قبل الإرسال.",
 
     fields: {
-      firstName: "الاسم الأول*",
-      lastName: "اسم العائلة*",
-      email: "البريد الإلكتروني*",
-      phone: "الهاتف*",
-      education: "المؤهل العلمي*",
-      country: "الدولة*",
-      city: "المدينة*",
-      cv: "السيرة الذاتية (مطلوب)*",
-      cover: "ملف رسالة تغطية (اختياري)",
+      firstName: "الاسم الأول",
+      lastName: "اسم العائلة",
+      email: "البريد الإلكتروني",
+      phone: "رقم الهاتف",
+      education: "المؤهل العلمي",
+      country: "الدولة",
+      city: "المدينة",
+      cv: "السيرة الذاتية (مطلوب)",
+      cover: "رسالة تغطية (ملف اختياري)",
     },
 
     educationOptions: ["ثانوي", "دبلوم", "بكالوريوس", "ماجستير", "دكتوراه", "أخرى"],
-    dash: "—",
-    cvHint: "الصيغ المقبولة: PDF, DOC, DOCX أو صور (حد أقصى 15MB)",
-    coverHint: "الصيغ المقبولة: PDF, DOC, DOCX أو صور (حد أقصى 15MB)",
-    pickJobHint: "يرجى اختيار وظيفة من الأعلى.",
+
+    whatsapp: {
+      title: "تفضّل واتساب؟",
+      body: "يمكنك إرسال رسالة قصيرة عبر واتساب وسنرد عليك بالخطوات التالية.",
+      cta: "راسلنا واتساب",
+      message: "مرحباً زمرد، أريد التقديم على وظيفة. يرجى تزويدي بالخطوات التالية.",
+    },
+
+    links: {
+      quality: "الجودة والامتثال",
+      contact: "التواصل",
+    },
   },
 };
 
 function stripHtml(html) {
-  return String(html || "")
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function truncateWords(text, maxWords) {
   const words = String(text || "").split(/\s+/).filter(Boolean);
-  if (words.length <= maxWords) return { text, truncated: false };
-  return { text: `${words.slice(0, maxWords).join(" ")}...`, truncated: true };
+  if (words.length <= maxWords) return String(text || "");
+  return `${words.slice(0, maxWords).join(" ")}…`;
+}
+
+function normalizeJob(row) {
+  return {
+    id: String(row?.id ?? ""),
+    title: String(row?.title ?? ""),
+    department: row?.department ? String(row.department) : "",
+    locationCountry: row?.location_country ? String(row.location_country) : "",
+    locationCity: row?.location_city ? String(row.location_city) : "",
+    employmentType: row?.employment_type ? String(row.employment_type) : "",
+    jobDescriptionHtml: String(row?.job_description_html ?? ""),
+    publishedAt: row?.published_at ? String(row.published_at) : "",
+    createdAt: row?.created_at ? String(row.created_at) : "",
+  };
 }
 
 export default function Careers() {
-  const ctx = useOutletContext() || {};
-  const lang = ctx.lang || "en";
-  const t = useMemo(() => COPY[lang] || COPY.en, [lang]);
+  const { lang } = useOutletContext();
+  const t = UI_COPY[lang] || UI_COPY.en;
 
   const [jobs, setJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(true);
@@ -119,47 +155,74 @@ export default function Careers() {
   const [selectedJobId, setSelectedJobId] = useState("");
 
   const [expandedJobs, setExpandedJobs] = useState({});
+  const [page, setPage] = useState(1);
 
-  const [applyMsg, setApplyMsg] = useState("");
   const [applyErr, setApplyErr] = useState("");
+  const [applyMsg, setApplyMsg] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const applyFormRef = useRef(null);
 
   const selectedJob = useMemo(() => {
-    const id = Number(selectedJobId || 0);
-    return jobs.find((j) => Number(j.id) === id) || null;
+    if (!selectedJobId) return null;
+    return jobs.find((j) => String(j.id) === String(selectedJobId)) || null;
   }, [jobs, selectedJobId]);
 
-  async function loadJobs() {
-    setJobsLoading(true);
-    setJobsError("");
-    try {
-      const res = await fetch("/api/recruitment?resource=jobs", {
-        headers: { Accept: "application/json" },
-        cache: "no-store",
-      });
+  const pageCount = useMemo(() => {
+    return Math.max(1, Math.ceil((jobs?.length || 0) / JOBS_PER_PAGE));
+  }, [jobs]);
 
-      const data = await res.json().catch(() => ({}));
+  const pageJobs = useMemo(() => {
+    const start = (page - 1) * JOBS_PER_PAGE;
+    return jobs.slice(start, start + JOBS_PER_PAGE);
+  }, [jobs, page]);
 
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.error || data?.detail || `HTTP ${res.status}`);
-      }
-
-      const list = Array.isArray(data.jobs) ? data.jobs : [];
-      setJobs(list);
-    } catch (err) {
-      setJobs([]);
-      setJobsError(String(err?.message || err || "Failed to load jobs"));
-    } finally {
-      setJobsLoading(false);
-    }
-  }
+  const paginationSummary = useMemo(() => {
+    const total = jobs.length;
+    if (!total) return "";
+    const start = (page - 1) * JOBS_PER_PAGE + 1;
+    const end = Math.min(page * JOBS_PER_PAGE, total);
+    return `${t.pagination.showing} ${start}-${end} ${t.pagination.of} ${total} ${t.pagination.jobs}`;
+  }, [jobs.length, page, t]);
 
   useEffect(() => {
-    loadJobs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    let alive = true;
+
+    (async () => {
+      setJobsLoading(true);
+      setJobsError("");
+      try {
+        const res = await fetch("/api/recruitment?resource=jobs", { cache: "no-store" });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok || !data?.ok) {
+          throw new Error(data?.error || data?.detail || t.loadError);
+        }
+
+        const rows = Array.isArray(data.jobs) ? data.jobs : [];
+        const normalized = rows.map(normalizeJob).filter((j) => j.id && j.title);
+
+        if (!alive) return;
+        setJobs(normalized);
+        setPage(1);
+      } catch (err) {
+        if (!alive) return;
+        setJobs([]);
+        setJobsError(String(err?.message || t.loadError));
+      } finally {
+        if (!alive) return;
+        setJobsLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [t.loadError]);
+
+  function toggleExpanded(jobId) {
+    setExpandedJobs((prev) => ({ ...prev, [jobId]: !prev[jobId] }));
+  }
 
   function handleSelectJob(jobId) {
     setSelectedJobId(String(jobId));
@@ -172,20 +235,30 @@ export default function Careers() {
     }
   }
 
+  function gotoPage(nextPage) {
+    const n = Number(nextPage);
+    if (!Number.isFinite(n)) return;
+    const clamped = Math.min(Math.max(n, 1), pageCount);
+    setPage(clamped);
+    // optional: collapse descriptions when paging
+    // setExpandedJobs({});
+  }
+
   async function onApply(e) {
     e.preventDefault();
     setApplyErr("");
     setApplyMsg("");
 
-    const formEl = e.currentTarget;
-    const form = new FormData(formEl);
-
     if (!selectedJobId) {
-      setApplyErr(t.applyError);
+      setApplyErr(t.validationError);
       return;
     }
 
-    form.set("jobId", selectedJobId);
+    const formEl = e.currentTarget;
+    const form = new FormData(formEl);
+
+    // Ensure jobId is present and matches selection
+    form.set("jobId", String(selectedJobId));
 
     const requiredKeys = [
       "jobId",
@@ -199,14 +272,16 @@ export default function Careers() {
       "cv",
     ];
 
-    const hasAll = requiredKeys.every((k) => {
+    const missing = requiredKeys.some((k) => {
       const v = form.get(k);
-      if (k === "cv") return v instanceof File && v.size > 0;
-      return !!String(v || "").trim();
+      if (k === "cv") {
+        return !(v && typeof v === "object" && v.size > 0);
+      }
+      return !String(v || "").trim();
     });
 
-    if (!hasAll) {
-      setApplyErr(t.applyError);
+    if (missing) {
+      setApplyErr(t.validationError);
       return;
     }
 
@@ -218,260 +293,299 @@ export default function Careers() {
       });
       const data = await res.json().catch(() => ({}));
 
-      if (!res.ok || !data.ok) {
-        throw new Error(data.detail || data.error || "Failed to submit application");
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.detail || data?.error || "Failed to submit application");
       }
 
-      // Important: don’t block applicant if Sheets sync fails (application is saved in DB)
       if (data?.sheetSync?.ok === false) {
-        setApplyMsg(t.applySuccessWithWarning);
-      } else {
-        setApplyMsg(t.applySuccess);
+        throw new Error(data?.sheetSync?.error || "Saved, but Google Sheet sync failed");
       }
 
-      formEl.reset();
+      setApplyMsg(t.success);
+      formEl?.reset();
       setSelectedJobId("");
     } catch (err) {
-      setApplyErr(err?.message || "Failed to submit application");
+      setApplyErr(String(err?.message || "Failed to submit application"));
     } finally {
       setSubmitting(false);
     }
   }
 
+  const whatsappHref = useMemo(() => buildWhatsAppLink(t.whatsapp.message), [t.whatsapp.message]);
+
   return (
-    <main className="page">
-      <section className="card page-section">
-        <div className="page-head">
-          <h1 className="h2" style={{ margin: 0 }}>
-            {t.title}
-          </h1>
-          <p className="p" style={{ margin: 0 }}>
-            {t.subtitle}
-          </p>
-        </div>
+    <div className="page" dir={lang === "ar" ? "rtl" : "ltr"}>
+      <div className="page-head">
+        <h1>{t.title}</h1>
+        <p className="muted">{t.subtitle}</p>
+      </div>
 
-        <div className="hr" />
-
-        <div className="grid grid-2" style={{ alignItems: "start" }}>
-          {/* Jobs list */}
-          <div className="card" style={{ background: "rgba(255,255,255,.03)", boxShadow: "none" }}>
-            <div className="card-pad">
-              {jobsLoading ? (
-                <div className="muted">{t.jobsLoading}</div>
-              ) : jobsError ? (
-                <div className="banner" style={{ margin: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                    <div>
-                      <div style={{ fontWeight: 900 }}>{t.jobsErrorTitle}</div>
-                      <div className="small" style={{ marginTop: 4, opacity: 0.9 }}>
-                        <bdi>{jobsError}</bdi>
-                      </div>
-                    </div>
-                    <button className="btn btn-ghost" type="button" onClick={loadJobs}>
-                      {t.retry}
-                    </button>
-                  </div>
-                </div>
-              ) : jobs.length === 0 ? (
-                <div className="muted">{t.jobsEmpty}</div>
-              ) : (
-                <div className="mkt-jobs-list">
-                  {jobs.map((job) => {
-                    const html = job.job_description_html || "";
-                    const plain = stripHtml(html);
-                    const { text: previewText, truncated } = truncateWords(plain, PREVIEW_WORDS);
-                    const expanded = !!expandedJobs[job.id];
-                    const isSelected = String(job.id) === String(selectedJobId);
-
-                    const meta = [
-                      job.department,
-                      job.location_city,
-                      job.location_country,
-                      job.employment_type,
-                    ]
-                      .filter(Boolean)
-                      .join(" • ");
-
-                    return (
-                      <article
-                        key={job.id}
-                        className={`mkt-job-card ${isSelected ? "is-selected" : ""}`}
-                      >
-                        <div className="row" style={{ justifyContent: "space-between", gap: 12 }}>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontWeight: 900 }}>
-                              <bdi>{job.title}</bdi>
-                            </div>
-                            {meta ? (
-                              <div className="small" style={{ marginTop: 4 }}>
-                                <bdi>{meta}</bdi>
-                              </div>
-                            ) : null}
-                          </div>
-
-                          <button
-                            type="button"
-                            className="mkt-inline-btn"
-                            onClick={() => handleSelectJob(job.id)}
-                          >
-                            {t.selectJob}
-                          </button>
-                        </div>
-
-                        {/* Description: preview 25–30 words, toggle to full HTML */}
-                        <div className="mkt-job-description" style={{ marginTop: 8 }}>
-                          {expanded ? (
-                            <div dangerouslySetInnerHTML={{ __html: html }} />
-                          ) : (
-                            <p style={{ margin: 0 }}>
-                              <bdi>{previewText}</bdi>
-                            </p>
-                          )}
-                        </div>
-
-                        {truncated ? (
-                          <button
-                            type="button"
-                            className="mkt-readmore"
-                            onClick={() =>
-                              setExpandedJobs((prev) => ({ ...prev, [job.id]: !prev[job.id] }))
-                            }
-                            style={{
-                              marginTop: 8,
-                              width: "fit-content",
-                              background: "transparent",
-                              border: "none",
-                              color: "var(--text)",
-                              opacity: 0.85,
-                              cursor: "pointer",
-                              padding: 0,
-                              textDecoration: "underline",
-                            }}
-                          >
-                            {expanded ? t.readLess : t.readMore}
-                          </button>
-                        ) : null}
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+      <div className="careers-grid">
+        {/* JOBS */}
+        <section className="jobs card">
+          <div className="card-pad">
+            <h2 style={{ margin: 0 }}>{lang === "ar" ? "الوظائف المفتوحة" : "Open vacancies"}</h2>
+            {paginationSummary ? <div className="muted small" style={{ marginTop: 6 }}>{paginationSummary}</div> : null}
           </div>
 
-          {/* Apply form */}
-          <div ref={applyFormRef} className="card page-section">
-            <div className="page-head">
-              <div className="h2" style={{ fontSize: 18, margin: 0 }}>
-                {t.applyTitle}
+          <div className="job-list">
+            {jobsLoading ? (
+              <div className="card-pad">
+                <p className="muted" style={{ margin: 0 }}>{t.loading}</p>
               </div>
-              <div className="p" style={{ margin: 0 }}>
-                {t.applyHint}
+            ) : jobsError ? (
+              <div className="card-pad">
+                <p className="muted" style={{ margin: 0 }}>{jobsError}</p>
               </div>
-            </div>
-
-            <div className="hr" />
-
-            <div className="mkt-selected-job">
-              <div className="mkt-selected-job-label">{t.selectedJobLabel}:</div>
-              <div className="mkt-selected-job-value">
-                <strong>
-                  <bdi>{selectedJob ? selectedJob.title : t.pickJobHint}</bdi>
-                </strong>
+            ) : !jobs.length ? (
+              <div className="card-pad">
+                <p className="muted" style={{ margin: 0 }}>{t.empty}</p>
               </div>
-            </div>
+            ) : (
+              <>
+                {pageJobs.map((job) => {
+                  const fullText = stripHtml(job.jobDescriptionHtml);
+                  const isLong = fullText.split(/\s+/).filter(Boolean).length > PREVIEW_WORDS;
+                  const isExpanded = !!expandedJobs[job.id];
+                  const preview = truncateWords(fullText, PREVIEW_WORDS);
 
-            {applyMsg ? <div className="mkt-success">{applyMsg}</div> : null}
-            {applyErr ? (
-              <div className="banner" style={{ marginTop: 10 }}>
-                {applyErr}
+                  const meta = [
+                    job.department,
+                    job.locationCity,
+                    job.locationCountry,
+                    job.employmentType,
+                  ]
+                    .filter(Boolean)
+                    .join(" • ");
+
+                  return (
+                    <article key={job.id} className="job">
+                      <div className="job-top">
+                        <div>
+                          <div className="job-title">{job.title}</div>
+                          {meta ? <div className="job-meta">{meta}</div> : null}
+                        </div>
+
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={() => handleSelectJob(job.id)}
+                        >
+                          {t.selectJob}
+                        </button>
+                      </div>
+
+                      <div className="job-desc">
+                        {isLong && !isExpanded ? (
+                          <p style={{ margin: 0 }}>{preview}</p>
+                        ) : (
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: job.jobDescriptionHtml || `<p>${preview}</p>`,
+                            }}
+                          />
+                        )}
+                      </div>
+
+                      {isLong ? (
+                        <button
+                          type="button"
+                          className="readmore"
+                          onClick={() => toggleExpanded(job.id)}
+                        >
+                          {isExpanded ? t.readLess : t.readMore}
+                        </button>
+                      ) : null}
+                    </article>
+                  );
+                })}
+
+                {/* Pagination */}
+                {jobs.length > JOBS_PER_PAGE ? (
+                  <div className="card-pad">
+                    <div className="row">
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => gotoPage(page - 1)}
+                        disabled={page <= 1}
+                      >
+                        {t.pagination.prev}
+                      </button>
+
+                      <div className="spacer" />
+
+                      <div className="muted small" style={{ alignSelf: "center" }}>
+                        {t.pagination.page} {page} {t.pagination.of} {pageCount}
+                      </div>
+
+                      <div className="spacer" />
+
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => gotoPage(page + 1)}
+                        disabled={page >= pageCount}
+                      >
+                        {t.pagination.next}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* APPLY */}
+        <section className="apply card" ref={applyFormRef}>
+          <div className="apply-head">
+            <h2 style={{ margin: 0 }}>{t.applyTitle}</h2>
+            <p className="muted" style={{ margin: 0 }}>{t.applySubtitle}</p>
+          </div>
+
+          <div className="card-pad">
+            <form onSubmit={onApply}>
+              {/* Job selector */}
+              <div className="field">
+                <label className="muted small">{t.selectedJob}</label>
+                <select
+                  className="input"
+                  name="jobId"
+                  value={selectedJobId || ""}
+                  onChange={(e) => {
+                    setSelectedJobId(e.target.value);
+                    setApplyErr("");
+                    setApplyMsg("");
+                  }}
+                >
+                  <option value="">{t.selectPlaceholder}</option>
+                  {jobs.map((j) => (
+                    <option key={j.id} value={j.id}>
+                      {j.title}
+                    </option>
+                  ))}
+                </select>
+
+                {!selectedJobId ? (
+                  <div className="muted small" style={{ marginTop: 6 }}>
+                    {t.selectHint}
+                  </div>
+                ) : selectedJob ? (
+                  <div className="muted small" style={{ marginTop: 6 }}>
+                    {[selectedJob.department, selectedJob.locationCity, selectedJob.locationCountry, selectedJob.employmentType]
+                      .filter(Boolean)
+                      .join(" • ")}
+                  </div>
+                ) : null}
               </div>
-            ) : null}
 
-            <form className="mkt-apply-form" onSubmit={onApply}>
-              <div className="grid grid-2">
+              <div className="grid-2">
                 <div className="field">
-                  <label>{t.fields.firstName}</label>
+                  <label className="muted small">{t.fields.firstName}</label>
                   <input className="input" name="firstName" required />
                 </div>
                 <div className="field">
-                  <label>{t.fields.lastName}</label>
+                  <label className="muted small">{t.fields.lastName}</label>
                   <input className="input" name="lastName" required />
                 </div>
-              </div>
-
-              <div className="grid grid-2">
                 <div className="field">
-                  <label>{t.fields.email}</label>
+                  <label className="muted small">{t.fields.email}</label>
                   <input className="input" type="email" name="email" required />
                 </div>
                 <div className="field">
-                  <label>{t.fields.phone}</label>
+                  <label className="muted small">{t.fields.phone}</label>
                   <input className="input" name="phone" required />
                 </div>
-              </div>
 
-              <div className="grid grid-2">
                 <div className="field">
-                  <label>{t.fields.education}</label>
-                  <select name="educationLevel" required defaultValue="">
+                  <label className="muted small">{t.fields.education}</label>
+                  <select className="input" name="educationLevel" defaultValue="" required>
                     <option value="" disabled>
-                      {t.dash}
+                      {t.fields.education}
                     </option>
-                    {t.educationOptions.map((x) => (
-                      <option key={x} value={x}>
-                        {x}
+                    {t.educationOptions.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
                       </option>
                     ))}
                   </select>
                 </div>
+
                 <div className="field">
-                  <label>{t.fields.country}</label>
+                  <label className="muted small">{t.fields.country}</label>
                   <input className="input" name="country" required />
                 </div>
-              </div>
 
-              <div className="grid grid-2">
                 <div className="field">
-                  <label>{t.fields.city}</label>
+                  <label className="muted small">{t.fields.city}</label>
                   <input className="input" name="city" required />
                 </div>
 
                 <div className="field">
-                  <label>{t.fields.cv}</label>
+                  <label className="muted small">{t.fields.cv}</label>
                   <input
                     className="input"
-                    type="file"
                     name="cv"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tif,.tiff"
+                    type="file"
                     required
+                    accept=".pdf,.doc,.docx,image/*"
                   />
-                  <div className="small" style={{ marginTop: 6 }}>
-                    {t.cvHint}
-                  </div>
+                </div>
+
+                <div className="field" style={{ gridColumn: "1 / -1" }}>
+                  <label className="muted small">{t.fields.cover}</label>
+                  <input
+                    className="input"
+                    name="cover"
+                    type="file"
+                    accept=".pdf,.doc,.docx,image/*"
+                  />
                 </div>
               </div>
 
-              <div className="field">
-                <label>{t.fields.cover}</label>
-                <input
-                  className="input"
-                  type="file"
-                  name="cover"
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tif,.tiff"
-                />
-                <div className="small" style={{ marginTop: 6 }}>
-                  {t.coverHint}
-                </div>
+              <div className="row" style={{ marginTop: 12 }}>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={submitting || !selectedJobId}
+                >
+                  {submitting ? t.submitting : t.submit}
+                </button>
+
+                <div className="spacer" />
+
+                <Link className="btn btn-ghost" to="/quality">
+                  {t.links.quality}
+                </Link>
+                <Link className="btn btn-ghost" to="/contact">
+                  {t.links.contact}
+                </Link>
               </div>
 
-              <button className="btn btn-primary" type="submit" disabled={submitting || !selectedJobId}>
-                {submitting ? t.submitting : t.apply}
-              </button>
+              {applyErr ? (
+                <div className="banner" style={{ marginTop: 10 }}>
+                  {applyErr}
+                </div>
+              ) : null}
+
+              {applyMsg ? (
+                <div className="mkt-success" style={{ marginTop: 10 }}>
+                  {applyMsg}
+                </div>
+              ) : null}
             </form>
+
+            <div className="hr" />
+
+            <h3 style={{ marginTop: 0 }}>{t.whatsapp.title}</h3>
+            <p className="muted">{t.whatsapp.body}</p>
+            <a className="btn" href={whatsappHref} target="_blank" rel="noopener noreferrer">
+              {t.whatsapp.cta}
+            </a>
           </div>
-        </div>
-      </section>
-    </main>
+        </section>
+      </div>
+    </div>
   );
 }
