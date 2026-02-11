@@ -2,23 +2,27 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
+const PREVIEW_WORDS = 28; // 25–30 words as requested
+
 const COPY = {
   en: {
     title: "Careers",
-    subtitle: "Open vacancies published from CRM. Select a role and apply below.",
+    subtitle: "Open vacancies published from CRM. Select a vacancy and apply below.",
     jobsLoading: "Loading opportunities...",
     jobsEmpty: "No openings announced at the moment.",
-    selectJob: "Select",
+    jobsErrorTitle: "Couldn’t load openings.",
+    retry: "Retry",
+
+    selectJob: "Select this job",
     selectedJobLabel: "Selected job",
     applyTitle: "Apply now",
-    applyHint:
-      "Fill in the form and upload your CV. We will contact shortlisted candidates.",
+    applyHint: "Fill in the form and upload your CV. Optional: upload a cover letter file.",
     submitting: "Submitting...",
     apply: "Submit application",
     applySuccess: "Your application has been submitted successfully.",
-    applyError:
-      "Please select a job and fill all required fields before submitting.",
-    readMore: "Read more",
+    applySuccessWithWarning: "Your application was saved. (Note: Sheet sync issue on our side.)",
+    applyError: "Please select a job and fill all required fields before submitting.",
+    readMore: "Show more",
     readLess: "Show less",
 
     fields: {
@@ -30,7 +34,7 @@ const COPY = {
       country: "Country*",
       city: "City*",
       cv: "CV (required)*",
-      cover: "Cover letter (optional)",
+      cover: "Cover letter file (optional)",
     },
 
     educationOptions: [
@@ -42,7 +46,9 @@ const COPY = {
       "Other",
     ],
     dash: "—",
-    cvHint: "Accepted: PDF, DOC, DOCX",
+    cvHint: "Accepted: PDF, DOC, DOCX, images (max 15 MB)",
+    coverHint: "Accepted: PDF, DOC, DOCX, images (max 15 MB)",
+    pickJobHint: "Please select a vacancy above.",
   },
 
   ar: {
@@ -50,15 +56,19 @@ const COPY = {
     subtitle: "الوظائف المفتوحة منشورة من CRM. اختر الوظيفة ثم قدّم أدناه.",
     jobsLoading: "جاري تحميل الفرص...",
     jobsEmpty: "لا توجد وظائف معلنة حالياً.",
-    selectJob: "اختيار",
+    jobsErrorTitle: "تعذر تحميل الوظائف.",
+    retry: "إعادة المحاولة",
+
+    selectJob: "اختيار هذه الوظيفة",
     selectedJobLabel: "الوظيفة المختارة",
     applyTitle: "قدّم الآن",
-    applyHint: "يرجى تعبئة النموذج ورفع السيرة الذاتية. سنتواصل مع المرشحين المؤهلين.",
+    applyHint: "يرجى تعبئة النموذج ورفع السيرة الذاتية. اختياري: رفع ملف رسالة تغطية.",
     submitting: "جاري الإرسال...",
     apply: "إرسال الطلب",
     applySuccess: "تم إرسال طلبك بنجاح.",
+    applySuccessWithWarning: "تم حفظ طلبك. (ملاحظة: مشكلة في مزامنة Google Sheet لدينا.)",
     applyError: "يرجى اختيار وظيفة ثم تعبئة جميع الحقول المطلوبة.",
-    readMore: "اقرأ المزيد",
+    readMore: "عرض المزيد",
     readLess: "عرض أقل",
 
     fields: {
@@ -70,17 +80,21 @@ const COPY = {
       country: "الدولة*",
       city: "المدينة*",
       cv: "السيرة الذاتية (مطلوب)*",
-      cover: "رسالة تغطية (اختياري)",
+      cover: "ملف رسالة تغطية (اختياري)",
     },
 
     educationOptions: ["ثانوي", "دبلوم", "بكالوريوس", "ماجستير", "دكتوراه", "أخرى"],
     dash: "—",
-    cvHint: "الصيغ المقبولة: PDF, DOC, DOCX",
+    cvHint: "الصيغ المقبولة: PDF, DOC, DOCX أو صور (حد أقصى 15MB)",
+    coverHint: "الصيغ المقبولة: PDF, DOC, DOCX أو صور (حد أقصى 15MB)",
+    pickJobHint: "يرجى اختيار وظيفة من الأعلى.",
   },
 };
 
 function stripHtml(html) {
   return String(html || "")
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -88,19 +102,22 @@ function stripHtml(html) {
 
 function truncateWords(text, maxWords) {
   const words = String(text || "").split(/\s+/).filter(Boolean);
-  if (words.length <= maxWords) return text;
-  return `${words.slice(0, maxWords).join(" ")}...`;
+  if (words.length <= maxWords) return { text, truncated: false };
+  return { text: `${words.slice(0, maxWords).join(" ")}...`, truncated: true };
 }
 
 export default function Careers() {
-  const ctx = useOutletContext?.() || {};
+  const ctx = useOutletContext() || {};
   const lang = ctx.lang || "en";
   const t = useMemo(() => COPY[lang] || COPY.en, [lang]);
 
   const [jobs, setJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(true);
+  const [jobsError, setJobsError] = useState("");
 
+  // IMPORTANT: do NOT auto-select. User must explicitly choose the job.
   const [selectedJobId, setSelectedJobId] = useState("");
+
   const [expandedJobs, setExpandedJobs] = useState({});
 
   const [applyMsg, setApplyMsg] = useState("");
@@ -114,33 +131,34 @@ export default function Careers() {
     return jobs.find((j) => Number(j.id) === id) || null;
   }, [jobs, selectedJobId]);
 
-  useEffect(() => {
-    let alive = true;
+  async function loadJobs() {
+    setJobsLoading(true);
+    setJobsError("");
+    try {
+      const res = await fetch("/api/recruitment?resource=jobs", {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
 
-    (async () => {
-      setJobsLoading(true);
-      try {
-        const res = await fetch("/api/recruitment?resource=jobs");
-        const data = await res.json().catch(() => ({}));
-        if (!alive) return;
+      const data = await res.json().catch(() => ({}));
 
-        if (res.ok && data.ok) {
-          setJobs(Array.isArray(data.jobs) ? data.jobs : []);
-        } else {
-          setJobs([]);
-        }
-      } catch {
-        if (!alive) return;
-        setJobs([]);
-      } finally {
-        if (!alive) return;
-        setJobsLoading(false);
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || data?.detail || `HTTP ${res.status}`);
       }
-    })();
 
-    return () => {
-      alive = false;
-    };
+      const list = Array.isArray(data.jobs) ? data.jobs : [];
+      setJobs(list);
+    } catch (err) {
+      setJobs([]);
+      setJobsError(String(err?.message || err || "Failed to load jobs"));
+    } finally {
+      setJobsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleSelectJob(jobId) {
@@ -181,7 +199,6 @@ export default function Careers() {
       "cv",
     ];
 
-    // For FormData, file inputs exist as File objects (or empty).
     const hasAll = requiredKeys.every((k) => {
       const v = form.get(k);
       if (k === "cv") return v instanceof File && v.size > 0;
@@ -204,11 +221,14 @@ export default function Careers() {
       if (!res.ok || !data.ok) {
         throw new Error(data.detail || data.error || "Failed to submit application");
       }
+
+      // Important: don’t block applicant if Sheets sync fails (application is saved in DB)
       if (data?.sheetSync?.ok === false) {
-        throw new Error(data?.sheetSync?.error || "Saved, but Google Sheet sync failed");
+        setApplyMsg(t.applySuccessWithWarning);
+      } else {
+        setApplyMsg(t.applySuccess);
       }
 
-      setApplyMsg(t.applySuccess);
       formEl.reset();
       setSelectedJobId("");
     } catch (err) {
@@ -219,7 +239,7 @@ export default function Careers() {
   }
 
   return (
-    <div className="page">
+    <main className="page">
       <section className="card page-section">
         <div className="page-head">
           <h1 className="h2" style={{ margin: 0 }}>
@@ -238,31 +258,55 @@ export default function Careers() {
             <div className="card-pad">
               {jobsLoading ? (
                 <div className="muted">{t.jobsLoading}</div>
+              ) : jobsError ? (
+                <div className="banner" style={{ margin: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                    <div>
+                      <div style={{ fontWeight: 900 }}>{t.jobsErrorTitle}</div>
+                      <div className="small" style={{ marginTop: 4, opacity: 0.9 }}>
+                        <bdi>{jobsError}</bdi>
+                      </div>
+                    </div>
+                    <button className="btn btn-ghost" type="button" onClick={loadJobs}>
+                      {t.retry}
+                    </button>
+                  </div>
+                </div>
               ) : jobs.length === 0 ? (
                 <div className="muted">{t.jobsEmpty}</div>
               ) : (
                 <div className="mkt-jobs-list">
                   {jobs.map((job) => {
-                    const plain = stripHtml(job.description || "");
+                    const html = job.job_description_html || "";
+                    const plain = stripHtml(html);
+                    const { text: previewText, truncated } = truncateWords(plain, PREVIEW_WORDS);
                     const expanded = !!expandedJobs[job.id];
-                    const snippet = expanded ? plain : truncateWords(plain, 28);
                     const isSelected = String(job.id) === String(selectedJobId);
 
+                    const meta = [
+                      job.department,
+                      job.location_city,
+                      job.location_country,
+                      job.employment_type,
+                    ]
+                      .filter(Boolean)
+                      .join(" • ");
+
                     return (
-                      <div
+                      <article
                         key={job.id}
                         className={`mkt-job-card ${isSelected ? "is-selected" : ""}`}
                       >
-                        <div className="row" style={{ justifyContent: "space-between" }}>
+                        <div className="row" style={{ justifyContent: "space-between", gap: 12 }}>
                           <div style={{ minWidth: 0 }}>
                             <div style={{ fontWeight: 900 }}>
                               <bdi>{job.title}</bdi>
                             </div>
-                            <div className="small" style={{ marginTop: 4 }}>
-                              <bdi>
-                                {[job.country, job.city, job.type].filter(Boolean).join(" • ")}
-                              </bdi>
-                            </div>
+                            {meta ? (
+                              <div className="small" style={{ marginTop: 4 }}>
+                                <bdi>{meta}</bdi>
+                              </div>
+                            ) : null}
                           </div>
 
                           <button
@@ -274,29 +318,31 @@ export default function Careers() {
                           </button>
                         </div>
 
-                        {snippet ? (
-                          <div className="mkt-job-description" style={{ marginTop: 6 }}>
-                            <bdi>{snippet}</bdi>
-                          </div>
-                        ) : null}
+                        {/* Description: preview 25–30 words, toggle to full HTML */}
+                        <div className="mkt-job-description" style={{ marginTop: 8 }}>
+                          {expanded ? (
+                            <div dangerouslySetInnerHTML={{ __html: html }} />
+                          ) : (
+                            <p style={{ margin: 0 }}>
+                              <bdi>{previewText}</bdi>
+                            </p>
+                          )}
+                        </div>
 
-                        {plain && plain.split(/\s+/).filter(Boolean).length > 28 ? (
+                        {truncated ? (
                           <button
                             type="button"
                             className="mkt-readmore"
                             onClick={() =>
-                              setExpandedJobs((prev) => ({
-                                ...prev,
-                                [job.id]: !prev[job.id],
-                              }))
+                              setExpandedJobs((prev) => ({ ...prev, [job.id]: !prev[job.id] }))
                             }
                             style={{
-                              marginTop: 6,
+                              marginTop: 8,
                               width: "fit-content",
                               background: "transparent",
                               border: "none",
                               color: "var(--text)",
-                              opacity: 0.8,
+                              opacity: 0.85,
                               cursor: "pointer",
                               padding: 0,
                               textDecoration: "underline",
@@ -305,7 +351,7 @@ export default function Careers() {
                             {expanded ? t.readLess : t.readMore}
                           </button>
                         ) : null}
-                      </div>
+                      </article>
                     );
                   })}
                 </div>
@@ -330,7 +376,7 @@ export default function Careers() {
               <div className="mkt-selected-job-label">{t.selectedJobLabel}:</div>
               <div className="mkt-selected-job-value">
                 <strong>
-                  <bdi>{selectedJob ? selectedJob.title : t.dash}</bdi>
+                  <bdi>{selectedJob ? selectedJob.title : t.pickJobHint}</bdi>
                 </strong>
               </div>
             </div>
@@ -390,13 +436,14 @@ export default function Careers() {
                   <label>{t.fields.city}</label>
                   <input className="input" name="city" required />
                 </div>
+
                 <div className="field">
                   <label>{t.fields.cv}</label>
                   <input
                     className="input"
                     type="file"
                     name="cv"
-                    accept=".pdf,.doc,.docx"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tif,.tiff"
                     required
                   />
                   <div className="small" style={{ marginTop: 6 }}>
@@ -407,16 +454,24 @@ export default function Careers() {
 
               <div className="field">
                 <label>{t.fields.cover}</label>
-                <textarea className="input" name="coverLetter" rows={4} />
+                <input
+                  className="input"
+                  type="file"
+                  name="cover"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tif,.tiff"
+                />
+                <div className="small" style={{ marginTop: 6 }}>
+                  {t.coverHint}
+                </div>
               </div>
 
-              <button className="btn btn-primary" type="submit" disabled={submitting}>
+              <button className="btn btn-primary" type="submit" disabled={submitting || !selectedJobId}>
                 {submitting ? t.submitting : t.apply}
               </button>
             </form>
           </div>
         </div>
       </section>
-    </div>
+    </main>
   );
 }

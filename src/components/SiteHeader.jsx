@@ -11,6 +11,8 @@ export default function SiteHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
+  const closeMenu = () => setMenuOpen(false);
+
   const navItems = useMemo(() => {
     const nav = t?.nav || {};
     return [
@@ -18,14 +20,13 @@ export default function SiteHeader({
       { to: "/products", label: nav.products || "Products" },
       { to: "/careers", label: nav.careers || "Careers" },
       { to: "/contact", label: nav.contact || "Contact" },
-      // ✅ you asked: quality after contact
-      { to: "/quality", label: nav.quality || "Quality & Compliance" },
+      { to: "/quality", label: nav.quality || "Quality & Compliance" }, // after contact
     ];
   }, [t]);
 
   // Close menu on route change (mobile)
   React.useEffect(() => {
-    setMenuOpen(false);
+    closeMenu();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
@@ -53,9 +54,10 @@ export default function SiteHeader({
           </nav>
 
           <div className="site-actions desktop-only">
-            <Link to="/login" className="btn btn-ghost">
+            <Link to="/crm/login" className="btn btn-ghost">
               {t?.ctaStaff || "Staff Login"}
             </Link>
+
             <a
               className="btn btn-primary"
               href={whatsappQuoteHref}
@@ -92,21 +94,29 @@ export default function SiteHeader({
         <div className={`site-mobile ${menuOpen ? "is-open" : ""}`}>
           <div className="site-mobile-nav" aria-label="Mobile navigation">
             {navItems.map((it) => (
-              <NavLink key={it.to} to={it.to} className={navLinkClass} end={it.to === "/"}>
+              <NavLink
+                key={it.to}
+                to={it.to}
+                className={navLinkClass}
+                end={it.to === "/"}
+                onClick={closeMenu}
+              >
                 {it.label}
               </NavLink>
             ))}
           </div>
 
           <div className="site-mobile-actions">
-            <Link to="/login" className="btn btn-ghost w-full">
+            <Link to="/crm/login" className="btn btn-ghost w-full" onClick={closeMenu}>
               {t?.ctaStaff || "Staff Login"}
             </Link>
+
             <a
               className="btn btn-primary w-full"
               href={whatsappQuoteHref}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={closeMenu}
             >
               {t?.ctaQuote || "Get a Quote"}
             </a>

@@ -1,79 +1,84 @@
 // src/App.jsx
-import React, { Suspense, lazy } from "react";
+import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-/* ===== Public site (main) ===== */
+// Public site
 import MainLayout from "./main/MainLayout.jsx";
 import Home from "./main/Home.jsx";
 import Products from "./main/Products.jsx";
-import Quality from "./main/Quality.jsx";
-import Careers from "./main/Careers.jsx";
 import Contact from "./main/Contact.jsx";
+import Careers from "./main/Careers.jsx";
+import Quality from "./main/Quality.jsx";
 import Privacy from "./main/Privacy.jsx";
 import Terms from "./main/Terms.jsx";
 
-/* ===== CRM ===== */
-import CRMLayout from "./crm/CRMLayout.jsx";
+// CRM
 import LoginPage from "./crm/LoginPage.jsx";
+import CRMLayout from "./crm/CRMLayout.jsx";
 import ProtectedRoute from "./crm/ProtectedRoute.jsx";
+import DashboardPage from "./crm/pages/DashboardPage.jsx";
+import ProductsPage from "./crm/pages/ProductsPage.jsx";
+import SuppliersPage from "./crm/pages/SuppliersPage.jsx";
+import ClientsPage from "./crm/pages/ClientsPage.jsx";
+import SalesPage from "./crm/pages/SalesPage.jsx";
+import SalespersonsPage from "./crm/pages/SalespersonsPage.jsx";
+import RecruitmentPage from "./crm/pages/RecruitmentPage.jsx";
+import UsersPage from "./crm/pages/UsersPage.jsx";
 
-// ✅ Lazy-load CRM pages to reduce main bundle size
-const DashboardPage = lazy(() => import("./crm/pages/DashboardPage.jsx"));
-const ProductsPage = lazy(() => import("./crm/pages/ProductsPage.jsx"));
-const ClientsPage = lazy(() => import("./crm/pages/ClientsPage.jsx"));
-const SalesPage = lazy(() => import("./crm/pages/SalesPage.jsx"));
-const SuppliersPage = lazy(() => import("./crm/pages/SuppliersPage.jsx"));
-const SalespersonsPage = lazy(() => import("./crm/pages/SalespersonsPage.jsx"));
-const UsersPage = lazy(() => import("./crm/pages/UsersPage.jsx"));
-const RecruitmentPage = lazy(() => import("./crm/pages/RecruitmentPage.jsx"));
+function NotFound() {
+  return (
+    <main className="site-page">
+      <section className="card page-section">
+        <h1 className="h2" style={{ margin: 0 }}>404</h1>
+        <p className="p">Page not found.</p>
+      </section>
+    </main>
+  );
+}
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<div style={{ padding: 16 }}>Loading...</div>}>
-        <Routes>
-          {/* Public site */}
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<Home />} />
-            <Route path="products" element={<Products />} />
-            <Route path="quality" element={<Quality />} />
-            <Route path="careers" element={<Careers />} />
-            <Route path="contact" element={<Contact />} />
-            <Route path="privacy" element={<Privacy />} />
-            <Route path="terms" element={<Terms />} />
-          </Route>
+      <Routes>
+        {/* Public website */}
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/careers" element={<Careers />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/quality" element={<Quality />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+        </Route>
 
-          {/* Backward-compat (old marketing path if it existed) */}
-          <Route path="/marketing" element={<Navigate to="/" replace />} />
+        {/* Keep /login as an alias (your header uses it) */}
+        <Route path="/login" element={<Navigate to="/crm/login" replace />} />
 
-          {/* keep old login working */}
-          <Route path="/login" element={<Navigate to="/crm/login" replace />} />
-          <Route path="/crm/login" element={<LoginPage />} />
+        {/* CRM */}
+        <Route path="/crm/login" element={<LoginPage />} />
 
-          <Route
-            path="/crm"
-            element={
-              <ProtectedRoute>
-                <CRMLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="/crm/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="products" element={<ProductsPage />} />
-            <Route path="clients" element={<ClientsPage />} />
-            <Route path="sales" element={<SalesPage />} />
-            <Route path="suppliers" element={<SuppliersPage />} />
-            <Route path="salespersons" element={<SalespersonsPage />} />
-            <Route path="users" element={<UsersPage />} />
-            <Route path="recruitment" element={<RecruitmentPage />} />
-            <Route path="*" element={<Navigate to="/crm/dashboard" replace />} />
-          </Route>
+        <Route
+          path="/crm"
+          element={
+            <ProtectedRoute>
+              <CRMLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DashboardPage />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="products" element={<ProductsPage />} />
+          <Route path="suppliers" element={<SuppliersPage />} />
+          <Route path="clients" element={<ClientsPage />} />
+          <Route path="sales" element={<SalesPage />} />
+          <Route path="salespersons" element={<SalespersonsPage />} />
+          <Route path="recruitment" element={<RecruitmentPage />} />
+          <Route path="users" element={<UsersPage />} />
+        </Route>
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
+        {/* Fallback */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </BrowserRouter>
   );
 }

@@ -72,7 +72,7 @@ export default function Contact() {
             <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
               {copy.ctas.quote}
             </a>
-            <a className="btn btn-ghost" href="/login">
+            <a className="btn btn-ghost" href="/crm/login">
               {copy.ctas.staff}
             </a>
           </div>
