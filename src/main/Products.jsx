@@ -7,7 +7,7 @@ const UI_COPY = {
   en: {
     title: "Products",
     subtitle:
-      "Category-level view — request a quotation for exact SKUs, packaging, and documentation availability.",
+      "Explore product categories and submit a targeted quote request for exact SKUs and packaging.",
     filters: [
       { key: "all", label: "All" },
       { key: "wound", label: "Wound care" },
@@ -16,12 +16,12 @@ const UI_COPY = {
     ],
     ctaQuote: "Get a Quote",
     ctaQuality: "Quality & Compliance",
-    note: "Tip: For faster quoting, include pack unit (piece/box/carton), specification, quantity, and destination city.",
+    note: "For faster quoting, include pack unit (piece/box/carton), specification, quantity, and destination city.",
   },
   ar: {
     title: "المنتجات",
     subtitle:
-      "عرض حسب الفئات — اطلب عرض سعر لتحديد الأصناف الدقيقة، وحدة التعبئة، وتوفر المستندات.",
+      "تصفح الفئات المتاحة وقدّم طلب عرض سعر واضح للأصناف الدقيقة ووحدة التعبئة.",
     filters: [
       { key: "all", label: "الكل" },
       { key: "wound", label: "العناية بالجروح" },
@@ -30,7 +30,7 @@ const UI_COPY = {
     ],
     ctaQuote: "احصل على عرض سعر",
     ctaQuality: "الجودة والامتثال",
-    note: "نصيحة: لتسعير أسرع، اذكر وحدة التعبئة (قطعة/علبة/كرتون) والمواصفات والكمية ومدينة/وجهة التسليم.",
+    note: "لتسعير أسرع، اذكر وحدة التعبئة (قطعة/علبة/كرتون) والمواصفات والكمية ومدينة/وجهة التسليم.",
   },
 };
 
@@ -190,23 +190,7 @@ export default function Products() {
           <h1 className="h2" style={{ margin: 0 }}>
             {ui.title}
           </h1>
-          <p className="p">{ui.subtitle}</p>
-
-          <div className="row">
-            <a
-              className="btn btn-primary"
-              href={whatsappQuoteHref}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {ui.ctaQuote}
-            </a>
-            <Link className="btn btn-ghost" to="/quality">
-              {ui.ctaQuality}
-            </Link>
-            <span className="spacer" />
-            <span className="small muted">{ui.note}</span>
-          </div>
+          <p className="p page-intro">{ui.subtitle}</p>
 
           <div className="mkt-products-toolbar" aria-label="Product filters">
             {ui.filters.map((f) => (
@@ -252,6 +236,24 @@ export default function Products() {
               </div>
             </article>
           ))}
+        </div>
+
+        <div className="mkt-products-footer card-soft">
+          <div className="mkt-products-note">{ui.note}</div>
+
+          <div className="row">
+            <a
+              className="btn btn-primary"
+              href={whatsappQuoteHref}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {ui.ctaQuote}
+            </a>
+            <Link className="btn btn-ghost" to="/quality">
+              {ui.ctaQuality}
+            </Link>
+          </div>
         </div>
       </section>
     </main>

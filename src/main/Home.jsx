@@ -10,9 +10,13 @@ function LinkedInIcon({ title = "LinkedIn" }) {
       height="18"
       aria-hidden="true"
       focusable="false"
+      role="img"
     >
       <title>{title}</title>
-      <path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5ZM.5 8.5H4.5V24H.5V8.5ZM8.5 8.5H12.3V10.6H12.36C12.89 9.6 14.2 8.5 16.2 8.5 20.3 8.5 21 11.1 21 14.5V24H17V15.6C17 13.6 17 11.9 15.2 11.9 13.4 11.9 13.1 13.3 13.1 15.5V24H9.1V8.5H8.5Z" />
+      <path
+        fill="currentColor"
+        d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5ZM.5 8.5H4.5V24H.5V8.5ZM8.5 8.5H12.3V10.6H12.36C12.89 9.6 14.2 8.5 16.2 8.5 20.3 8.5 21 11.1 21 14.5V24H17V15.6C17 13.6 17 11.9 15.2 11.9 13.4 11.9 13.1 13.3 13.1 15.5V24H9.1V8.5H8.5Z"
+      />
     </svg>
   );
 }
@@ -32,10 +36,6 @@ export default function Home() {
 
   const mdLinkedInUrl = t?.mdLinkedInUrl || "";
   const mdLinkedInLabel = t?.mdLinkedInLabel || (isAr ? "لينكدإن" : "LinkedIn");
-
-  const companyLinkedInUrl = t?.companyLinkedInUrl || "";
-  const companyLinkedInLabel =
-    t?.companyLinkedInLabel || (isAr ? "لينكدإن الشركة" : "Company LinkedIn");
 
   const COPY = isAr
     ? {
@@ -282,7 +282,7 @@ export default function Home() {
               <div className="md-title">{COPY.mdTitle}</div>
               <div className="md-name">{COPY.mdName}</div>
 
-              {/* ✅ LinkedIn icons directly under name (personal + company) */}
+              {/* LinkedIn (Managing Director only) */}
               <div className="md-links-undername">
                 {mdLinkedInUrl ? (
                   <a
@@ -296,21 +296,6 @@ export default function Home() {
                       <LinkedInIcon title={mdLinkedInLabel} />
                     </span>
                     <span>{mdLinkedInLabel}</span>
-                  </a>
-                ) : null}
-
-                {companyLinkedInUrl ? (
-                  <a
-                    className="md-linkedin-undername"
-                    href={companyLinkedInUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={companyLinkedInLabel}
-                  >
-                    <span className="md-linkedin-icon" aria-hidden="true">
-                      <LinkedInIcon title={companyLinkedInLabel} />
-                    </span>
-                    <span>{companyLinkedInLabel}</span>
                   </a>
                 ) : null}
               </div>
