@@ -4,7 +4,13 @@ import { Link, useOutletContext } from "react-router-dom";
 
 function LinkedInIcon({ title = "LinkedIn" }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      aria-hidden="true"
+      focusable="false"
+    >
       <title>{title}</title>
       <path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5ZM.5 8.5H4.5V24H.5V8.5ZM8.5 8.5H12.3V10.6H12.36C12.89 9.6 14.2 8.5 16.2 8.5 20.3 8.5 21 11.1 21 14.5V24H17V15.6C17 13.6 17 11.9 15.2 11.9 13.4 11.9 13.1 13.3 13.1 15.5V24H9.1V8.5H8.5Z" />
     </svg>
@@ -80,10 +86,22 @@ export default function Home() {
 
         trustTitle: "معايير تشغيل نركز عليها",
         trust: [
-          { k: "ثبات المواصفات", v: "الأولوية للمنتجات ذات مواصفات وتعبئة قابلة للتكرار." },
-          { k: "وضوح التعبئة", v: "نحدد القطعة/علبة/كرتون لأن ذلك مهم للصيدليات." },
-          { k: "التتبع عند توفره", v: "معلومات دفعة/تشغيلة وتاريخ انتهاء عندما يوفرها المورد." },
-          { k: "ملاحظة امتثال", v: "المتطلبات تختلف حسب الوجهة؛ نوفر إرشاداً عملياً عند الطلب." },
+          {
+            k: "ثبات المواصفات",
+            v: "الأولوية للمنتجات ذات مواصفات وتعبئة قابلة للتكرار.",
+          },
+          {
+            k: "وضوح التعبئة",
+            v: "نحدد القطعة/علبة/كرتون لأن ذلك مهم للصيدليات.",
+          },
+          {
+            k: "التتبع عند توفره",
+            v: "معلومات دفعة/تشغيلة وتاريخ انتهاء عندما يوفرها المورد.",
+          },
+          {
+            k: "ملاحظة امتثال",
+            v: "المتطلبات تختلف حسب الوجهة؛ نوفر إرشاداً عملياً عند الطلب.",
+          },
         ],
 
         mdTitle: "المدير العام",
@@ -142,10 +160,22 @@ export default function Home() {
 
         trustTitle: "Operating focus",
         trust: [
-          { k: "Consistency", v: "We prioritize repeatable specs and packaging across orders." },
-          { k: "Pack clarity", v: "We confirm unit/box/carton because it matters for resellers." },
-          { k: "Traceability when available", v: "Lot/batch and expiry details when provided upstream." },
-          { k: "Compliance note", v: "Requirements vary by destination; we provide practical guidance on request." },
+          {
+            k: "Consistency",
+            v: "We prioritize repeatable specs and packaging across orders.",
+          },
+          {
+            k: "Pack clarity",
+            v: "We confirm unit/box/carton because it matters for resellers.",
+          },
+          {
+            k: "Traceability when available",
+            v: "Lot/batch and expiry details when provided upstream.",
+          },
+          {
+            k: "Compliance note",
+            v: "Requirements vary by destination; we provide practical guidance on request.",
+          },
         ],
 
         mdTitle: "Managing Director",
@@ -167,7 +197,12 @@ export default function Home() {
             <div className="pill">{COPY.sla}</div>
 
             <div className="page-hero-actions">
-              <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+              <a
+                className="btn btn-primary"
+                href={whatsappQuoteHref}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 {COPY.ctaQuote}
               </a>
               <Link className="btn btn-ghost" to="/products">
@@ -176,9 +211,15 @@ export default function Home() {
             </div>
 
             <div className="page-hero-links">
-              <Link className="text-link" to="/careers">{COPY.ctaCareers}</Link>
-              <span className="dot" aria-hidden="true">•</span>
-              <Link className="text-link" to="/quality">{COPY.ctaQuality}</Link>
+              <Link className="text-link" to="/careers">
+                {COPY.ctaCareers}
+              </Link>
+              <span className="dot" aria-hidden="true">
+                •
+              </span>
+              <Link className="text-link" to="/quality">
+                {COPY.ctaQuality}
+              </Link>
             </div>
           </div>
 
@@ -199,7 +240,9 @@ export default function Home() {
               <div className="card-title">{COPY.aboutTitle}</div>
               <p className="muted">{COPY.aboutText}</p>
               <ul className="bullets">
-                {COPY.aboutBullets.map((x) => <li key={x}>{x}</li>)}
+                {COPY.aboutBullets.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
               </ul>
             </div>
           </div>
@@ -276,8 +319,15 @@ export default function Home() {
               <div className="md-body">{COPY.mdBody}</div>
 
               <div className="md-actions">
-                <Link className="btn btn-ghost" to="/contact">{COPY.contactCta}</Link>
-                <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+                <Link className="btn btn-ghost" to="/contact">
+                  {COPY.contactCta}
+                </Link>
+                <a
+                  className="btn btn-primary"
+                  href={whatsappQuoteHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {COPY.ctaQuote}
                 </a>
               </div>

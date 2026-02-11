@@ -10,7 +10,7 @@ export default function SiteFooter({ lang = "en" }) {
   const data = isAr
     ? {
         legalNameLabel: "الاسم القانوني",
-        legalName: "الزمرد للمستلزمات الطبيه ذ.م.م",
+        legalName: "الزمرد للمستلزمات الطبية ذ.م.م",
         addressLabel: "العنوان",
         address: "Sport City Circle, Amman, Jordan",
         idsLabel: "بيانات الشركة",

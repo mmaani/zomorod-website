@@ -33,7 +33,8 @@ const UI_COPY = {
     submit: "Submit application",
     submitting: "Submitting…",
     success: "Your application has been submitted successfully.",
-    validationError: "Please select a job and fill all required fields before submitting.",
+    validationError:
+      "Please select a job and fill all required fields before submitting.",
 
     fields: {
       firstName: "First name",
@@ -47,17 +48,22 @@ const UI_COPY = {
       cover: "Cover letter (optional file)",
     },
 
-    educationOptions: ["High School", "Diploma", "Bachelor's Degree", "Master's Degree", "PhD", "Other"],
+    educationOptions: [
+      "High School",
+      "Diploma",
+      "Bachelor's Degree",
+      "Master's Degree",
+      "PhD",
+      "Other",
+    ],
 
     whatsapp: {
       title: "Prefer WhatsApp?",
-      body:
-        "You can also send a short message on WhatsApp and we’ll respond with next steps.",
+      body: "You can also send a short message on WhatsApp and we’ll respond with next steps.",
       cta: "WhatsApp us",
-      message: "Hello Zomorod, I want to apply for a vacancy. Please advise the next steps.",
+      message:
+        "Hello Zomorod, I want to apply for a vacancy. Please advise the next steps.",
     },
-
-
   },
 
   ar: {
@@ -86,7 +92,8 @@ const UI_COPY = {
     submit: "إرسال الطلب",
     submitting: "جاري الإرسال…",
     success: "تم إرسال طلبك بنجاح.",
-    validationError: "يرجى اختيار وظيفة ثم تعبئة جميع الحقول المطلوبة قبل الإرسال.",
+    validationError:
+      "يرجى اختيار وظيفة ثم تعبئة جميع الحقول المطلوبة قبل الإرسال.",
 
     fields: {
       firstName: "الاسم الأول",
@@ -100,25 +107,36 @@ const UI_COPY = {
       cover: "رسالة تغطية (ملف اختياري)",
     },
 
-    educationOptions: ["ثانوي", "دبلوم", "بكالوريوس", "ماجستير", "دكتوراه", "أخرى"],
+    educationOptions: [
+      "ثانوي",
+      "دبلوم",
+      "بكالوريوس",
+      "ماجستير",
+      "دكتوراه",
+      "أخرى",
+    ],
 
     whatsapp: {
       title: "تفضّل واتساب؟",
       body: "يمكنك إرسال رسالة قصيرة عبر واتساب وسنرد عليك بالخطوات التالية.",
       cta: "راسلنا واتساب",
-      message: "مرحباً زمرد، أريد التقديم على وظيفة. يرجى تزويدي بالخطوات التالية.",
+      message:
+        "مرحباً زمرد، أريد التقديم على وظيفة. يرجى تزويدي بالخطوات التالية.",
     },
-
-
   },
 };
 
 function stripHtml(html) {
-  return String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return String(html || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function truncateWords(text, maxWords) {
-  const words = String(text || "").split(/\s+/).filter(Boolean);
+  const words = String(text || "")
+    .split(/\s+/)
+    .filter(Boolean);
   if (words.length <= maxWords) return String(text || "");
   return `${words.slice(0, maxWords).join(" ")}…`;
 }
@@ -186,7 +204,9 @@ export default function Careers() {
       setJobsLoading(true);
       setJobsError("");
       try {
-        const res = await fetch("/api/recruitment?resource=jobs", { cache: "no-store" });
+        const res = await fetch("/api/recruitment?resource=jobs", {
+          cache: "no-store",
+        });
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok || !data?.ok) {
@@ -194,7 +214,9 @@ export default function Careers() {
         }
 
         const rows = Array.isArray(data.jobs) ? data.jobs : [];
-        const normalized = rows.map(normalizeJob).filter((j) => j.id && j.title);
+        const normalized = rows
+          .map(normalizeJob)
+          .filter((j) => j.id && j.title);
 
         if (!alive) return;
         setJobs(normalized);
@@ -288,11 +310,15 @@ export default function Careers() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data?.ok) {
-        throw new Error(data?.detail || data?.error || "Failed to submit application");
+        throw new Error(
+          data?.detail || data?.error || "Failed to submit application",
+        );
       }
 
       if (data?.sheetSync?.ok === false) {
-        throw new Error(data?.sheetSync?.error || "Saved, but Google Sheet sync failed");
+        throw new Error(
+          data?.sheetSync?.error || "Saved, but Google Sheet sync failed",
+        );
       }
 
       setApplyMsg(t.success);
@@ -305,7 +331,10 @@ export default function Careers() {
     }
   }
 
-  const whatsappHref = useMemo(() => buildWhatsAppLink(t.whatsapp.message), [t.whatsapp.message]);
+  const whatsappHref = useMemo(
+    () => buildWhatsAppLink(t.whatsapp.message),
+    [t.whatsapp.message],
+  );
 
   return (
     <div className="page" dir={lang === "ar" ? "rtl" : "ltr"}>
@@ -318,28 +347,42 @@ export default function Careers() {
         {/* JOBS */}
         <section className="jobs card">
           <div className="card-pad">
-            <h2 style={{ margin: 0 }}>{lang === "ar" ? "الوظائف المفتوحة" : "Open vacancies"}</h2>
-            {paginationSummary ? <div className="muted small" style={{ marginTop: 6 }}>{paginationSummary}</div> : null}
+            <h2 style={{ margin: 0 }}>
+              {lang === "ar" ? "الوظائف المفتوحة" : "Open vacancies"}
+            </h2>
+            {paginationSummary ? (
+              <div className="muted small" style={{ marginTop: 6 }}>
+                {paginationSummary}
+              </div>
+            ) : null}
           </div>
 
           <div className="job-list">
             {jobsLoading ? (
               <div className="card-pad">
-                <p className="muted" style={{ margin: 0 }}>{t.loading}</p>
+                <p className="muted" style={{ margin: 0 }}>
+                  {t.loading}
+                </p>
               </div>
             ) : jobsError ? (
               <div className="card-pad">
-                <p className="muted" style={{ margin: 0 }}>{jobsError}</p>
+                <p className="muted" style={{ margin: 0 }}>
+                  {jobsError}
+                </p>
               </div>
             ) : !jobs.length ? (
               <div className="card-pad">
-                <p className="muted" style={{ margin: 0 }}>{t.empty}</p>
+                <p className="muted" style={{ margin: 0 }}>
+                  {t.empty}
+                </p>
               </div>
             ) : (
               <>
                 {pageJobs.map((job) => {
                   const fullText = stripHtml(job.jobDescriptionHtml);
-                  const isLong = fullText.split(/\s+/).filter(Boolean).length > PREVIEW_WORDS;
+                  const isLong =
+                    fullText.split(/\s+/).filter(Boolean).length >
+                    PREVIEW_WORDS;
                   const isExpanded = !!expandedJobs[job.id];
                   const preview = truncateWords(fullText, PREVIEW_WORDS);
 
@@ -375,7 +418,8 @@ export default function Careers() {
                         ) : (
                           <div
                             dangerouslySetInnerHTML={{
-                              __html: job.jobDescriptionHtml || `<p>${preview}</p>`,
+                              __html:
+                                job.jobDescriptionHtml || `<p>${preview}</p>`,
                             }}
                           />
                         )}
@@ -409,7 +453,10 @@ export default function Careers() {
 
                       <div className="spacer" />
 
-                      <div className="muted small" style={{ alignSelf: "center" }}>
+                      <div
+                        className="muted small"
+                        style={{ alignSelf: "center" }}
+                      >
                         {t.pagination.page} {page} {t.pagination.of} {pageCount}
                       </div>
 
@@ -435,7 +482,9 @@ export default function Careers() {
         <section className="apply card" ref={applyFormRef}>
           <div className="apply-head">
             <h2 style={{ margin: 0 }}>{t.applyTitle}</h2>
-            <p className="muted" style={{ margin: 0 }}>{t.applySubtitle}</p>
+            <p className="muted" style={{ margin: 0 }}>
+              {t.applySubtitle}
+            </p>
           </div>
 
           <div className="card-pad">
@@ -467,7 +516,12 @@ export default function Careers() {
                   </div>
                 ) : selectedJob ? (
                   <div className="muted small" style={{ marginTop: 6 }}>
-                    {[selectedJob.department, selectedJob.locationCity, selectedJob.locationCountry, selectedJob.employmentType]
+                    {[
+                      selectedJob.department,
+                      selectedJob.locationCity,
+                      selectedJob.locationCountry,
+                      selectedJob.employmentType,
+                    ]
                       .filter(Boolean)
                       .join(" • ")}
                   </div>
@@ -494,7 +548,12 @@ export default function Careers() {
 
                 <div className="field">
                   <label className="muted small">{t.fields.education}</label>
-                  <select className="input" name="educationLevel" defaultValue="" required>
+                  <select
+                    className="input"
+                    name="educationLevel"
+                    defaultValue=""
+                    required
+                  >
                     <option value="" disabled>
                       {t.fields.education}
                     </option>
@@ -548,7 +607,6 @@ export default function Careers() {
                 </button>
 
                 <div className="spacer" />
-
               </div>
 
               {applyErr ? (
@@ -568,7 +626,12 @@ export default function Careers() {
 
             <h3 style={{ marginTop: 0 }}>{t.whatsapp.title}</h3>
             <p className="muted">{t.whatsapp.body}</p>
-            <a className="btn" href={whatsappHref} target="_blank" rel="noopener noreferrer">
+            <a
+              className="btn"
+              href={whatsappHref}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               {t.whatsapp.cta}
             </a>
           </div>

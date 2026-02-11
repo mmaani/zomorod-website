@@ -16,8 +16,7 @@ const UI_COPY = {
     ],
     ctaQuote: "Get a Quote",
     ctaQuality: "Quality & Compliance",
-    note:
-      "Tip: For faster quoting, include pack unit (piece/box/carton), specification, quantity, and destination city.",
+    note: "Tip: For faster quoting, include pack unit (piece/box/carton), specification, quantity, and destination city.",
   },
   ar: {
     title: "المنتجات",
@@ -31,8 +30,7 @@ const UI_COPY = {
     ],
     ctaQuote: "احصل على عرض سعر",
     ctaQuality: "الجودة والامتثال",
-    note:
-      "نصيحة: لتسعير أسرع، اذكر وحدة التعبئة (قطعة/علبة/كرتون) والمواصفات والكمية ومدينة/وجهة التسليم.",
+    note: "نصيحة: لتسعير أسرع، اذكر وحدة التعبئة (قطعة/علبة/كرتون) والمواصفات والكمية ومدينة/وجهة التسليم.",
   },
 };
 
@@ -42,8 +40,7 @@ const PRODUCT_ITEMS = {
       id: "adv-wound",
       category: "wound",
       title: "Advanced wound care dressings",
-      body:
-        "Silicone foam, hydrocolloid, and transparent film dressings (sterile options).",
+      body: "Silicone foam, hydrocolloid, and transparent film dressings (sterile options).",
       imgPng: "/products/advanced-wound-care.png",
       imgPng2x: "/products/advanced-wound-care@2x.png",
       imgSvg: "/products/advanced-wound-care.svg",
@@ -53,8 +50,7 @@ const PRODUCT_ITEMS = {
       id: "basic-wound",
       category: "wound",
       title: "Basic wound care consumables",
-      body:
-        "Gauze swabs & rolls, non-woven pads, and elastic/crepe bandages for routine care.",
+      body: "Gauze swabs & rolls, non-woven pads, and elastic/crepe bandages for routine care.",
       imgPng: "/products/basic-wound-care.png",
       imgPng2x: "/products/basic-wound-care@2x.png",
       imgSvg: "/products/basic-wound-care.svg",
@@ -64,8 +60,7 @@ const PRODUCT_ITEMS = {
       id: "nitrile-gloves",
       category: "ppe",
       title: "Nitrile examination gloves",
-      body:
-        "Powder-free nitrile exam gloves (sizes S/M) with consistent QC and clear labeling.",
+      body: "Powder-free nitrile exam gloves (sizes S/M) with consistent QC and clear labeling.",
       imgPng: "/products/nitrile-gloves.png",
       imgPng2x: "/products/nitrile-gloves@2x.png",
       imgSvg: "/products/nitrile-gloves.svg",
@@ -75,8 +70,7 @@ const PRODUCT_ITEMS = {
       id: "surgical-masks",
       category: "ppe",
       title: "Type IIR surgical masks (optional add-on)",
-      body:
-        "Type IIR masks with ear-loop or head-loop options, suitable for private-sector channels.",
+      body: "Type IIR masks with ear-loop or head-loop options, suitable for private-sector channels.",
       imgPng: "/products/surgical-masks.png",
       imgPng2x: "/products/surgical-masks@2x.png",
       imgSvg: "/products/surgical-masks.svg",
@@ -86,8 +80,7 @@ const PRODUCT_ITEMS = {
       id: "silicone-bottles",
       category: "baby",
       title: "Silicone baby feeding bottles",
-      body:
-        "Food-grade silicone bottles (150/240/330 ml), heat-resistant and sterilization-safe.",
+      body: "Food-grade silicone bottles (150/240/330 ml), heat-resistant and sterilization-safe.",
       imgPng: "/products/silicone-baby-bottle.png",
       imgPng2x: "/products/silicone-baby-bottle@2x.png",
       imgSvg: "/products/silicone-baby-bottle.svg",
@@ -97,8 +90,7 @@ const PRODUCT_ITEMS = {
       id: "silicone-pacifiers",
       category: "baby",
       title: "Silicone pacifiers (phase 2)",
-      body:
-        "Orthodontic and standard shapes (0–6m / 6–18m), individually packaged.",
+      body: "Orthodontic and standard shapes (0–6m / 6–18m), individually packaged.",
       imgPng: "/products/silicone-pacifier.png",
       imgPng2x: "/products/silicone-pacifier@2x.png",
       imgSvg: "/products/silicone-pacifier.svg",
@@ -110,8 +102,7 @@ const PRODUCT_ITEMS = {
       id: "adv-wound",
       category: "wound",
       title: "ضمادات عناية متقدمة بالجروح",
-      body:
-        "ضمادات رغوية سيليكون، هيدروكولويد، وضمادات فيلم شفافة (خيارات معقمة).",
+      body: "ضمادات رغوية سيليكون، هيدروكولويد، وضمادات فيلم شفافة (خيارات معقمة).",
       imgPng: "/products/advanced-wound-care.png",
       imgPng2x: "/products/advanced-wound-care@2x.png",
       imgSvg: "/products/advanced-wound-care.svg",
@@ -121,8 +112,7 @@ const PRODUCT_ITEMS = {
       id: "basic-wound",
       category: "wound",
       title: "مستلزمات العناية الأساسية بالجروح",
-      body:
-        "شاش ولفائف شاش، فوط/وسائد غير منسوجة، ورباط/ضماد مرن للعناية الروتينية.",
+      body: "شاش ولفائف شاش، فوط/وسائد غير منسوجة، ورباط/ضماد مرن للعناية الروتينية.",
       imgPng: "/products/basic-wound-care.png",
       imgPng2x: "/products/basic-wound-care@2x.png",
       imgSvg: "/products/basic-wound-care.svg",
@@ -132,8 +122,7 @@ const PRODUCT_ITEMS = {
       id: "nitrile-gloves",
       category: "ppe",
       title: "قفازات فحص نيتريل",
-      body:
-        "قفازات نيتريل للفحص بدون بودرة (مقاسات S/M) مع ضبط جودة وتوسيم واضح.",
+      body: "قفازات نيتريل للفحص بدون بودرة (مقاسات S/M) مع ضبط جودة وتوسيم واضح.",
       imgPng: "/products/nitrile-gloves.png",
       imgPng2x: "/products/nitrile-gloves@2x.png",
       imgSvg: "/products/nitrile-gloves.svg",
@@ -143,8 +132,7 @@ const PRODUCT_ITEMS = {
       id: "surgical-masks",
       category: "ppe",
       title: "كمامات جراحية Type IIR (اختياري)",
-      body:
-        "كمامات Type IIR بخيارات ربط خلف الأذن أو خلف الرأس، مناسبة لقنوات القطاع الخاص.",
+      body: "كمامات Type IIR بخيارات ربط خلف الأذن أو خلف الرأس، مناسبة لقنوات القطاع الخاص.",
       imgPng: "/products/surgical-masks.png",
       imgPng2x: "/products/surgical-masks@2x.png",
       imgSvg: "/products/surgical-masks.svg",
@@ -154,8 +142,7 @@ const PRODUCT_ITEMS = {
       id: "silicone-bottles",
       category: "baby",
       title: "رضّاعات سيليكون",
-      body:
-        "رضّاعات سيليكون بدرجة غذائية (150/240/330 مل)، مقاومة للحرارة وآمنة للتعقيم.",
+      body: "رضّاعات سيليكون بدرجة غذائية (150/240/330 مل)، مقاومة للحرارة وآمنة للتعقيم.",
       imgPng: "/products/silicone-baby-bottle.png",
       imgPng2x: "/products/silicone-baby-bottle@2x.png",
       imgSvg: "/products/silicone-baby-bottle.svg",
@@ -165,8 +152,7 @@ const PRODUCT_ITEMS = {
       id: "silicone-pacifiers",
       category: "baby",
       title: "لهايات سيليكون (مرحلة 2)",
-      body:
-        "أشكال تقويمية وعادية (0–6 أشهر / 6–18 شهر)، مغلفة بشكل فردي.",
+      body: "أشكال تقويمية وعادية (0–6 أشهر / 6–18 شهر)، مغلفة بشكل فردي.",
       imgPng: "/products/silicone-pacifier.png",
       imgPng2x: "/products/silicone-pacifier@2x.png",
       imgSvg: "/products/silicone-pacifier.svg",
@@ -192,7 +178,10 @@ export default function Products() {
     lang === "ar"
       ? "مرحباً، أريد عرض سعر. الرجاء تحديد الفئة، المواصفات، وحدة التعبئة، الكمية، ومدينة التسليم."
       : "Hi, I'd like a quote. Please specify category, specification, pack unit, quantity, and delivery city.";
-  const whatsappQuoteHref = useMemo(() => buildWhatsAppLink(quoteBase), [quoteBase]);
+  const whatsappQuoteHref = useMemo(
+    () => buildWhatsAppLink(quoteBase),
+    [quoteBase],
+  );
 
   return (
     <main className="page" dir={t?.dir || "ltr"}>
@@ -204,7 +193,12 @@ export default function Products() {
           <p className="p">{ui.subtitle}</p>
 
           <div className="row">
-            <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+            <a
+              className="btn btn-primary"
+              href={whatsappQuoteHref}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               {ui.ctaQuote}
             </a>
             <Link className="btn btn-ghost" to="/quality">
@@ -248,9 +242,13 @@ export default function Products() {
               <p className="mkt-product-body">{p.body}</p>
 
               <div className="mkt-product-tags">
-                {Array.isArray(p.tags) ? p.tags.map((tag) => (
-                  <span key={tag} className="mkt-tag">{tag}</span>
-                )) : null}
+                {Array.isArray(p.tags)
+                  ? p.tags.map((tag) => (
+                      <span key={tag} className="mkt-tag">
+                        {tag}
+                      </span>
+                    ))
+                  : null}
               </div>
             </article>
           ))}

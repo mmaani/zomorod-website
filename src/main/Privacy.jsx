@@ -45,34 +45,33 @@ const PRIVACY_COPY = {
         h: "3) How we use your data",
         list: [
           { t: "To respond to quote requests and business inquiries." },
-          { t: "To process recruitment applications and communicate with applicants." },
-          { t: "To maintain site security, prevent abuse, and improve reliability." },
+          {
+            t: "To process recruitment applications and communicate with applicants.",
+          },
+          {
+            t: "To maintain site security, prevent abuse, and improve reliability.",
+          },
         ],
       },
       {
         h: "4) Sharing",
-        body:
-          "We do not sell personal data. We may share limited data with service providers that help us run the website (hosting, email delivery, file storage) and only as needed to provide the service.",
+        body: "We do not sell personal data. We may share limited data with service providers that help us run the website (hosting, email delivery, file storage) and only as needed to provide the service.",
       },
       {
         h: "5) Retention",
-        body:
-          "We retain data only as long as necessary for the purposes described above, unless a longer period is required for legitimate business needs or legal obligations. Recruitment files may be kept for a reasonable period to evaluate candidates and maintain hiring records.",
+        body: "We retain data only as long as necessary for the purposes described above, unless a longer period is required for legitimate business needs or legal obligations. Recruitment files may be kept for a reasonable period to evaluate candidates and maintain hiring records.",
       },
       {
         h: "6) Security",
-        body:
-          "We use reasonable administrative and technical measures to protect data. However, no system can be guaranteed 100% secure.",
+        body: "We use reasonable administrative and technical measures to protect data. However, no system can be guaranteed 100% secure.",
       },
       {
         h: "7) Your choices",
-        body:
-          "You may request access, correction, or deletion of your personal data by emailing us.",
+        body: "You may request access, correction, or deletion of your personal data by emailing us.",
       },
       {
         h: "8) Updates",
-        body:
-          "We may update this policy from time to time. The latest version will be posted on this page.",
+        body: "We may update this policy from time to time. The latest version will be posted on this page.",
       },
     ],
   },
@@ -125,28 +124,23 @@ const PRIVACY_COPY = {
       },
       {
         h: "4) مشاركة البيانات",
-        body:
-          "لا نقوم ببيع البيانات الشخصية. قد نشارك بيانات محدودة مع مزودي خدمات يساعدوننا في تشغيل الموقع (الاستضافة، البريد، التخزين) وبالقدر اللازم لتقديم الخدمة.",
+        body: "لا نقوم ببيع البيانات الشخصية. قد نشارك بيانات محدودة مع مزودي خدمات يساعدوننا في تشغيل الموقع (الاستضافة، البريد، التخزين) وبالقدر اللازم لتقديم الخدمة.",
       },
       {
         h: "5) مدة الاحتفاظ",
-        body:
-          "نحتفظ بالبيانات فقط للمدة اللازمة للأغراض المذكورة أعلاه، ما لم تلزم مدة أطول لاحتياجات تشغيلية مشروعة أو التزامات قانونية. قد تُحفظ ملفات التوظيف لمدة معقولة لتقييم المرشحين والاحتفاظ بسجلات التوظيف.",
+        body: "نحتفظ بالبيانات فقط للمدة اللازمة للأغراض المذكورة أعلاه، ما لم تلزم مدة أطول لاحتياجات تشغيلية مشروعة أو التزامات قانونية. قد تُحفظ ملفات التوظيف لمدة معقولة لتقييم المرشحين والاحتفاظ بسجلات التوظيف.",
       },
       {
         h: "6) الأمان",
-        body:
-          "نستخدم تدابير إدارية وتقنية معقولة لحماية البيانات، ومع ذلك لا يمكن ضمان الأمان بنسبة 100%.",
+        body: "نستخدم تدابير إدارية وتقنية معقولة لحماية البيانات، ومع ذلك لا يمكن ضمان الأمان بنسبة 100%.",
       },
       {
         h: "7) خياراتك",
-        body:
-          "يمكنك طلب الوصول إلى بياناتك أو تصحيحها أو حذفها عبر مراسلتنا بالبريد الإلكتروني.",
+        body: "يمكنك طلب الوصول إلى بياناتك أو تصحيحها أو حذفها عبر مراسلتنا بالبريد الإلكتروني.",
       },
       {
         h: "8) التحديثات",
-        body:
-          "قد نقوم بتحديث هذه السياسة من وقت لآخر، وسيتم نشر أحدث نسخة على هذه الصفحة.",
+        body: "قد نقوم بتحديث هذه السياسة من وقت لآخر، وسيتم نشر أحدث نسخة على هذه الصفحة.",
       },
     ],
   },
@@ -182,7 +176,11 @@ export default function Privacy() {
 
         <div className="grid" style={{ gap: 14 }}>
           {c.sections.map((s) => (
-            <div key={s.h} className="card" style={{ padding: 16, background: "rgba(255,255,255,.03)" }}>
+            <div
+              key={s.h}
+              className="card"
+              style={{ padding: 16, background: "rgba(255,255,255,.03)" }}
+            >
               <div className="h2" style={{ fontSize: 16, margin: 0 }}>
                 {s.h}
               </div>
