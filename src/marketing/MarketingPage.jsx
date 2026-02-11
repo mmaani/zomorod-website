@@ -12,21 +12,30 @@ const COPY = {
   en: {
     dir: "ltr",
     langLabel: "عربي",
+
     brandName: "Zomorod Medical Supplies LLC",
     tagline:
       "Reliable supply and consistent specifications for pharmacies and resellers — Jordan & Syria.",
     responseSla: "Quote response within 48 business hours.",
 
-    ctaStaff: "Staff Login",
-    ctaWhatsapp: "Get a Quote",
+    nav: { company: "Company", products: "Products", careers: "Careers", contact: "Contact" },
 
-    metrics: [
-      { value: "Jordan & Syria", label: "Coverage" },
-      { value: "Pharmacies & resellers", label: "Primary buyers" },
-      { value: "Consistency-first", label: "Supply approach" },
+    ctaStaff: "Staff Login",
+    ctaQuote: "Get a Quote",
+    ctaBrowse: "Browse Products",
+
+    highlights: [
+      { title: "Consistent specs", text: "Stable packaging and specifications across repeat orders." },
+      { title: "Fast quoting", text: "Clear, practical quotes with availability checks when needed." },
+      { title: "Buyer-focused", text: "Designed for pharmacies, resellers, clinics, and labs." },
     ],
 
-    tabs: { about: "Company", products: "Products", careers: "Careers" },
+    stats: [
+      { value: "48h", label: "Quote response" },
+      { value: "Jordan & Syria", label: "Coverage" },
+      { value: "Compliance-aware", label: "Documentation guidance" },
+      { value: "Consistency-first", label: "Supply approach" },
+    ],
 
     aboutTitle: "Professional medical supply solutions",
     aboutText:
@@ -39,44 +48,20 @@ const COPY = {
 
     trustTitle: "Trust & operating standards",
     trustPoints: [
-      {
-        k: "Buyer fit",
-        v: "Built for professional buyers (pharmacies, resellers, clinics, labs).",
-      },
-      {
-        k: "Consistency",
-        v: "We prioritize consistency of specs and packaging across repeat orders.",
-      },
-      {
-        k: "Traceability",
-        v: "Traceability when available from suppliers (e.g., lot/batch details).",
-      },
-      {
-        k: "Compliance note",
-        v: "Regulatory and import requirements vary by destination; we advise accordingly.",
-      },
-    ],
-
-    mdTitle: "Managing Director",
-    mdName: "Mohammad Maani",
-    mdRole: "Managing Director (MBA) • 12+ years of operational leadership",
-    mdBody:
-      "Leads sourcing discipline, partner coordination, and delivery execution across Jordan and regional markets.",
-    mdLinkedInLabel: "LinkedIn",
-
-    servicesTitle: "Our services",
-    services: [
-      "Medical consumables procurement and supply planning",
-      "Availability checks and volume-based quotations",
-      "Documentation guidance (as applicable) and basic traceability",
-      "Order fulfillment coordination and after-sales follow-up",
+      { k: "Buyer fit", v: "Built for professional buyers (pharmacies, resellers, clinics, labs)." },
+      { k: "Consistency", v: "We prioritize stable specs and packaging across repeat orders." },
+      { k: "Traceability", v: "Traceability when available (e.g., lot/batch details)." },
+      { k: "Compliance note", v: "Regulatory and import requirements vary by destination; we advise accordingly." },
     ],
 
     productsTitle: "Pilot product lines",
-    productsNote:
-      "Category-level view — request a quotation for exact SKUs, packaging, and documentation.",
-    sectorsTitle: "Who we serve",
-    sectors: ["Pharmacies", "Resellers / distributors", "Clinics", "Laboratories"],
+    productsNote: "Category-level view — request a quotation for exact SKUs, packaging, and documentation.",
+    filters: [
+      { key: "all", label: "All" },
+      { key: "wound", label: "Wound care" },
+      { key: "ppe", label: "PPE" },
+      { key: "baby", label: "Baby care" },
+    ],
 
     careersTitle: "Recruitment announcements",
     careersSubtitle: "Open vacancies published from CRM. Apply directly below.",
@@ -95,8 +80,7 @@ const COPY = {
     cover: "Cover letter (optional)",
 
     quoteTitle: "Request a Quote",
-    quoteSubtitle:
-      "Fastest way: WhatsApp your request with category, specification, quantity, and delivery city.",
+    quoteSubtitle: "Fastest way: WhatsApp your request with category, specification, quantity, and delivery city.",
     quoteChecklistTitle: "Include in your message",
     quoteChecklist: [
       "Buyer type (pharmacy or reseller)",
@@ -116,24 +100,33 @@ const COPY = {
   ar: {
     dir: "rtl",
     langLabel: "EN",
+
     brandName: "شركة زمرد للمستلزمات الطبية ذ.م.م",
     tagline: "توريد موثوق ومواصفات ثابتة للصيدليات والموزعين — الأردن وسوريا.",
     responseSla: "الرد على عروض الأسعار خلال 48 ساعة عمل.",
 
-    ctaStaff: "دخول الموظفين",
-    ctaWhatsapp: "احصل على عرض سعر",
+    nav: { company: "الشركة", products: "المنتجات", careers: "الوظائف", contact: "التواصل" },
 
-    metrics: [
-      { value: "الأردن وسوريا", label: "نطاق الخدمة" },
-      { value: "الصيدليات والموزعون", label: "الجهات الأساسية" },
-      { value: "ثبات المواصفات", label: "نهج التوريد" },
+    ctaStaff: "دخول الموظفين",
+    ctaQuote: "احصل على عرض سعر",
+    ctaBrowse: "تصفح المنتجات",
+
+    highlights: [
+      { title: "ثبات المواصفات", text: "تغليف ومواصفات مستقرة في الطلبات المتكررة." },
+      { title: "عروض سريعة", text: "تسعير عملي مع تأكيد التوفر عند الحاجة." },
+      { title: "للجهات المهنية", text: "مناسب للصيدليات والموزعين والعيادات والمختبرات." },
     ],
 
-    tabs: { about: "الشركة", products: "المنتجات", careers: "الوظائف" },
+    stats: [
+      { value: "48 ساعة", label: "زمن الرد" },
+      { value: "الأردن وسوريا", label: "نطاق الخدمة" },
+      { value: "إرشاد وثائقي", label: "امتثال حسب الوجهة" },
+      { value: "ثبات التوريد", label: "نهج التشغيل" },
+    ],
 
     aboutTitle: "حلول احترافية للمستلزمات الطبية",
     aboutText:
-      "من مقرّنا في عمّان، ندعم الصيدليات والعيادات والمختبرات والموزعين عبر توريد قابل للتتبع ونهج يركز على الجودة والامتثال.",
+      "من مقرّنا في عمّان، ندعم الصيدليات والعيادات والمختبرات والموزعين عبر توريد منضبط وواضح وتنفيذ موثوق.",
     aboutPoints: [
       "توريد موثوق مع ثبات في المواصفات",
       "وضوح في أوقات التوريد وتواصل عملي",
@@ -142,44 +135,20 @@ const COPY = {
 
     trustTitle: "الثقة ومعايير التشغيل",
     trustPoints: [
-      {
-        k: "الفئة المستهدفة",
-        v: "مخصص للمشترين المهنيين (صيدليات، موزعون، عيادات، مختبرات).",
-      },
-      {
-        k: "ثبات المواصفات",
-        v: "نركز على ثبات المواصفات والتعبئة في الطلبات المتكررة.",
-      },
-      {
-        k: "التتبع",
-        v: "تتبع عند توفره من الموردين (مثل رقم التشغيلة/الدفعة).",
-      },
-      {
-        k: "ملاحظة تنظيمية",
-        v: "المتطلبات التنظيمية تختلف حسب الوجهة؛ نقدم الإرشاد وفقاً لطلبك.",
-      },
-    ],
-
-    mdTitle: "المدير العام",
-    mdName: "Mohammad Maani",
-    mdRole: "المدير العام (MBA) • خبرة 12+ سنة في الإدارة التشغيلية",
-    mdBody:
-      "يقود الانضباط في التوريد وتنسيق الشركاء وتنفيذ التسليم داخل الأردن والأسواق الإقليمية.",
-    mdLinkedInLabel: "لينكدإن",
-
-    servicesTitle: "خدماتنا",
-    services: [
-      "توريد المستهلكات الطبية وتخطيط احتياجات الإمداد",
-      "تأكيد التوفر وتقديم عروض حسب الكميات",
-      "إرشادات المستندات (عند الاقتضاء) وتتبع أساسي",
-      "تنسيق تنفيذ الطلبات والمتابعة بعد البيع",
+      { k: "الفئة المستهدفة", v: "مخصص للمشترين المهنيين (صيدليات، موزعون، عيادات، مختبرات)." },
+      { k: "ثبات المواصفات", v: "نركز على ثبات المواصفات والتعبئة في الطلبات المتكررة." },
+      { k: "التتبع", v: "تتبع عند توفره من الموردين (مثل رقم التشغيلة/الدفعة)." },
+      { k: "ملاحظة تنظيمية", v: "المتطلبات التنظيمية تختلف حسب الوجهة؛ نقدم الإرشاد وفقاً لطلبك." },
     ],
 
     productsTitle: "خطوط المنتجات التجريبية",
-    productsNote:
-      "عرض حسب الفئات — اطلب عرض سعر لتحديد الأصناف الدقيقة والتغليف والمتطلبات الوثائقية.",
-    sectorsTitle: "الجهات التي نخدمها",
-    sectors: ["الصيدليات", "الموزعون/الموردون", "العيادات", "المختبرات"],
+    productsNote: "عرض حسب الفئات — اطلب عرض سعر لتحديد الأصناف الدقيقة والتغليف والمتطلبات الوثائقية.",
+    filters: [
+      { key: "all", label: "الكل" },
+      { key: "wound", label: "العناية بالجروح" },
+      { key: "ppe", label: "معدات وقاية" },
+      { key: "baby", label: "عناية بالأطفال" },
+    ],
 
     careersTitle: "إعلانات التوظيف",
     careersSubtitle: "الوظائف المفتوحة المنشورة من CRM. يمكن التقديم مباشرة.",
@@ -198,8 +167,7 @@ const COPY = {
     cover: "رسالة تغطية (اختياري)",
 
     quoteTitle: "طلب عرض سعر",
-    quoteSubtitle:
-      "الأسرع: أرسل طلبك عبر واتساب مع الفئة والمواصفات والكمية ومدينة التسليم.",
+    quoteSubtitle: "الأسرع: أرسل طلبك عبر واتساب مع الفئة والمواصفات والكمية ومدينة التسليم.",
     quoteChecklistTitle: "يرجى تضمين التالي",
     quoteChecklist: [
       "نوع الجهة (صيدلية أو موزع)",
@@ -217,21 +185,6 @@ const COPY = {
   },
 };
 
-const PRODUCT_FILTERS = {
-  en: [
-    { key: "all", label: "All" },
-    { key: "wound", label: "Wound care" },
-    { key: "ppe", label: "PPE" },
-    { key: "baby", label: "Baby care" },
-  ],
-  ar: [
-    { key: "all", label: "الكل" },
-    { key: "wound", label: "العناية بالجروح" },
-    { key: "ppe", label: "معدات وقاية" },
-    { key: "baby", label: "عناية بالأطفال" },
-  ],
-};
-
 const PRODUCT_ITEMS = {
   en: [
     {
@@ -239,7 +192,9 @@ const PRODUCT_ITEMS = {
       category: "wound",
       title: "Advanced wound care dressings",
       body: "Silicone foam, hydrocolloid, and transparent film dressings (sterile options).",
-      img: "/products/advanced-wound-care.svg",
+      imgPng: "/products/advanced-wound-care.png",
+      imgPng2x: "/products/advanced-wound-care@2x.png",
+      imgSvg: "/products/advanced-wound-care.svg",
       tags: ["Sterile options", "Clinic use", "High margin"],
     },
     {
@@ -247,7 +202,9 @@ const PRODUCT_ITEMS = {
       category: "wound",
       title: "Basic wound care consumables",
       body: "Gauze swabs & rolls, non-woven pads, and elastic/crepe bandages for routine care.",
-      img: "/products/basic-wound-care.svg",
+      imgPng: "/products/basic-wound-care.png",
+      imgPng2x: "/products/basic-wound-care@2x.png",
+      imgSvg: "/products/basic-wound-care.svg",
       tags: ["Fast-moving", "Bundling-friendly", "Reliable specs"],
     },
     {
@@ -255,15 +212,19 @@ const PRODUCT_ITEMS = {
       category: "ppe",
       title: "Nitrile examination gloves",
       body: "Powder-free nitrile exam gloves (sizes S/M) with consistent QC and clear labeling.",
-      img: "/products/nitrile-gloves.svg",
+      imgPng: "/products/nitrile-gloves.png",
+      imgPng2x: "/products/nitrile-gloves@2x.png",
+      imgSvg: "/products/nitrile-gloves.svg",
       tags: ["Powder-free", "S/M sizes", "Blue/pink/black"],
     },
     {
       id: "surgical-masks",
       category: "ppe",
-      title: "Type IIR surgical masks ",
+      title: "Type IIR surgical masks (optional add-on)",
       body: "Type IIR masks with ear-loop or head-loop options, suitable for private-sector channels.",
-      img: "/products/surgical-masks.svg",
+      imgPng: "/products/surgical-masks.png",
+      imgPng2x: "/products/surgical-masks@2x.png",
+      imgSvg: "/products/surgical-masks.svg",
       tags: ["Type IIR", "Ear/Head loop", "Color options"],
     },
     {
@@ -271,7 +232,9 @@ const PRODUCT_ITEMS = {
       category: "baby",
       title: "Silicone baby feeding bottles",
       body: "Food-grade silicone bottles (150/240/330 ml), heat-resistant and sterilization-safe.",
-      img: "/products/silicone-baby-bottle.svg",
+      imgPng: "/products/silicone-baby-bottle.png",
+      imgPng2x: "/products/silicone-baby-bottle@2x.png",
+      imgSvg: "/products/silicone-baby-bottle.svg",
       tags: ["Food-grade", "BPA-free", "Handle-free"],
     },
     {
@@ -279,7 +242,9 @@ const PRODUCT_ITEMS = {
       category: "baby",
       title: "Silicone pacifiers (phase 2)",
       body: "Orthodontic and standard shapes (0–6m / 6–18m), individually packaged.",
-      img: "/products/silicone-pacifier.svg",
+      imgPng: "/products/silicone-pacifier.png",
+      imgPng2x: "/products/silicone-pacifier@2x.png",
+      imgSvg: "/products/silicone-pacifier.svg",
       tags: ["Orthodontic", "2 age ranges", "Individually packed"],
     },
   ],
@@ -289,7 +254,9 @@ const PRODUCT_ITEMS = {
       category: "wound",
       title: "ضمادات عناية متقدمة بالجروح",
       body: "ضمادات رغوية سيليكون، هيدروكولويد، وضمادات فيلم شفافة (خيارات معقمة).",
-      img: "/products/advanced-wound-care.svg",
+      imgPng: "/products/advanced-wound-care.png",
+      imgPng2x: "/products/advanced-wound-care@2x.png",
+      imgSvg: "/products/advanced-wound-care.svg",
       tags: ["خيارات معقمة", "استخدام عيادات", "هامش مرتفع"],
     },
     {
@@ -297,7 +264,9 @@ const PRODUCT_ITEMS = {
       category: "wound",
       title: "مستلزمات العناية الأساسية بالجروح",
       body: "شاش معقم ولفائف شاش، فوط/وسائد غير منسوجة، ورباط/ضماد مرن للعناية الروتينية.",
-      img: "/products/basic-wound-care.svg",
+      imgPng: "/products/basic-wound-care.png",
+      imgPng2x: "/products/basic-wound-care@2x.png",
+      imgSvg: "/products/basic-wound-care.svg",
       tags: ["سريع الدوران", "مناسب للتجميع", "مواصفات ثابتة"],
     },
     {
@@ -305,15 +274,19 @@ const PRODUCT_ITEMS = {
       category: "ppe",
       title: "قفازات فحص نيتريل",
       body: "قفازات نيتريل للفحص بدون بودرة (مقاسات S/M) مع ضبط جودة وتوسيم واضح.",
-      img: "/products/nitrile-gloves.svg",
+      imgPng: "/products/nitrile-gloves.png",
+      imgPng2x: "/products/nitrile-gloves@2x.png",
+      imgSvg: "/products/nitrile-gloves.svg",
       tags: ["بدون بودرة", "مقاسات S/M", "أزرق/وردي/أسود"],
     },
     {
       id: "surgical-masks",
       category: "ppe",
-      title: "كمامات جراحية Type IIR",
+      title: "كمامات جراحية Type IIR (اختياري)",
       body: "كمامات Type IIR بخيارات ربط خلف الأذن أو خلف الرأس، مناسبة لقنوات القطاع الخاص.",
-      img: "/products/surgical-masks.svg",
+      imgPng: "/products/surgical-masks.png",
+      imgPng2x: "/products/surgical-masks@2x.png",
+      imgSvg: "/products/surgical-masks.svg",
       tags: ["Type IIR", "رباط أذن/رأس", "خيارات ألوان"],
     },
     {
@@ -321,7 +294,9 @@ const PRODUCT_ITEMS = {
       category: "baby",
       title: "رضّاعات سيليكون",
       body: "رضّاعات سيليكون بدرجة غذائية (150/240/330 مل)، مقاومة للحرارة وآمنة للتعقيم.",
-      img: "/products/silicone-baby-bottle.svg",
+      imgPng: "/products/silicone-baby-bottle.png",
+      imgPng2x: "/products/silicone-baby-bottle@2x.png",
+      imgSvg: "/products/silicone-baby-bottle.svg",
       tags: ["درجة غذائية", "خالٍ من BPA", "بدون مقابض"],
     },
     {
@@ -329,12 +304,13 @@ const PRODUCT_ITEMS = {
       category: "baby",
       title: "لهايات سيليكون (مرحلة 2)",
       body: "أشكال تقويمية وعادية (0–6 أشهر / 6–18 شهر)، مغلفة بشكل فردي.",
-      img: "/products/silicone-pacifier.svg",
+      imgPng: "/products/silicone-pacifier.png",
+      imgPng2x: "/products/silicone-pacifier@2x.png",
+      imgSvg: "/products/silicone-pacifier.svg",
       tags: ["تقويمية", "فئتان عمريتان", "تغليف فردي"],
     },
   ],
 };
-
 
 const EDUCATION_LEVEL_OPTIONS = {
   en: ["High School", "Diploma", "Bachelor's Degree", "Master's Degree", "PhD", "Other"],
@@ -350,44 +326,72 @@ function truncateWords(text, maxWords) {
   return `${words.slice(0, maxWords).join(" ")}...`;
 }
 
-function LinkedInIcon({ title = "LinkedIn" }) {
+function Icon({ name }) {
+  const common = { width: 20, height: 20, viewBox: "0 0 24 24", "aria-hidden": true };
+  if (name === "check")
+    return (
+      <svg {...common}>
+        <path
+          fill="currentColor"
+          d="M9.55 17.3 4.9 12.65l1.4-1.4 3.25 3.25 8.15-8.15 1.4 1.4z"
+        />
+      </svg>
+    );
+  if (name === "bolt")
+    return (
+      <svg {...common}>
+        <path
+          fill="currentColor"
+          d="M13 2 3 14h7l-1 8 10-12h-7z"
+        />
+      </svg>
+    );
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width="18"
-      height="18"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <title>{title}</title>
-      <path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5ZM.5 8.5H4.5V24H.5V8.5ZM8.5 8.5H12.3V10.6H12.36C12.89 9.6 14.2 8.5 16.2 8.5 20.3 8.5 21 11.1 21 14.5V24H17V15.6C17 13.6 17 11.9 15.2 11.9 13.4 11.9 13.1 13.3 13.1 15.5V24H9.1V8.5H8.5Z" />
+    <svg {...common}>
+      <path
+        fill="currentColor"
+        d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm1 14.5h-2v-2h2v2Zm0-4h-2V7.5h2v5Z"
+      />
     </svg>
   );
 }
 
 export default function MarketingPage() {
   const [lang, setLang] = useState("en");
-  const [activeTab, setActiveTab] = useState("about");
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const [productFilter, setProductFilter] = useState("all");
+
   const [jobs, setJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(true);
 
-  // IMPORTANT: do NOT auto-select. User must explicitly choose the job.
   const [selectedJobId, setSelectedJobId] = useState("");
-
   const [applyMsg, setApplyMsg] = useState("");
   const [applyErr, setApplyErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [expandedJobs, setExpandedJobs] = useState({});
   const applyFormRef = useRef(null);
+
+  const companyRef = useRef(null);
+  const productsRef = useRef(null);
+  const careersRef = useRef(null);
+  const quoteRef = useRef(null);
+  const contactRef = useRef(null);
+
   const t = useMemo(() => COPY[lang], [lang]);
+
+  const whatsappQuoteHref = useMemo(() => {
+    const base =
+      lang === "ar"
+        ? "مرحباً، أريد عرض سعر. الرجاء تحديد الفئة والمواصفات والكمية ومدينة التسليم."
+        : "Hi, I'd like a quote. Please specify category, specs, quantity, and delivery city.";
+    return buildWhatsAppLink(base);
+  }, [lang]);
 
   const selectedJob = useMemo(() => {
     const id = Number(selectedJobId || 0);
     return jobs.find((j) => Number(j.id) === id) || null;
   }, [jobs, selectedJobId]);
-
-  const quoteRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -395,14 +399,21 @@ export default function MarketingPage() {
       try {
         const res = await fetch("/api/recruitment?resource=jobs");
         const data = await res.json().catch(() => ({}));
-        if (res.ok && data.ok) {
-          setJobs(Array.isArray(data.jobs) ? data.jobs : []);
-        }
+        if (res.ok && data.ok) setJobs(Array.isArray(data.jobs) ? data.jobs : []);
+        else setJobs([]);
       } finally {
         setJobsLoading(false);
       }
     })();
   }, []);
+
+  function scrollToRef(ref) {
+    setMenuOpen(false);
+    const el = ref?.current;
+    if (el && typeof el.scrollIntoView === "function") {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
 
   function handleSelectJob(jobId) {
     setSelectedJobId(String(jobId));
@@ -445,6 +456,7 @@ export default function MarketingPage() {
 
       setApplyMsg(t.applySuccess);
       formEl?.reset();
+      setSelectedJobId("");
     } catch (err) {
       setApplyErr(err?.message || "Failed to submit application");
     } finally {
@@ -452,329 +464,442 @@ export default function MarketingPage() {
     }
   }
 
-  const quoteMessage = useMemo(() => {
-    const buyer = lang === "ar" ? "الجهة: صيدلية/موزع" : "Buyer type: Pharmacy/Reseller";
-    const header = lang === "ar" ? "طلب عرض سعر — زمرد" : "Quote request — Zomorod";
-    const line1 = lang === "ar" ? "الفئة + المواصفات:" : "Category + specification:";
-    const line2 = lang === "ar" ? "الكمية:" : "Quantity:";
-    const line3 = lang === "ar" ? "مدينة التسليم + الوجهة:" : "Delivery city + destination (Jordan/Syria):";
-    return `${header}\n${buyer}\n${line1}\n${line2}\n${line3}`;
-  }, [lang]);
+  const filteredProducts = useMemo(() => {
+    const items = PRODUCT_ITEMS[lang] || [];
+    if (productFilter === "all") return items;
+    return items.filter((p) => p.category === productFilter);
+  }, [lang, productFilter]);
 
-  const whatsappQuoteHref = buildWhatsAppLink(quoteMessage);
+  // Hero uses existing product images so you don’t get broken placeholders on mobile.
+  const heroImgs = useMemo(
+    () => [
+      "/products/nitrile-gloves.png",
+      "/products/advanced-wound-care.png",
+      "/products/silicone-baby-bottle.png",
+    ],
+    []
+  );
 
   return (
-    <main className="mkt-page" dir={t.dir}>
-      <header className="mkt-hero card">
-        <div className="mkt-hero-top">
-          <img className="mkt-logo" src="/logo.png" alt="Zomorod logo" />
-          <button
-            type="button"
-            className="btn btn-ghost mkt-lang"
-            onClick={() => setLang((s) => (s === "en" ? "ar" : "en"))}
-          >
-            {t.langLabel}
-          </button>
-        </div>
+    <main className="mkt2" dir={t.dir}>
+      <div className="container">
+        {/* Sticky header */}
+        <header className="mkt2-header card">
+          <div className="mkt2-topbar">
+            <Link to="/" className="mkt2-brand" aria-label="Zomorod Medical Supplies">
+              <img className="mkt2-logo" src="/logo.png" alt="" />
+              <span className="mkt2-brandText">ZOMOROD</span>
+            </Link>
 
-        <div className="mkt-hero-main">
-          <div className="mkt-hero-copy">
-            <h1 className="mkt-title">{t.brandName}</h1>
-            <p className="mkt-tagline">{t.tagline}</p>
+            {/* Desktop nav */}
+            <nav className="mkt2-nav" aria-label="Primary">
+              <button type="button" className="mkt2-navLink" onClick={() => scrollToRef(companyRef)}>
+                {t.nav.company}
+              </button>
+              <button type="button" className="mkt2-navLink" onClick={() => scrollToRef(productsRef)}>
+                {t.nav.products}
+              </button>
+              <button type="button" className="mkt2-navLink" onClick={() => scrollToRef(careersRef)}>
+                {t.nav.careers}
+              </button>
+              <button type="button" className="mkt2-navLink" onClick={() => scrollToRef(contactRef)}>
+                {t.nav.contact}
+              </button>
+            </nav>
 
-            <div className="mkt-trust-row">
-              <span className="mkt-pill">{t.responseSla}</span>
-            </div>
-
-            {/* CTAs: max 2 */}
-            <div className="mkt-cta-row">
-              <a
-                className="btn btn-primary mkt-cta"
-                href={whatsappQuoteHref}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {t.ctaWhatsapp}
-              </a>
-
-              <Link to="/login" className="btn btn-ghost mkt-cta">
+            {/* Actions */}
+            <div className="mkt2-actions">
+              <Link to="/login" className="btn btn-ghost mkt2-hideSm">
                 {t.ctaStaff}
               </Link>
+              <a className="btn btn-primary mkt2-hideSm" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+                {t.ctaQuote}
+              </a>
+
+              <button
+                type="button"
+                className="btn btn-ghost mkt2-lang"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setLang((p) => (p === "en" ? "ar" : "en"));
+                }}
+              >
+                {t.langLabel}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-ghost mkt2-burger"
+                aria-label="Menu"
+                aria-expanded={menuOpen ? "true" : "false"}
+                onClick={() => setMenuOpen((v) => !v)}
+              >
+                ☰
+              </button>
             </div>
           </div>
 
-          <div className="mkt-hero-art" aria-hidden="true">
-            <img
-              className="mkt-hero-illustration"
-              src="/products/hero-illustration.svg"
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
-        </div>
+          {/* Mobile menu */}
+          {menuOpen ? (
+            <div className="mkt2-mobileMenu card-soft">
+              <button type="button" className="mkt2-mobileLink" onClick={() => scrollToRef(companyRef)}>
+                {t.nav.company}
+              </button>
+              <button type="button" className="mkt2-mobileLink" onClick={() => scrollToRef(productsRef)}>
+                {t.nav.products}
+              </button>
+              <button type="button" className="mkt2-mobileLink" onClick={() => scrollToRef(careersRef)}>
+                {t.nav.careers}
+              </button>
+              <button type="button" className="mkt2-mobileLink" onClick={() => scrollToRef(contactRef)}>
+                {t.nav.contact}
+              </button>
 
-        <div className="mkt-hero-metrics">
-          {t.metrics.map((m) => (
-            <div className="mkt-metric" key={m.label}>
-              <strong>{m.value}</strong>
-              <span>{m.label}</span>
-            </div>
-          ))}
-        </div>
-      </header>
-
-      <section className="mkt-section card">
-        <div className="mkt-tabs" role="tablist" aria-label="Main sections">
-          {Object.entries(t.tabs).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === key}
-              className={`mkt-tab ${activeTab === key ? "is-active" : ""}`}
-              onClick={() => setActiveTab(key)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {activeTab === "about" ? (
-          <div className="mkt-tab-panel">
-            <h2 className="mkt-h2">{t.aboutTitle}</h2>
-            <p className="mkt-p">{t.aboutText}</p>
-            <ul className="mkt-list">{t.aboutPoints.map((point) => <li key={point}>{point}</li>)}</ul>
-
-            <div className="mkt-split">
-              <article className="mkt-trust card-soft">
-                <h3 className="mkt-h3">{t.trustTitle}</h3>
-                <div className="mkt-kv">
-                  {t.trustPoints.map((row) => (
-                    <div className="mkt-kv-row" key={row.k}>
-                      <div className="mkt-k">{row.k}</div>
-                      <div className="mkt-v">{row.v}</div>
-                    </div>
-                  ))}
-                </div>
-              </article>
-
-              <article className="mkt-md card-soft">
-                <h3 className="mkt-h3">{t.mdTitle}</h3>
-                <div className="mkt-md-name">{t.mdName}</div>
-                <div className="mkt-md-role">{t.mdRole}</div>
-                <p className="mkt-p">{t.mdBody}</p>
-
-                <a
-                  className="mkt-icon-link"
-                  href="https://www.linkedin.com/in/mohammadamaani/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={t.mdLinkedInLabel}
-                  title={t.mdLinkedInLabel}
-                >
-                  <LinkedInIcon title={t.mdLinkedInLabel} />
+              <div className="mkt2-mobileCtas">
+                <Link to="/login" className="btn btn-ghost">
+                  {t.ctaStaff}
+                </Link>
+                <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+                  {t.ctaQuote}
                 </a>
-              </article>
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </header>
 
-        {activeTab === "products" ? (
-          <div className="mkt-tab-panel">
-            <h2 className="mkt-h2">{t.productsTitle}</h2>
-            <p className="mkt-p">{t.productsNote}</p>
+        {/* Hero */}
+        <section className="mkt2-hero card">
+          <div className="mkt2-heroGrid">
+            <div className="mkt2-heroCopy">
+              <div className="mkt2-pill">
+                <Icon name="bolt" /> <span>{t.responseSla}</span>
+              </div>
 
-            <div
-              className="mkt-products-toolbar"
-              role="tablist"
-              aria-label={lang === "ar" ? "تصفية المنتجات" : "Product filters"}
-            >
-              {PRODUCT_FILTERS[lang].map((f) => (
-                <button
-                  key={f.key}
-                  type="button"
-                  className={`mkt-filter ${productFilter === f.key ? "is-active" : ""}`}
-                  onClick={() => setProductFilter(f.key)}
-                >
-                  {f.label}
+              <h1 className="mkt2-h1">{t.brandName}</h1>
+              <p className="mkt2-sub">{t.tagline}</p>
+
+              <div className="mkt2-heroCtas">
+                <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+                  {t.ctaQuote}
+                </a>
+                <button type="button" className="btn btn-ghost" onClick={() => scrollToRef(productsRef)}>
+                  {t.ctaBrowse}
                 </button>
+              </div>
+
+              <div className="mkt2-highlights">
+                {t.highlights.map((h) => (
+                  <div key={h.title} className="mkt2-highlight card-soft">
+                    <div className="mkt2-highlightTitle">{h.title}</div>
+                    <div className="mkt2-highlightText">{h.text}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mkt2-heroVisual" aria-hidden="true">
+              <div className="mkt2-visualPlate" />
+              {heroImgs.map((src, idx) => (
+                <img
+                  key={src}
+                  className={`mkt2-visualImg mkt2-visualImg-${idx + 1}`}
+                  src={src}
+                  alt=""
+                  loading="eager"
+                  decoding="async"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
               ))}
             </div>
+          </div>
 
-            <div className="mkt-products-grid">
-              {PRODUCT_ITEMS[lang]
-                .filter((p) => productFilter === "all" || p.category === productFilter)
-                .map((p) => (
-                  <article className="mkt-product-card" key={p.id}>
-                    <div className="mkt-product-thumb" aria-hidden="true">
-                      <img src={p.img} alt="" loading="lazy" decoding="async" />
-                    </div>
-                    <div className="mkt-product-title">{p.title}</div>
-                    <p className="mkt-product-body">{p.body}</p>
-                    <div className="mkt-product-tags">
-                      {p.tags.map((tag) => (
-                        <span className="mkt-tag" key={tag}>
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </article>
+          <div className="mkt2-stats">
+            {t.stats.map((s) => (
+              <div key={s.label} className="mkt2-stat card-soft">
+                <div className="mkt2-statValue">{s.value}</div>
+                <div className="mkt2-statLabel">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Company */}
+        <section ref={companyRef} id="company" className="mkt2-section card">
+          <div className="mkt2-sectionHead">
+            <h2 className="mkt2-h2">{t.aboutTitle}</h2>
+            <p className="muted">{t.aboutText}</p>
+          </div>
+
+          <div className="mkt2-twoCol">
+            <div className="mkt2-soft">
+              <ul className="mkt2-bullets">
+                {t.aboutPoints.map((p) => (
+                  <li key={p}>
+                    <span className="mkt2-bulletIcon"><Icon name="check" /></span>
+                    <span>{p}</span>
+                  </li>
                 ))}
+              </ul>
+            </div>
+
+            <div className="mkt2-soft">
+              <div className="mkt2-softTitle">{t.trustTitle}</div>
+              <div className="mkt2-kv">
+                {t.trustPoints.map((x) => (
+                  <div key={x.k} className="mkt2-kvRow">
+                    <div className="mkt2-k">{x.k}</div>
+                    <div className="mkt2-v muted">{x.v}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        ) : null}
+        </section>
 
-        {activeTab === "careers" ? (
-          <div className="mkt-tab-panel">
-            <h2 className="mkt-h2">{t.careersTitle}</h2>
-            <p className="mkt-p">{t.careersSubtitle}</p>
+        {/* Products */}
+        <section ref={productsRef} id="products" className="mkt2-section card">
+          <div className="mkt2-sectionHead">
+            <h2 className="mkt2-h2">{t.productsTitle}</h2>
+            <p className="muted">{t.productsNote}</p>
+          </div>
 
-            {jobsLoading ? (
-              <p className="mkt-p">{t.jobsLoading}</p>
-            ) : (
-              <div className="mkt-jobs-list">
-                {jobs.map((job) => (
-                  <article key={job.id} className="mkt-job-card">
-                    <div className="mkt-card-title">{job.title}</div>
-                    <p className="mkt-card-body">
-                      {[job.department, job.location_city, job.location_country, job.employment_type].filter(Boolean).join(" • ")}
-                    </p>
+          <div className="mkt2-filters">
+            {t.filters.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                className={`mkt2-filter ${productFilter === f.key ? "is-active" : ""}`}
+                onClick={() => setProductFilter(f.key)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
 
-                    {(() => {
-                      const fullText = stripHtml(job.job_description_html);
-                      const isLong = fullText.split(/\s+/).filter(Boolean).length > 50;
-                      const isExpanded = !!expandedJobs[job.id];
-                      return (
-                        <>
-                          <div className="mkt-job-description">
-                            {isLong && !isExpanded ? (
-                              <p>{truncateWords(fullText, 50)}</p>
-                            ) : (
-                              <div dangerouslySetInnerHTML={{ __html: job.job_description_html }} />
-                            )}
-                          </div>
-                          {isLong ? (
-                            <button
-                              type="button"
-                              className="mkt-inline-btn"
-                              onClick={() => setExpandedJobs((prev) => ({ ...prev, [job.id]: !prev[job.id] }))}
-                            >
-                              {isExpanded ? t.readLess : t.readMore}
-                            </button>
-                          ) : null}
-                        </>
-                      );
-                    })()}
-
-                    <button className="btn btn-primary" type="button" onClick={() => handleSelectJob(job.id)}>
-                      {t.selectJob}
-                    </button>
-                  </article>
-                ))}
-                {!jobs.length ? <p className="mkt-p">{t.jobsEmpty}</p> : null}
-              </div>
-            )}
-
-            {jobs.length ? (
-              <form ref={applyFormRef} className="mkt-apply-form" onSubmit={onApply}>
-                <input type="hidden" name="jobId" value={selectedJobId || ""} />
-
-                <div className="mkt-selected-job">
-                  <span className="mkt-selected-job-label">{t.selectedJobLabel}:</span>
-                  <span className="mkt-selected-job-value">
-                    {selectedJob ? selectedJob.title : (lang === "ar" ? "يرجى اختيار وظيفة أعلاه" : "Please select a job above")}
-                  </span>
+          <div className="mkt2-productsGrid">
+            {filteredProducts.map((p) => (
+              <div key={p.id} className="mkt2-product card-soft">
+                <div className="mkt2-productMedia">
+                  <img
+                    src={p.imgPng}
+                    srcSet={`${p.imgPng} 1x, ${p.imgPng2x} 2x`}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    onError={(e) => {
+                      if (p.imgSvg) e.currentTarget.src = p.imgSvg;
+                      else e.currentTarget.style.display = "none";
+                    }}
+                  />
                 </div>
 
-                <div className="grid grid-2">
-                  <input className="input" name="firstName" placeholder={lang === "ar" ? "الاسم الأول" : "First name"} required />
-                  <input className="input" name="lastName" placeholder={lang === "ar" ? "اسم العائلة" : "Last name"} required />
-                  <input className="input" type="email" name="email" placeholder="Email" required />
-                  <input className="input" name="phone" placeholder={lang === "ar" ? "رقم الهاتف" : "Phone number"} required />
-                  <select className="input" name="educationLevel" defaultValue="" required>
-                    <option value="" disabled>{t.educationPlaceholder}</option>
-                    {EDUCATION_LEVEL_OPTIONS[lang].map((level) => (
-                      <option key={level} value={level}>{level}</option>
+                <div className="mkt2-productBody">
+                  <div className="mkt2-productTitle">{p.title}</div>
+                  <div className="mkt2-productText muted">{p.body}</div>
+
+                  <div className="mkt2-tags">
+                    {p.tags.map((x) => (
+                      <span key={x} className="mkt2-tag">{x}</span>
                     ))}
-                  </select>
-                  <input className="input" name="country" placeholder={lang === "ar" ? "الدولة" : "Country"} required />
-                  <input className="input" name="city" placeholder={lang === "ar" ? "المدينة" : "City"} required />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Careers */}
+        <section ref={careersRef} id="careers" className="mkt2-section card">
+          <div className="mkt2-sectionHead">
+            <h2 className="mkt2-h2">{t.careersTitle}</h2>
+            <p className="muted">{t.careersSubtitle}</p>
+          </div>
+
+          <div className="mkt2-careersGrid">
+            <div className="mkt2-soft">
+              {jobsLoading ? (
+                <div className="muted">{t.jobsLoading}</div>
+              ) : jobs.length === 0 ? (
+                <div className="muted">{t.jobsEmpty}</div>
+              ) : (
+                <div className="mkt2-jobList">
+                  {jobs.map((job) => {
+                    const plain = stripHtml(job.description || "");
+                    const expanded = !!expandedJobs[job.id];
+                    const snippet = expanded ? plain : truncateWords(plain, 26);
+
+                    return (
+                      <div key={job.id} className="mkt2-job">
+                        <div className="mkt2-jobTop">
+                          <div>
+                            <div className="mkt2-jobTitle">{job.title}</div>
+                            <div className="mkt2-jobMeta muted">
+                              {job.country}
+                              {job.city ? ` • ${job.city}` : ""}
+                              {job.type ? ` • ${job.type}` : ""}
+                            </div>
+                          </div>
+
+                          <button type="button" className="btn btn-ghost" onClick={() => handleSelectJob(job.id)}>
+                            {t.selectJob}
+                          </button>
+                        </div>
+
+                        <div className="mkt2-jobDesc muted">{snippet}</div>
+
+                        {plain && plain.split(/\s+/).filter(Boolean).length > 26 ? (
+                          <button
+                            type="button"
+                            className="mkt2-readmore"
+                            onClick={() => setExpandedJobs((prev) => ({ ...prev, [job.id]: !prev[job.id] }))}
+                          >
+                            {expanded ? t.readLess : t.readMore}
+                          </button>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div ref={applyFormRef} className="mkt2-soft">
+              <div className="mkt2-applyHead">
+                <div className="mkt2-softTitle">{t.apply}</div>
+                <div className="muted">
+                  {t.selectedJobLabel}: <strong>{selectedJob ? selectedJob.title : "—"}</strong>
+                </div>
+              </div>
+
+              {applyMsg ? <div className="mkt2-success">{applyMsg}</div> : null}
+              {applyErr ? <div className="mkt2-error">{applyErr}</div> : null}
+
+              <form className="mkt2-form" onSubmit={onApply}>
+                <div className="mkt2-formRow">
+                  <label>
+                    <span>First Name*</span>
+                    <input name="firstName" required />
+                  </label>
+                  <label>
+                    <span>Last Name*</span>
+                    <input name="lastName" required />
+                  </label>
                 </div>
 
-                <div className="grid grid-2" style={{ marginTop: 10 }}>
-                  <label>{t.cv}<input className="input" name="cv" type="file" required /></label>
-                  <label>{t.cover}<input className="input" name="cover" type="file" /></label>
+                <div className="mkt2-formRow">
+                  <label>
+                    <span>Email*</span>
+                    <input type="email" name="email" required />
+                  </label>
+                  <label>
+                    <span>Phone*</span>
+                    <input name="phone" required />
+                  </label>
                 </div>
 
-                <button type="submit" className="btn btn-primary" disabled={submitting || !selectedJobId}>
+                <div className="mkt2-formRow">
+                  <label>
+                    <span>{t.educationPlaceholder}*</span>
+                    <select name="educationLevel" required defaultValue="">
+                      <option value="" disabled>—</option>
+                      {(EDUCATION_LEVEL_OPTIONS[lang] || EDUCATION_LEVEL_OPTIONS.en).map((x) => (
+                        <option key={x} value={x}>{x}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Country*</span>
+                    <input name="country" required />
+                  </label>
+                </div>
+
+                <div className="mkt2-formRow">
+                  <label>
+                    <span>City*</span>
+                    <input name="city" required />
+                  </label>
+                  <label>
+                    <span>{t.cv}*</span>
+                    <input type="file" name="cv" accept=".pdf,.doc,.docx" required />
+                  </label>
+                </div>
+
+                <label>
+                  <span>{t.cover}</span>
+                  <textarea name="coverLetter" rows={4} />
+                </label>
+
+                <button className="btn btn-primary" type="submit" disabled={submitting}>
                   {submitting ? t.submitting : t.apply}
                 </button>
-
-                {applyErr ? <div className="banner">{applyErr}</div> : null}
-                {applyMsg ? <div className="mkt-success">{applyMsg}</div> : null}
               </form>
-            ) : null}
-          </div>
-        ) : null}
-      </section>
-
-      <section className="mkt-section card">
-        <div className="grid grid-2">
-          <article>
-            <h2 className="mkt-h2">{t.servicesTitle}</h2>
-            <ul className="mkt-list">{t.services.map((service) => <li key={service}>{service}</li>)}</ul>
-          </article>
-          <article>
-            <h2 className="mkt-h2">{t.sectorsTitle}</h2>
-            <div className="mkt-grid mkt-grid-compact">
-              {t.sectors.map((sector) => (
-                <div key={sector} className="mkt-card"><div className="mkt-card-title">{sector}</div></div>
-              ))}
             </div>
-          </article>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      <section className="mkt-section card" id="mkt-quote" ref={quoteRef}>
-        <h2 className="mkt-h2">{t.quoteTitle}</h2>
-        <p className="mkt-p">{t.quoteSubtitle}</p>
-
-        <div className="mkt-quote-grid">
-          <div>
-            <h3 className="mkt-h3">{t.quoteChecklistTitle}</h3>
-            <ul className="mkt-list">{t.quoteChecklist.map((it) => <li key={it}>{it}</li>)}</ul>
+        {/* Quote + Contact */}
+        <section ref={quoteRef} id="quote" className="mkt2-section card">
+          <div className="mkt2-sectionHead">
+            <h2 className="mkt2-h2">{t.quoteTitle}</h2>
+            <p className="muted">{t.quoteSubtitle}</p>
           </div>
 
-          {/* CTAs: max 2 */}
-          <div className="mkt-quote-actions">
-            <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
-              {t.ctaWhatsapp}
-            </a>
-            <a className="btn" href="mailto:info@zomorodmedical.com">
-              {t.contactEmail}
-            </a>
-          </div>
-        </div>
-      </section>
+          <div className="mkt2-quoteGrid">
+            <div className="mkt2-soft">
+              <div className="mkt2-softTitle">{t.quoteChecklistTitle}</div>
+              <ul className="mkt2-bullets">
+                {t.quoteChecklist.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+              <div style={{ marginTop: 12 }}>
+                <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+                  {t.ctaQuote}
+                </a>
+              </div>
+            </div>
 
-      <section className="mkt-section card">
-        <h2 className="mkt-h2">{t.contactTitle}</h2>
-        <div className="mkt-contact">
-          <div className="mkt-contact-row">
-            <span className="mkt-contact-label">{t.contactEmail}</span>
-            <a href="mailto:info@zomorodmedical.com" className="ltr">info@zomorodmedical.com</a>
+            <div className="mkt2-soft">
+              <div className="mkt2-softTitle">{t.contactTitle}</div>
+              <div className="mkt2-contactItem">
+                <div className="mkt2-contactLabel">{t.contactEmail}</div>
+                <div className="mkt2-contactValue mkt2-ltr">
+                  <a href="mailto:info@zomorodmedical.com">info@zomorodmedical.com</a>
+                </div>
+              </div>
+              <div className="mkt2-contactItem">
+                <div className="mkt2-contactLabel">{t.contactPhone}</div>
+                <div className="mkt2-contactValue mkt2-ltr">
+                  <a href="tel:+962791752686">+962 79 175 2686</a>
+                </div>
+              </div>
+              <div className="mkt2-contactItem">
+                <div className="mkt2-contactLabel">{t.contactAddress}</div>
+                <div className="mkt2-contactValue">{t.addressValue}</div>
+              </div>
+              <div className="mkt2-contactBtns">
+                <a className="btn btn-primary" href={whatsappQuoteHref} target="_blank" rel="noopener noreferrer">
+                  {t.ctaQuote}
+                </a>
+                <Link className="btn btn-ghost" to="/login">
+                  {t.ctaStaff}
+                </Link>
+              </div>
+            </div>
           </div>
-          <div className="mkt-contact-row">
-            <span className="mkt-contact-label">{t.contactPhone}</span>
-            <a href="tel:+962791752686" className="ltr">+962 79 175 2686</a>
+        </section>
+
+        <section ref={contactRef} id="contact" className="mkt2-contactAnchor" aria-hidden="true" />
+
+        <footer className="mkt2-footer">
+          <div className="mkt2-footerInner">
+            <span>© {new Date().getFullYear()} Zomorod Medical Supplies LLC</span>
           </div>
-          <div className="mkt-contact-row">
-            <span className="mkt-contact-label">{t.contactAddress}</span>
-            <span>{t.addressValue}</span>
-          </div>
-        </div>
-      </section>
+        </footer>
+      </div>
     </main>
   );
 }
