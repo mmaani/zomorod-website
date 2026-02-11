@@ -1,6 +1,6 @@
 // src/main/Careers.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useOutletContext } from "react-router-dom";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { buildWhatsAppLink } from "./MainLayout.jsx";
 
 const JOBS_PER_PAGE = 5;
@@ -13,6 +13,7 @@ const UI_COPY = {
     loading: "Loading opportunities…",
     loadError: "Could not load vacancies. Please refresh and try again.",
     empty: "No openings announced at the moment.",
+    retry: "Retry",
     readMore: "Read more",
     readLess: "Show less",
     selectJob: "Select this job",
@@ -35,6 +36,8 @@ const UI_COPY = {
     success: "Your application has been submitted successfully.",
     validationError:
       "Please select a job and fill all required fields before submitting.",
+    applyUnavailable:
+      "Applications are temporarily unavailable because no vacancies could be loaded.",
 
     fields: {
       firstName: "First name",
@@ -72,6 +75,7 @@ const UI_COPY = {
     loading: "جاري تحميل الفرص…",
     loadError: "تعذر تحميل الوظائف. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
     empty: "لا توجد وظائف معلنة حالياً.",
+    retry: "إعادة المحاولة",
     readMore: "اقرأ المزيد",
     readLess: "عرض أقل",
     selectJob: "اختيار هذه الوظيفة",
@@ -94,6 +98,8 @@ const UI_COPY = {
     success: "تم إرسال طلبك بنجاح.",
     validationError:
       "يرجى اختيار وظيفة ثم تعبئة جميع الحقول المطلوبة قبل الإرسال.",
+    applyUnavailable:
+      "التقديم غير متاح حالياً لأنه لم يتم تحميل الوظائف بشكل صحيح.",
 
     fields: {
       firstName: "الاسم الأول",
@@ -174,6 +180,7 @@ export default function Careers() {
   const [submitting, setSubmitting] = useState(false);
 
   const applyFormRef = useRef(null);
+  const mountedRef = useRef(true);
 
   const selectedJob = useMemo(() => {
     if (!selectedJobId) return null;
@@ -197,44 +204,45 @@ export default function Careers() {
     return `${t.pagination.showing} ${start}-${end} ${t.pagination.of} ${total} ${t.pagination.jobs}`;
   }, [jobs.length, page, t]);
 
-  useEffect(() => {
-    let alive = true;
+  const loadJobs = useCallback(async () => {
+    if (!mountedRef.current) return;
+    setJobsLoading(true);
+    setJobsError("");
 
-    (async () => {
-      setJobsLoading(true);
-      setJobsError("");
-      try {
-        const res = await fetch("/api/recruitment?resource=jobs", {
-          cache: "no-store",
-        });
-        const data = await res.json().catch(() => ({}));
+    try {
+      const res = await fetch("/api/recruitment?resource=jobs", {
+        cache: "no-store",
+      });
+      const data = await res.json().catch(() => ({}));
 
-        if (!res.ok || !data?.ok) {
-          throw new Error(data?.error || data?.detail || t.loadError);
-        }
-
-        const rows = Array.isArray(data.jobs) ? data.jobs : [];
-        const normalized = rows
-          .map(normalizeJob)
-          .filter((j) => j.id && j.title);
-
-        if (!alive) return;
-        setJobs(normalized);
-        setPage(1);
-      } catch (err) {
-        if (!alive) return;
-        setJobs([]);
-        setJobsError(String(err?.message || t.loadError));
-      } finally {
-        if (!alive) return;
-        setJobsLoading(false);
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || data?.detail || t.loadError);
       }
-    })();
+
+      const rows = Array.isArray(data.jobs) ? data.jobs : [];
+      const normalized = rows.map(normalizeJob).filter((j) => j.id && j.title);
+
+      if (!mountedRef.current) return;
+      setJobs(normalized);
+      setPage(1);
+    } catch (err) {
+      if (!mountedRef.current) return;
+      setJobs([]);
+      setJobsError(String(err?.message || t.loadError));
+    } finally {
+      if (!mountedRef.current) return;
+      setJobsLoading(false);
+    }
+  }, [t.loadError]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    loadJobs();
 
     return () => {
-      alive = false;
+      mountedRef.current = false;
     };
-  }, [t.loadError]);
+  }, [loadJobs]);
 
   function toggleExpanded(jobId) {
     setExpandedJobs((prev) => ({ ...prev, [jobId]: !prev[jobId] }));
@@ -335,6 +343,7 @@ export default function Careers() {
     () => buildWhatsAppLink(t.whatsapp.message),
     [t.whatsapp.message],
   );
+  const canApply = !jobsLoading && !jobsError && jobs.length > 0;
 
   return (
     <div className="page" dir={lang === "ar" ? "rtl" : "ltr"}>
@@ -488,139 +497,159 @@ export default function Careers() {
           </div>
 
           <div className="card-pad">
-            <form onSubmit={onApply}>
-              {/* Job selector */}
-              <div className="field">
-                <label className="muted small">{t.selectedJob}</label>
-                <select
-                  className="input"
-                  name="jobId"
-                  value={selectedJobId || ""}
-                  onChange={(e) => {
-                    setSelectedJobId(e.target.value);
-                    setApplyErr("");
-                    setApplyMsg("");
-                  }}
-                >
-                  <option value="">{t.selectPlaceholder}</option>
-                  {jobs.map((j) => (
-                    <option key={j.id} value={j.id}>
-                      {j.title}
-                    </option>
-                  ))}
-                </select>
-
-                {!selectedJobId ? (
-                  <div className="muted small" style={{ marginTop: 6 }}>
-                    {t.selectHint}
-                  </div>
-                ) : selectedJob ? (
-                  <div className="muted small" style={{ marginTop: 6 }}>
-                    {[
-                      selectedJob.department,
-                      selectedJob.locationCity,
-                      selectedJob.locationCountry,
-                      selectedJob.employmentType,
-                    ]
-                      .filter(Boolean)
-                      .join(" • ")}
-                  </div>
+            {!canApply ? (
+              <div className="stack">
+                <div className="banner">{t.applyUnavailable}</div>
+                {jobsError ? (
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={loadJobs}
+                  >
+                    {t.retry}
+                  </button>
                 ) : null}
               </div>
-
-              <div className="grid-2">
+            ) : (
+              <form onSubmit={onApply}>
+                {/* Job selector */}
                 <div className="field">
-                  <label className="muted small">{t.fields.firstName}</label>
-                  <input className="input" name="firstName" required />
-                </div>
-                <div className="field">
-                  <label className="muted small">{t.fields.lastName}</label>
-                  <input className="input" name="lastName" required />
-                </div>
-                <div className="field">
-                  <label className="muted small">{t.fields.email}</label>
-                  <input className="input" type="email" name="email" required />
-                </div>
-                <div className="field">
-                  <label className="muted small">{t.fields.phone}</label>
-                  <input className="input" name="phone" required />
-                </div>
-
-                <div className="field">
-                  <label className="muted small">{t.fields.education}</label>
+                  <label className="muted small">{t.selectedJob}</label>
                   <select
                     className="input"
-                    name="educationLevel"
-                    defaultValue=""
-                    required
+                    name="jobId"
+                    value={selectedJobId || ""}
+                    onChange={(e) => {
+                      setSelectedJobId(e.target.value);
+                      setApplyErr("");
+                      setApplyMsg("");
+                    }}
                   >
-                    <option value="" disabled>
-                      {t.fields.education}
-                    </option>
-                    {t.educationOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
+                    <option value="">{t.selectPlaceholder}</option>
+                    {jobs.map((j) => (
+                      <option key={j.id} value={j.id}>
+                        {j.title}
                       </option>
                     ))}
                   </select>
+
+                  {!selectedJobId ? (
+                    <div className="muted small" style={{ marginTop: 6 }}>
+                      {t.selectHint}
+                    </div>
+                  ) : selectedJob ? (
+                    <div className="muted small" style={{ marginTop: 6 }}>
+                      {[
+                        selectedJob.department,
+                        selectedJob.locationCity,
+                        selectedJob.locationCountry,
+                        selectedJob.employmentType,
+                      ]
+                        .filter(Boolean)
+                        .join(" • ")}
+                    </div>
+                  ) : null}
                 </div>
 
-                <div className="field">
-                  <label className="muted small">{t.fields.country}</label>
-                  <input className="input" name="country" required />
+                <div className="grid-2">
+                  <div className="field">
+                    <label className="muted small">{t.fields.firstName}</label>
+                    <input className="input" name="firstName" required />
+                  </div>
+                  <div className="field">
+                    <label className="muted small">{t.fields.lastName}</label>
+                    <input className="input" name="lastName" required />
+                  </div>
+                  <div className="field">
+                    <label className="muted small">{t.fields.email}</label>
+                    <input
+                      className="input"
+                      type="email"
+                      name="email"
+                      required
+                    />
+                  </div>
+                  <div className="field">
+                    <label className="muted small">{t.fields.phone}</label>
+                    <input className="input" name="phone" required />
+                  </div>
+
+                  <div className="field">
+                    <label className="muted small">{t.fields.education}</label>
+                    <select
+                      className="input"
+                      name="educationLevel"
+                      defaultValue=""
+                      required
+                    >
+                      <option value="" disabled>
+                        {t.fields.education}
+                      </option>
+                      {t.educationOptions.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="field">
+                    <label className="muted small">{t.fields.country}</label>
+                    <input className="input" name="country" required />
+                  </div>
+
+                  <div className="field">
+                    <label className="muted small">{t.fields.city}</label>
+                    <input className="input" name="city" required />
+                  </div>
+
+                  <div className="field">
+                    <label className="muted small">{t.fields.cv}</label>
+                    <input
+                      className="input"
+                      name="cv"
+                      type="file"
+                      required
+                      accept=".pdf,.doc,.docx,image/*"
+                    />
+                  </div>
+
+                  <div className="field" style={{ gridColumn: "1 / -1" }}>
+                    <label className="muted small">{t.fields.cover}</label>
+                    <input
+                      className="input"
+                      name="cover"
+                      type="file"
+                      accept=".pdf,.doc,.docx,image/*"
+                    />
+                  </div>
                 </div>
 
-                <div className="field">
-                  <label className="muted small">{t.fields.city}</label>
-                  <input className="input" name="city" required />
+                <div className="row" style={{ marginTop: 12 }}>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={submitting || !selectedJobId}
+                  >
+                    {submitting ? t.submitting : t.submit}
+                  </button>
+
+                  <div className="spacer" />
                 </div>
 
-                <div className="field">
-                  <label className="muted small">{t.fields.cv}</label>
-                  <input
-                    className="input"
-                    name="cv"
-                    type="file"
-                    required
-                    accept=".pdf,.doc,.docx,image/*"
-                  />
-                </div>
+                {applyErr ? (
+                  <div className="banner" style={{ marginTop: 10 }}>
+                    {applyErr}
+                  </div>
+                ) : null}
 
-                <div className="field" style={{ gridColumn: "1 / -1" }}>
-                  <label className="muted small">{t.fields.cover}</label>
-                  <input
-                    className="input"
-                    name="cover"
-                    type="file"
-                    accept=".pdf,.doc,.docx,image/*"
-                  />
-                </div>
-              </div>
-
-              <div className="row" style={{ marginTop: 12 }}>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={submitting || !selectedJobId}
-                >
-                  {submitting ? t.submitting : t.submit}
-                </button>
-
-                <div className="spacer" />
-              </div>
-
-              {applyErr ? (
-                <div className="banner" style={{ marginTop: 10 }}>
-                  {applyErr}
-                </div>
-              ) : null}
-
-              {applyMsg ? (
-                <div className="mkt-success" style={{ marginTop: 10 }}>
-                  {applyMsg}
-                </div>
-              ) : null}
-            </form>
+                {applyMsg ? (
+                  <div className="mkt-success" style={{ marginTop: 10 }}>
+                    {applyMsg}
+                  </div>
+                ) : null}
+              </form>
+            )}
 
             <div className="hr" />
 
