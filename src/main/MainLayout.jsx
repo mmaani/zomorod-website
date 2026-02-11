@@ -14,7 +14,7 @@ export function buildWhatsAppLink(message) {
 const COPY = {
   en: {
     dir: "ltr",
-    langLabel: "عربي",
+    langLabel: "العربيه",
     brandShort: "ZOMOROD",
     brandName: "Zomorod Medical Supplies LLC",
     tagline:
@@ -43,9 +43,9 @@ const COPY = {
 
   ar: {
     dir: "rtl",
-    langLabel: "EN",
-    brandShort: "الززمد",
-    brandName: "الززمد للمستلزمات الطبيه",
+    langLabel: "ENGLISH",
+    brandShort: "الزمرد",
+    brandName: "الزمرد للمستلزمات الطبيه",
     tagline: "توريد موثوق ومواصفات ثابتة للصيدليات والموزعين — الأردن وسوريا.",
     responseSla: "الرد على عروض الأسعار خلال 48 ساعة عمل.",
 
