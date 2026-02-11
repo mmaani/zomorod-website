@@ -1,6 +1,7 @@
 // src/main/MainLayout.jsx
 import React, { useMemo, useState } from "react";
 import { Outlet } from "react-router-dom";
+import SiteHeader from "../components/SiteHeader.jsx";
 import SiteFooter from "../components/SiteFooter.jsx";
 
 const WHATSAPP_NUMBER = "962791752686";
