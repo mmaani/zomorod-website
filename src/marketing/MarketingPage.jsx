@@ -261,7 +261,7 @@ const PRODUCT_ITEMS = {
     {
       id: "surgical-masks",
       category: "ppe",
-      title: "Type IIR surgical masks (optional add-on)",
+      title: "Type IIR surgical masks ",
       body: "Type IIR masks with ear-loop or head-loop options, suitable for private-sector channels.",
       img: "/products/surgical-masks.svg",
       tags: ["Type IIR", "Ear/Head loop", "Color options"],
@@ -311,7 +311,7 @@ const PRODUCT_ITEMS = {
     {
       id: "surgical-masks",
       category: "ppe",
-      title: "كمامات جراحية Type IIR (اختياري)",
+      title: "كمامات جراحية Type IIR",
       body: "كمامات Type IIR بخيارات ربط خلف الأذن أو خلف الرأس، مناسبة لقنوات القطاع الخاص.",
       img: "/products/surgical-masks.svg",
       tags: ["Type IIR", "رباط أذن/رأس", "خيارات ألوان"],
