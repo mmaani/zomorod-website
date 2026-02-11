@@ -1,36 +1,31 @@
 // src/main/Products.jsx
 import React, { useMemo, useState } from "react";
-import { Link, useOutletContext } from "react-router-dom";
-import { buildWhatsAppLink } from "./MainLayout.jsx";
+import { useOutletContext } from "react-router-dom";
 
 const UI_COPY = {
   en: {
     title: "Products",
     subtitle:
-      "Category-level view — request a quotation for exact SKUs, packaging, and documentation availability.",
+      "Explore product categories and submit a targeted quote request for exact SKUs and packaging.",
     filters: [
       { key: "all", label: "All" },
       { key: "wound", label: "Wound care" },
       { key: "ppe", label: "PPE" },
       { key: "baby", label: "Baby care" },
     ],
-    ctaQuote: "Get a Quote",
-    ctaQuality: "Quality & Compliance",
-    note: "Tip: For faster quoting, include pack unit (piece/box/carton), specification, quantity, and destination city.",
+    note: "",
   },
   ar: {
     title: "المنتجات",
     subtitle:
-      "عرض حسب الفئات — اطلب عرض سعر لتحديد الأصناف الدقيقة، وحدة التعبئة، وتوفر المستندات.",
+      "تصفح الفئات المتاحة وقدّم طلب عرض سعر واضح للأصناف الدقيقة ووحدة التعبئة.",
     filters: [
       { key: "all", label: "الكل" },
       { key: "wound", label: "العناية بالجروح" },
       { key: "ppe", label: "معدات الوقاية" },
       { key: "baby", label: "عناية بالأطفال" },
     ],
-    ctaQuote: "احصل على عرض سعر",
-    ctaQuality: "الجودة والامتثال",
-    note: "نصيحة: لتسعير أسرع، اذكر وحدة التعبئة (قطعة/علبة/كرتون) والمواصفات والكمية ومدينة/وجهة التسليم.",
+    note: "",
   },
 };
 
@@ -174,15 +169,6 @@ export default function Products() {
     return items.filter((x) => x.category === filter);
   }, [items, filter]);
 
-  const quoteBase =
-    lang === "ar"
-      ? "مرحباً، أريد عرض سعر. الرجاء تحديد الفئة، المواصفات، وحدة التعبئة، الكمية، ومدينة التسليم."
-      : "Hi, I'd like a quote. Please specify category, specification, pack unit, quantity, and delivery city.";
-  const whatsappQuoteHref = useMemo(
-    () => buildWhatsAppLink(quoteBase),
-    [quoteBase],
-  );
-
   return (
     <main className="page" dir={t?.dir || "ltr"}>
       <section className="card page-section">
@@ -190,23 +176,7 @@ export default function Products() {
           <h1 className="h2" style={{ margin: 0 }}>
             {ui.title}
           </h1>
-          <p className="p">{ui.subtitle}</p>
-
-          <div className="row">
-            <a
-              className="btn btn-primary"
-              href={whatsappQuoteHref}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {ui.ctaQuote}
-            </a>
-            <Link className="btn btn-ghost" to="/quality">
-              {ui.ctaQuality}
-            </Link>
-            <span className="spacer" />
-            <span className="small muted">{ui.note}</span>
-          </div>
+          <p className="p page-intro">{ui.subtitle}</p>
 
           <div className="mkt-products-toolbar" aria-label="Product filters">
             {ui.filters.map((f) => (
@@ -253,6 +223,12 @@ export default function Products() {
             </article>
           ))}
         </div>
+
+        {ui.note ? (
+          <div className="mkt-products-footer card-soft">
+            <div className="mkt-products-note">{ui.note}</div>
+          </div>
+        ) : null}
       </section>
     </main>
   );

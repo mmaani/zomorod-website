@@ -44,6 +44,8 @@ export default function App() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/career" element={<Navigate to="/careers" replace />} />
+          <Route path="/careerpage" element={<Navigate to="/careers" replace />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/quality" element={<Quality />} />

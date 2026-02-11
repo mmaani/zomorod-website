@@ -21,13 +21,11 @@ const COPY = {
       "Reliable supply and consistent specifications for pharmacies and resellers — Jordan & Syria.",
     responseSla: "Quote response within 48 business hours.",
 
-    // ✅ You asked: quality after contact
     nav: {
       home: "Company",
       products: "Products",
       careers: "Careers",
       contact: "Contact",
-      quality: "Quality & Compliance",
     },
 
     ctaStaff: "Staff Login",
@@ -46,8 +44,8 @@ const COPY = {
   ar: {
     dir: "rtl",
     langLabel: "EN",
-    brandShort: "زمرد",
-    brandName: "شركة زمرد للمستلزمات الطبية ذ.م.م",
+    brandShort: "الززمد",
+    brandName: "الززمد للمستلزمات الطبيه",
     tagline: "توريد موثوق ومواصفات ثابتة للصيدليات والموزعين — الأردن وسوريا.",
     responseSla: "الرد على عروض الأسعار خلال 48 ساعة عمل.",
 
@@ -56,7 +54,6 @@ const COPY = {
       products: "المنتجات",
       careers: "الوظائف",
       contact: "التواصل",
-      quality: "الجودة والامتثال",
     },
 
     ctaStaff: "دخول الموظفين",
