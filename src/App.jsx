@@ -1,6 +1,6 @@
 // src/App.jsx
-import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 // Public site
 import MainLayout from "./main/MainLayout.jsx";
@@ -25,6 +25,28 @@ import SalespersonsPage from "./crm/pages/SalespersonsPage.jsx";
 import RecruitmentPage from "./crm/pages/RecruitmentPage.jsx";
 import UsersPage from "./crm/pages/UsersPage.jsx";
 
+const GA_ID = "G-0J45FC20N6";
+
+function GA4RouteTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (typeof window.gtag !== "function") return;
+
+    const pagePath = location.pathname + location.search + location.hash;
+
+    window.gtag("event", "page_view", {
+      page_location: window.location.href,
+      page_path: pagePath,
+      page_title: document.title,
+      send_to: GA_ID,
+    });
+  }, [location]);
+
+  return null;
+}
+
 function NotFound() {
   return (
     <main className="site-page">
@@ -39,6 +61,7 @@ function NotFound() {
 export default function App() {
   return (
     <BrowserRouter>
+      <GA4RouteTracker />
       <Routes>
         {/* Public website */}
         <Route element={<MainLayout />}>

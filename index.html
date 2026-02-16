@@ -6,7 +6,9 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-0J45FC20N6');
+
+      // SPA: disable automatic page_view so we can send it on React Router navigation
+      gtag('config', 'G-0J45FC20N6', { send_page_view: false });
     </script>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
