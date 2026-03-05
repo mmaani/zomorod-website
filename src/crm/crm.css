@@ -26,9 +26,9 @@
 
   /* Dark surfaces */
   --z-bg: #050f0a;
-  --z-surface: rgba(12, 30, 20, 0.84);
-  --z-surface-2: rgba(12, 30, 20, 0.96);
-  --z-surface-3: rgba(20, 52, 36, 0.92);
+  --z-surface: rgba(14, 36, 24, 0.90);
+  --z-surface-2: rgba(14, 36, 24, 0.98);
+  --z-surface-3: rgba(24, 64, 44, 0.96);
 
   /* Text (HIGH contrast) */
   --z-text: rgba(255,255,255,0.95);
@@ -39,9 +39,9 @@
   /* Borders / shadows */
   --z-border: rgba(255,255,255,0.18);
   --z-border-2: rgba(255,255,255,0.12);
-  --z-shadow: 0 16px 42px rgba(0,0,0,0.48);
-  --z-shadow-soft: 0 10px 26px rgba(0,0,0,0.32);
-  --z-glow: 0 0 0 1px rgba(18,178,69,0.16), 0 18px 38px rgba(0,0,0,0.46);
+  --z-shadow: 0 18px 46px rgba(0,0,0,0.54);
+  --z-shadow-soft: 0 12px 30px rgba(0,0,0,0.36);
+  --z-glow: 0 0 0 1px rgba(18,178,69,0.22), 0 22px 46px rgba(0,0,0,0.54);
 
   --z-radius: 16px;
 
@@ -63,9 +63,9 @@ body{
 
   /* Green identity glow (no blue) */
   background:
-    radial-gradient(1100px 760px at 18% 10%, rgba(18,178,69,.30), transparent 58%),
-    radial-gradient(900px 620px at 88% 12%, rgba(6,123,46,.24), transparent 60%),
-    radial-gradient(760px 560px at 55% 92%, rgba(122,223,133,.18), transparent 62%),
+    radial-gradient(1100px 760px at 18% 10%, rgba(18,178,69,.36), transparent 58%),
+    radial-gradient(900px 620px at 88% 12%, rgba(6,123,46,.28), transparent 60%),
+    radial-gradient(760px 560px at 55% 92%, rgba(122,223,133,.22), transparent 62%),
     linear-gradient(180deg, #050f0a, #040d08);
   background-size: 120% 120%, 130% 130%, 140% 140%, 100% 100%;
   background-position: 0% 0%, 100% 0%, 60% 100%, 0% 0%;
@@ -219,7 +219,7 @@ a:hover{ text-decoration: none; }
    Cards / Banners
    ------------------------- */
 .crm-card, .card{
-  background: linear-gradient(165deg, rgba(18, 46, 32, 0.94), rgba(10, 22, 16, 0.92));
+  background: linear-gradient(165deg, rgba(22, 58, 40, 0.96), rgba(10, 22, 16, 0.92));
   border: 1px solid var(--z-border);
   border-radius: var(--z-radius);
   box-shadow: var(--z-glow);

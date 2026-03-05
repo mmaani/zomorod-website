@@ -6,10 +6,10 @@
 
 :root{
   /* Core (green-tinted dark) */
-  --bg: #050f0b;                 /* deeper emerald night */
-  --surface: #0c221a;            /* card base (green/charcoal) */
-  --surface-2: #103126;          /* elevated surface */
-  --surface-3: #143a2d;          /* premium highlights */
+  --bg: #040c09;                 /* deeper emerald night */
+  --surface: #0c251c;            /* card base (green/charcoal) */
+  --surface-2: #123628;          /* elevated surface */
+  --surface-3: #184734;          /* premium highlights */
   --text: rgba(255,255,255,.94);
   --muted: rgba(255,255,255,.76);
   --muted-2: rgba(255,255,255,.60);
@@ -25,10 +25,10 @@
   --danger: #ef4444;
 
   /* Effects */
-  --shadow: 0 16px 40px rgba(0,0,0,.45);
-  --shadow-soft: 0 10px 26px rgba(0,0,0,.30);
-  --glow: 0 0 0 1px rgba(18,178,69,.14), 0 18px 40px rgba(0,0,0,.45);
-  --glow-strong: 0 0 0 1px rgba(18,178,69,.22), 0 22px 46px rgba(0,0,0,.52);
+  --shadow: 0 18px 46px rgba(0,0,0,.50);
+  --shadow-soft: 0 12px 30px rgba(0,0,0,.34);
+  --glow: 0 0 0 1px rgba(18,178,69,.18), 0 20px 46px rgba(0,0,0,.50);
+  --glow-strong: 0 0 0 1px rgba(18,178,69,.28), 0 26px 56px rgba(0,0,0,.58);
   --radius: 14px;
   --radius-sm: 10px;
 
@@ -48,9 +48,9 @@ body{
   line-height: 1.5;
 
   background:
-    radial-gradient(1100px 760px at 18% 10%, rgba(18,178,69,.28), transparent 58%),
-    radial-gradient(900px 620px at 88% 12%, rgba(122,223,133,.20), transparent 58%),
-    radial-gradient(720px 520px at 70% 85%, rgba(6,123,46,.16), transparent 60%),
+    radial-gradient(1100px 760px at 18% 10%, rgba(18,178,69,.34), transparent 58%),
+    radial-gradient(900px 620px at 88% 12%, rgba(122,223,133,.24), transparent 58%),
+    radial-gradient(720px 520px at 70% 85%, rgba(6,123,46,.22), transparent 60%),
     var(--bg);
   background-size: 120% 120%, 130% 130%, 140% 140%, 100% 100%;
   background-position: 0% 0%, 100% 0%, 60% 100%, 0% 0%;
@@ -85,7 +85,7 @@ html, body{ width: 100%; overflow-x: hidden; }
    ================================ */
 
 .card{
-  background: linear-gradient(160deg, rgba(16, 42, 30, 0.92), rgba(10, 22, 16, 0.9));
+  background: linear-gradient(160deg, rgba(20, 58, 42, 0.96), rgba(10, 22, 16, 0.92));
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--glow);
@@ -98,8 +98,8 @@ html, body{ width: 100%; overflow-x: hidden; }
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 48%);
-  opacity: 0.6;
+  background: linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0) 52%);
+  opacity: 0.7;
   pointer-events: none;
 }
 
@@ -224,15 +224,15 @@ html, body{ width: 100%; overflow-x: hidden; }
 
 .btn-primary{
   border-color: rgba(18,178,69,.55);
-  background: linear-gradient(180deg, rgba(18,178,69,.55), rgba(10,127,89,.28));
-  box-shadow: 0 14px 30px rgba(18,178,69,.25), var(--shadow-soft);
+  background: linear-gradient(180deg, rgba(18,178,69,.68), rgba(10,127,89,.34));
+  box-shadow: 0 16px 36px rgba(18,178,69,.32), var(--shadow-soft);
 }
 .btn-primary:hover{ filter: brightness(1.05); }
 
 .btn-accent{
   border-color: rgba(214,178,94,.45);
-  background: linear-gradient(180deg, rgba(214,178,94,.30), rgba(214,178,94,.14));
-  box-shadow: 0 12px 26px rgba(214,178,94,.18), var(--shadow-soft);
+  background: linear-gradient(180deg, rgba(214,178,94,.40), rgba(214,178,94,.18));
+  box-shadow: 0 14px 32px rgba(214,178,94,.22), var(--shadow-soft);
 }
 .btn-danger{
   border-color: rgba(239,68,68,.35);
@@ -653,9 +653,9 @@ tr:hover td{ background: rgba(255,255,255,.04); }
 .page-hero{
   padding: 20px;
   background:
-    radial-gradient(420px 280px at 15% 15%, rgba(18,178,69,.25), transparent 70%),
-    radial-gradient(360px 240px at 88% 10%, rgba(122,223,133,.16), transparent 70%),
-    linear-gradient(145deg, rgba(12,34,26,.96), rgba(7,18,14,.94));
+    radial-gradient(420px 280px at 15% 15%, rgba(18,178,69,.32), transparent 70%),
+    radial-gradient(360px 240px at 88% 10%, rgba(122,223,133,.22), transparent 70%),
+    linear-gradient(145deg, rgba(16,44,32,.96), rgba(7,18,14,.94));
   border: 1px solid rgba(255,255,255,0.14);
   box-shadow: 0 18px 46px rgba(0,0,0,.5), 0 0 0 1px rgba(18,178,69,.16);
 }
