@@ -28,6 +28,7 @@
   --z-bg: #050f0a;
   --z-surface: rgba(12, 30, 20, 0.84);
   --z-surface-2: rgba(12, 30, 20, 0.96);
+  --z-surface-3: rgba(20, 52, 36, 0.92);
 
   /* Text (HIGH contrast) */
   --z-text: rgba(255,255,255,0.95);
@@ -39,6 +40,8 @@
   --z-border: rgba(255,255,255,0.18);
   --z-border-2: rgba(255,255,255,0.12);
   --z-shadow: 0 16px 42px rgba(0,0,0,0.48);
+  --z-shadow-soft: 0 10px 26px rgba(0,0,0,0.32);
+  --z-glow: 0 0 0 1px rgba(18,178,69,0.16), 0 18px 38px rgba(0,0,0,0.46);
 
   --z-radius: 16px;
 
@@ -108,10 +111,12 @@ a:hover{ text-decoration: none; }
   top: 0;
   z-index: 20;
 
-  background: rgba(8, 22, 14, 0.72);
+  background:
+    linear-gradient(160deg, rgba(12, 34, 24, 0.82), rgba(7, 18, 12, 0.9));
   backdrop-filter: blur(10px);
 
   border-bottom: 1px solid var(--z-border);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.28);
 }
 
 .crm-topbar-inner{
@@ -140,6 +145,7 @@ a:hover{ text-decoration: none; }
   object-fit: contain;
   background: rgba(255,255,255,.06);
   border: 1px solid var(--z-border);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.35);
 }
 
 .crm-brand-text{
@@ -175,12 +181,14 @@ a:hover{ text-decoration: none; }
   opacity: .88;
   font-weight: 800;
   font-size: 14px;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, opacity 140ms ease;
 }
 
 .crm-nav-link:hover{
   opacity: 1;
   background: rgba(18,178,69,0.16);
   border-color: rgba(18,178,69,0.34);
+  transform: translateY(-1px);
 }
 
 .crm-nav-link.active{
@@ -211,10 +219,10 @@ a:hover{ text-decoration: none; }
    Cards / Banners
    ------------------------- */
 .crm-card, .card{
-  background: linear-gradient(165deg, rgba(18, 46, 32, 0.92), rgba(10, 22, 16, 0.9));
+  background: linear-gradient(165deg, rgba(18, 46, 32, 0.94), rgba(10, 22, 16, 0.92));
   border: 1px solid var(--z-border);
   border-radius: var(--z-radius);
-  box-shadow: var(--z-shadow);
+  box-shadow: var(--z-glow);
   padding: 16px;
 }
 
@@ -247,12 +255,14 @@ a:hover{ text-decoration: none; }
   cursor: pointer;
   border: 1px solid transparent;
   font: inherit;
+  box-shadow: var(--z-shadow-soft);
+  transition: transform .12s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease, filter .2s ease;
 }
 
 .crm-btn-primary, .button--primary{
   background: linear-gradient(180deg, rgba(18,178,69,1), rgba(6,123,46,1));
   color: rgba(255,255,255,0.96);
-  box-shadow: var(--z-shadow);
+  box-shadow: 0 14px 30px rgba(18,178,69,.25), var(--z-shadow-soft);
   border-color: rgba(18,178,69,0.45);
 }
 .crm-btn-primary:hover, .button--primary:hover{ filter: brightness(1.06); }
@@ -273,7 +283,7 @@ button:not(.crm-btn):not(.button){
   border-color: var(--z-border);
   color: var(--z-text);
 }
-button:hover{ filter: brightness(1.05); }
+button:hover{ filter: brightness(1.05); transform: translateY(-1px); }
 
 button:focus-visible,
 a:focus-visible,
@@ -305,11 +315,12 @@ textarea,
 select{
   font: inherit;
   color: var(--z-text);
-  background: rgba(255,255,255,0.06);
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
   border: 1px solid var(--z-border);
   border-radius: 12px;
   padding: 10px 12px;
   outline: none;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
 }
 
 /* Placeholders */
@@ -319,7 +330,7 @@ input::placeholder, textarea::placeholder{
 
 input:focus, select:focus, textarea:focus{
   box-shadow: var(--z-focus);
-  border-color: rgba(14,142,50,0.42);
+  border-color: rgba(18,178,69,0.55);
 }
 
 /* Checkboxes / Radios (keep small + consistent) */
@@ -503,11 +514,11 @@ select[multiple] option:checked{
   letter-spacing: .03em;
   text-transform: uppercase;
   color: var(--z-muted);
-  background: rgba(255,255,255,0.04);
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
 }
 
 .table tr:hover td{
-  background: rgba(18,178,69,0.10);
+  background: rgba(18,178,69,0.12);
 }
 
 /* Lists used inside tables */
@@ -531,8 +542,8 @@ select[multiple] option:checked{
   border: 1px solid var(--z-border);
   border-radius: 22px;
   overflow: hidden;
-  background: rgba(7, 19, 12, 0.72);
-  box-shadow: 0 28px 60px rgba(0,0,0,0.4);
+  background: linear-gradient(160deg, rgba(12, 34, 24, 0.88), rgba(6, 14, 10, 0.92));
+  box-shadow: 0 28px 60px rgba(0,0,0,0.46);
 }
 
 .crm-login-brand-panel{
@@ -569,6 +580,7 @@ select[multiple] option:checked{
   font-size: 34px;
   line-height: 1.15;
   color: var(--z-text-strong);
+  font-family: var(--z-font-display);
 }
 
 .crm-login-copy{
@@ -588,6 +600,7 @@ select[multiple] option:checked{
   margin: 0;
   font-size: 30px;
   color: var(--z-text-strong);
+  font-family: var(--z-font-display);
 }
 
 .crm-login-subtitle{
@@ -614,6 +627,7 @@ select[multiple] option:checked{
   background: rgba(255,255,255,0.03);
   color: var(--z-text-strong);
   padding: 11px 12px;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
 }
 
 .crm-login-input::placeholder{ color: var(--z-muted-2); }
