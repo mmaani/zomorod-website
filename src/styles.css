@@ -28,6 +28,7 @@
   --shadow: 0 16px 40px rgba(0,0,0,.45);
   --shadow-soft: 0 10px 26px rgba(0,0,0,.30);
   --glow: 0 0 0 1px rgba(18,178,69,.14), 0 18px 40px rgba(0,0,0,.45);
+  --glow-strong: 0 0 0 1px rgba(18,178,69,.22), 0 22px 46px rgba(0,0,0,.52);
   --radius: 14px;
   --radius-sm: 10px;
 
@@ -89,6 +90,23 @@ html, body{ width: 100%; overflow-x: hidden; }
   border-radius: var(--radius);
   box-shadow: var(--glow);
   backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.card::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 48%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.card:hover{
+  box-shadow: var(--glow-strong);
+  transform: translateY(-2px);
+  transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .card-soft{
@@ -639,7 +657,7 @@ tr:hover td{ background: rgba(255,255,255,.04); }
     radial-gradient(360px 240px at 88% 10%, rgba(122,223,133,.16), transparent 70%),
     linear-gradient(145deg, rgba(12,34,26,.96), rgba(7,18,14,.94));
   border: 1px solid rgba(255,255,255,0.14);
-  box-shadow: 0 16px 40px rgba(0,0,0,.45);
+  box-shadow: 0 18px 46px rgba(0,0,0,.5), 0 0 0 1px rgba(18,178,69,.16);
 }
 
 .page-hero-grid{
@@ -714,6 +732,7 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   background: linear-gradient(160deg, rgba(18, 46, 32, 0.38), rgba(10, 22, 16, 0.32));
   display: grid;
   gap: 2px;
+  box-shadow: var(--shadow-soft);
 }
 .metric strong{ font-size: 16px; }
 .metric span{ color: var(--muted); font-size: 12px; }
@@ -885,11 +904,21 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   display: grid;
   gap: 10px;
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  position: relative;
+  overflow: hidden;
 }
 .mkt-product-card:hover{
   transform: translateY(-2px);
   border-color: rgba(18,178,69,0.30);
   box-shadow: 0 14px 30px rgba(0,0,0,0.35);
+}
+.mkt-product-card::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(140deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 50%);
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 .mkt-product-thumb{
@@ -996,11 +1025,21 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   display: grid;
   gap: 10px;
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  position: relative;
+  overflow: hidden;
 }
 .product:hover{
   transform: translateY(-2px);
   border-color: rgba(18,178,69,0.30);
   box-shadow: 0 14px 30px rgba(0,0,0,0.35);
+}
+.product::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(140deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 50%);
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 .product-media{
@@ -1055,7 +1094,17 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   border-radius: 14px;
   overflow: hidden;
   background: linear-gradient(170deg, rgba(16, 40, 29, 0.55), rgba(10, 20, 16, 0.45));
+  position: relative;
 }
+.qc-details::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(140deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 50%);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 .qc-summary{
   cursor: pointer;
   list-style: none;
@@ -1076,7 +1125,18 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   background: linear-gradient(170deg, rgba(16, 40, 29, 0.55), rgba(10, 20, 16, 0.45));
   border-radius: 14px;
   padding: 14px;
+  position: relative;
+  overflow: hidden;
 }
+.qc-note::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(140deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 50%);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 .qc-note-h{ font-weight: 900; margin-bottom: 6px; }
 
 .qc-cta{
@@ -1119,12 +1179,23 @@ tr:hover td{ background: rgba(255,255,255,.04); }
   display: grid;
   gap: 10px;
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  position: relative;
+  overflow: hidden;
 }
 .job:hover{
   transform: translateY(-2px);
   border-color: rgba(18,178,69,0.30);
   box-shadow: 0 14px 30px rgba(0,0,0,0.35);
 }
+.job::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(140deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 50%);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 
 .job-top{
   display: flex;
