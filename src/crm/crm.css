@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap");
+
 /* =========================
    ZOMOROD CRM — Brand UI (Dark + Green Identity)
    Goals:
@@ -18,30 +20,34 @@
   color-scheme: dark;
 
   /* Brand */
-  --z-primary: #0e8e32;        /* emerald */
-  --z-primary-2: #03521e;      /* deep green */
-  --z-accent: #54b764;         /* soft green */
+  --z-primary: #12b245;        /* brighter emerald */
+  --z-primary-2: #067b2e;      /* deep green */
+  --z-accent: #7adf85;         /* vivid green */
 
   /* Dark surfaces */
-  --z-bg: #06120b;
-  --z-surface: rgba(10, 28, 18, 0.78);
-  --z-surface-2: rgba(10, 28, 18, 0.92);
+  --z-bg: #050f0a;
+  --z-surface: rgba(12, 30, 20, 0.84);
+  --z-surface-2: rgba(12, 30, 20, 0.96);
 
   /* Text (HIGH contrast) */
-  --z-text: rgba(255,255,255,0.94);
+  --z-text: rgba(255,255,255,0.95);
   --z-text-strong: rgba(255,255,255,0.98);
-  --z-muted: rgba(255,255,255,0.72);
-  --z-muted-2: rgba(255,255,255,0.56);
+  --z-muted: rgba(255,255,255,0.76);
+  --z-muted-2: rgba(255,255,255,0.60);
 
   /* Borders / shadows */
-  --z-border: rgba(255,255,255,0.14);
-  --z-border-2: rgba(255,255,255,0.10);
-  --z-shadow: 0 12px 34px rgba(0,0,0,0.42);
+  --z-border: rgba(255,255,255,0.18);
+  --z-border-2: rgba(255,255,255,0.12);
+  --z-shadow: 0 16px 42px rgba(0,0,0,0.48);
 
   --z-radius: 16px;
 
   /* Focus */
-  --z-focus: 0 0 0 3px rgba(14,142,50,0.28);
+  --z-focus: 0 0 0 3px rgba(18,178,69,0.32);
+
+  /* Typography */
+  --z-font: "Manrope", "Outfit", system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  --z-font-display: "Outfit", "Manrope", system-ui, -apple-system, Segoe UI, Roboto, Arial;
 }
 
 *{ box-sizing: border-box; }
@@ -49,15 +55,28 @@ html, body{ height: 100%; }
 
 body{
   margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  font-family: var(--z-font);
   color: var(--z-text);
 
   /* Green identity glow (no blue) */
   background:
-    radial-gradient(1100px 760px at 18% 10%, rgba(14,142,50,.22), transparent 58%),
-    radial-gradient(900px 620px at 88% 12%, rgba(3,82,30,.20), transparent 60%),
-    radial-gradient(760px 560px at 55% 92%, rgba(84,183,100,.14), transparent 62%),
-    linear-gradient(180deg, #06120b, #050f09);
+    radial-gradient(1100px 760px at 18% 10%, rgba(18,178,69,.30), transparent 58%),
+    radial-gradient(900px 620px at 88% 12%, rgba(6,123,46,.24), transparent 60%),
+    radial-gradient(760px 560px at 55% 92%, rgba(122,223,133,.18), transparent 62%),
+    linear-gradient(180deg, #050f0a, #040d08);
+  background-size: 120% 120%, 130% 130%, 140% 140%, 100% 100%;
+  background-position: 0% 0%, 100% 0%, 60% 100%, 0% 0%;
+  animation: crm-bg-drift 18s ease-in-out infinite;
+}
+
+@keyframes crm-bg-drift{
+  0%{ background-position: 0% 0%, 100% 0%, 60% 100%, 0% 0%; }
+  50%{ background-position: 10% 8%, 90% 6%, 68% 92%, 0% 0%; }
+  100%{ background-position: 0% 0%, 100% 0%, 60% 100%, 0% 0%; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  body{ animation: none; }
 }
 
 a{ color: inherit; text-decoration: none; }
@@ -160,14 +179,14 @@ a:hover{ text-decoration: none; }
 
 .crm-nav-link:hover{
   opacity: 1;
-  background: rgba(14,142,50,0.14);
-  border-color: rgba(14,142,50,0.30);
+  background: rgba(18,178,69,0.16);
+  border-color: rgba(18,178,69,0.34);
 }
 
 .crm-nav-link.active{
   opacity: 1;
-  background: rgba(14,142,50,0.20);
-  border-color: rgba(14,142,50,0.38);
+  background: rgba(18,178,69,0.24);
+  border-color: rgba(18,178,69,0.42);
   color: var(--z-text-strong);
 }
 
@@ -192,7 +211,7 @@ a:hover{ text-decoration: none; }
    Cards / Banners
    ------------------------- */
 .crm-card, .card{
-  background: var(--z-surface);
+  background: linear-gradient(165deg, rgba(18, 46, 32, 0.92), rgba(10, 22, 16, 0.9));
   border: 1px solid var(--z-border);
   border-radius: var(--z-radius);
   box-shadow: var(--z-shadow);
@@ -214,6 +233,8 @@ a:hover{ text-decoration: none; }
 .crm-card h1, .crm-card h2, .crm-card h3, .crm-card h4,
 .card h1, .card h2, .card h3, .card h4{
   color: var(--z-text-strong);
+  font-family: var(--z-font-display);
+  letter-spacing: .2px;
 }
 
 /* -------------------------
@@ -229,10 +250,10 @@ a:hover{ text-decoration: none; }
 }
 
 .crm-btn-primary, .button--primary{
-  background: linear-gradient(180deg, rgba(14,142,50,1), rgba(3,82,30,1));
+  background: linear-gradient(180deg, rgba(18,178,69,1), rgba(6,123,46,1));
   color: rgba(255,255,255,0.96);
   box-shadow: var(--z-shadow);
-  border-color: rgba(14,142,50,0.38);
+  border-color: rgba(18,178,69,0.45);
 }
 .crm-btn-primary:hover, .button--primary:hover{ filter: brightness(1.06); }
 
@@ -242,8 +263,8 @@ a:hover{ text-decoration: none; }
   color: var(--z-text);
 }
 .crm-btn-outline:hover, .button--ghost:hover{
-  border-color: rgba(14,142,50,0.34);
-  background: rgba(14,142,50,0.12);
+  border-color: rgba(18,178,69,0.38);
+  background: rgba(18,178,69,0.14);
 }
 
 /* Make native buttons that aren’t classed still look ok */
@@ -486,7 +507,7 @@ select[multiple] option:checked{
 }
 
 .table tr:hover td{
-  background: rgba(14,142,50,0.08);
+  background: rgba(18,178,69,0.10);
 }
 
 /* Lists used inside tables */
@@ -517,8 +538,8 @@ select[multiple] option:checked{
 .crm-login-brand-panel{
   padding: 40px 34px;
   background:
-    radial-gradient(560px 340px at 20% 8%, rgba(84,183,100,0.18), transparent 60%),
-    linear-gradient(160deg, rgba(4,28,14,0.92), rgba(7,18,12,0.95));
+    radial-gradient(560px 340px at 20% 8%, rgba(18,178,69,0.22), transparent 60%),
+    linear-gradient(160deg, rgba(5,32,16,0.94), rgba(7,18,12,0.96));
   border-right: 1px solid var(--z-border-2);
 }
 
@@ -598,7 +619,7 @@ select[multiple] option:checked{
 .crm-login-input::placeholder{ color: var(--z-muted-2); }
 .crm-login-input:focus{
   outline: none;
-  border-color: rgba(84,183,100,0.55);
+  border-color: rgba(18,178,69,0.55);
   box-shadow: var(--z-focus);
 }
 
