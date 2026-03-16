@@ -32,6 +32,7 @@ pip install -r scripts/requirements.txt
 
 ## Workbook Template
 - `automation/input/Zomorod_Supplier_Intelligence_TEMPLATE.xlsx`
+- TEMPLATE = master. LIVE = operational workbook. Do not work directly in TEMPLATE.
 - `automation/samples/medzell_company_urls.sample.txt`
 
 ## Recommended Ops Flow
