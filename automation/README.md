@@ -20,6 +20,12 @@ This folder formalizes the supplier automation pipeline while keeping live opera
 - `scripts/zomorod_autofill_supplier_intelligence_v2.py` → reads the workbook + writes results
 - `scripts/run_harvest_waves.sh` → orchestrates the above
 
+## Python Dependencies
+Install requirements for supplier scripts:
+```bash
+pip install -r scripts/requirements.txt
+```
+
 ## Workbook Template
 - `automation/input/Zomorod_Supplier_Intelligence_TEMPLATE.xlsx`
 

@@ -437,11 +437,13 @@ def main():
             written += 1
             r += 1
 
+    effective_delay = args.delay if args.delay > 0 else default_delay
+
     ws_log.append([
         datetime.now(timezone.utc).isoformat(),
         written,
         f"{args.source or 'MULTI'}|{args.country or 'ALL'}|{args.mode}",
-        f"Visited {len(seeds)} seeds; wrote {written} NEW suppliers. limit={args.limit or 'none'} delay={delay}s"
+        f"Visited {len(seeds)} seeds; wrote {written} NEW suppliers. limit={args.limit or 'none'} delay={effective_delay}s"
     ])
 
     wb.save(args.xlsx)
