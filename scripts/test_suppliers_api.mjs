@@ -4,10 +4,15 @@
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 
+const authToken = process.env.AUTH_TOKEN || "";
+
 async function req(path, opts = {}) {
   const url = baseUrl.replace(/\/$/, "") + path;
   const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    },
     ...opts,
   });
   const data = await res.json().catch(() => ({}));
