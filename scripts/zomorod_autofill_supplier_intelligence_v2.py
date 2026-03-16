@@ -20,6 +20,7 @@ from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
+from bs4 import FeatureNotFound
 from openpyxl import load_workbook
 
 UA = {
@@ -138,7 +139,7 @@ def read_seed_urls(ws, *, country: str, source: str) -> List[Dict[str, str]]:
     for row in ws.iter_rows(min_row=3, values_only=True):
         url = str(row[2] or "").strip()
         use = str(row[5] or "").strip().upper()
-        if use != "TRUE" or not url:
+        if use not in {"TRUE", "YES", "Y", "1"} or not url:
             continue
         src = str(row[0] or "").strip()
         cty = str(row[1] or "").strip()
@@ -278,15 +279,23 @@ def write_row(ws_out, r: int, row: Dict[str, object]):
     ws_out.cell(r, 20).value = row.get("Last_Checked", "")
     ws_out.cell(r, 21).value = row.get("Notes", "")
 
+def build_soup(html: str) -> BeautifulSoup:
+    try:
+        return BeautifulSoup(html, "lxml")
+    except FeatureNotFound:
+        return BeautifulSoup(html, "html.parser")
+
 def crawl_urls(
     urls: List[Dict[str, str]],
     *,
     keywords: Dict[str, List[str]],
-    delay_s: float,
+    default_delay_s: float,
     timeout: int,
     retries: int,
     limit: int,
-    existing_keys: set
+    existing_keys: set,
+    cfg: Dict[str, SourceCfg],
+    delay_override: float
 ) -> List[Dict[str, object]]:
     rows: List[Dict[str, object]] = []
     for idx, s in enumerate(urls, 1):
@@ -299,7 +308,7 @@ def crawl_urls(
         if not ems:
             continue
 
-        soup = BeautifulSoup(html, "lxml")
+        soup = build_soup(html)
         name = extract_title(soup) or url
         text = soup.get_text("\n", strip=True)
 
@@ -340,7 +349,12 @@ def crawl_urls(
         if limit and len(rows) >= limit:
             break
 
-        time.sleep(delay_s)
+        if delay_override > 0:
+            time.sleep(delay_override)
+        else:
+            src_name = s.get("Source_Name", "")
+            src_delay = cfg.get(src_name).delay_s if src_name in cfg else default_delay_s
+            time.sleep(src_delay)
     return rows
 
 def load_seed_file_urls(path: str) -> List[str]:
@@ -387,20 +401,22 @@ def main():
 
     existing_keys = load_existing_keys(ws_out, target)
 
-    delay = args.delay if args.delay > 0 else 0.6
-    if args.delay <= 0 and args.source and args.source in cfg:
-        delay = cfg[args.source].delay_s
-    elif args.delay <= 0 and not args.source:
-        delay = 0.8
+    default_delay = 0.6
+    if args.source and args.source in cfg:
+        default_delay = cfg[args.source].delay_s
+    elif not args.source:
+        default_delay = 0.8
 
     new_rows = crawl_urls(
         seeds,
         keywords=keywords,
-        delay_s=delay,
+        default_delay_s=default_delay,
         timeout=args.timeout,
         retries=args.retries,
         limit=args.limit,
         existing_keys=existing_keys,
+        cfg=cfg,
+        delay_override=args.delay,
     )
 
     written = 0
