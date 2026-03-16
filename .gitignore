@@ -20,6 +20,9 @@ coverage/
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
+.env.test
 
 # Optional secrets folder
 .secrets/
@@ -37,6 +40,9 @@ coverage/
 *.sql
 neon_schema.mjs
 service-account.json
+*.pem
+*.key
+*.p12
 
 # Backups / archives
 *.zip

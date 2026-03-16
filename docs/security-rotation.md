@@ -10,6 +10,8 @@
 - Rotate email provider credentials:
   - `RESEND_API_KEY`
   - `CRM_FROM_EMAIL` (if it includes SMTP credentials elsewhere)
+- Rotate one-time setup protection:
+  - `SETUP_TOKEN`
 - Reissue any Google service account keys if previously committed.
 
 ## Cleanup Actions
