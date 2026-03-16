@@ -1,0 +1,27 @@
+# Supplier Automation Workflow
+
+## Purpose
+This folder formalizes the supplier automation pipeline while keeping live operational data out of git.
+
+## Structure
+- `automation/input/` — tracked templates/examples (safe to commit)
+- `automation/output/` — generated artifacts (keep local / gitignored)
+
+## Canonical Live Data (Local Only)
+- `input/` — operational workbook used by scripts (local, gitignored)
+- `output/` — generated URL lists and logs (local, gitignored)
+
+## Core Scripts
+- `scripts/generate_seed_urls_medzell_v2.py` → outputs `output/medzell_company_urls.txt`
+- `scripts/generate_seed_urls_generic_directory.py` → outputs custom seed lists
+- `scripts/zomorod_autofill_supplier_intelligence_v2.py` → reads the workbook + writes results
+- `scripts/run_harvest_waves.sh` → orchestrates the above
+
+## Workbook Template
+- `automation/input/Zomorod_Supplier_Intelligence_TEMPLATE.xlsx`
+
+## Recommended Ops Flow
+1. Copy the template workbook into `input/` as the live workbook.
+2. Run `scripts/run_harvest_waves.sh` (or individual scripts).
+3. Review `Supplier_Intelligence` and `Run_Log` tabs in the workbook.
+4. Sync to Google Sheets / Apps Script if the Sheet becomes canonical.

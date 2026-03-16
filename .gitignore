@@ -58,3 +58,7 @@ project/
 test-*.html
 test-*.pdf
 test-*.txt
+
+# Supplier automation outputs (local only)
+automation/output/
+automation/input/live/
