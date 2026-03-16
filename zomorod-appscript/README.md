@@ -30,7 +30,7 @@ Menu: **Import Suppliers → Import from CSV (paste)**
 
 Recommended CSV headers:
 
-`Supplier_Name,Country,Website,Email,WhatsApp,Category,Notes`
+`Supplier_Name,Country,Website,Email,WhatsApp,Category,Notes,Source_Name,Source_URL`
 
 ### B) MARGMA (Malaysia)
 Menu: **Import Suppliers → Import from MARGMA (Ordinary / Associate)**
@@ -97,4 +97,4 @@ Places query format:
 
 - Some websites block automated scraping (Cloudflare, JS challenges). When blocked, the importer will error and record it in **Logs** and **Sources → Last_Status**.
 - Public services (Overpass) should be used responsibly: keep `Max_Items` reasonable.
-
+- `Source_Name` and `Source_URL` are optional but recommended audit fields when importing suppliers from the workbook.

@@ -26,7 +26,18 @@
 │   ├── schema.sql
 │   ├── setup.js
 │   └── suppliers.js
+├── automation
+│   ├── README.md
+│   ├── input
+│   │   └── Zomorod_Supplier_Intelligence_TEMPLATE.xlsx
+│   └── output
+│       └── medzell_company_urls.txt
 ├── docs
+│   ├── AGENT_RULES.md
+│   ├── PROJECT_ISOLATION.md
+│   ├── PROJECT_SCOPE.md
+│   ├── SECURITY_POLICY.md
+│   ├── SUPPLIER_PIPELINE.md
 │   ├── architecture.md
 │   ├── recruitment
 │   │   └── GOOGLE_SERVICE_ACCOUNT_PLAN.md
@@ -88,6 +99,7 @@
 ├── scripts
 │   ├── generate_seed_urls_generic_directory.py
 │   ├── generate_seed_urls_medzell_v2.py
+│   ├── requirements.txt
 │   ├── run-sql.mjs
 │   ├── run_harvest_waves.sh
 │   ├── setup.mjs
@@ -132,4 +144,4 @@
     ├── README.md
     └── appsscript.json
 
-16 directories, 117 files
+19 directories, 126 files

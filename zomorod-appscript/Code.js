@@ -578,7 +578,7 @@ function ZMS_importFromCSV() {
   const ui = SpreadsheetApp.getUi();
   const resp = ui.prompt(
     "Import Suppliers from CSV",
-    "Paste CSV rows here. Recommended headers:\nSupplier_Name,Country,Website,Email,WhatsApp,Category,Notes",
+    "Paste CSV rows here. Recommended headers:\nSupplier_Name,Country,Website,Email,WhatsApp,Category,Notes,Source_Name,Source_URL",
     ui.ButtonSet.OK_CANCEL
   );
   if (resp.getSelectedButton() !== ui.Button.OK) return;
@@ -925,11 +925,13 @@ function zmsUpsertSuppliers_(items, sourceName, ctx) {
       Website: (it.Website || "").toString().trim(),
       Certifications: (it.Certifications || "").toString().trim(),
       Notes: (it.Notes || "").toString().trim() || "Imported from " + sourceName,
+      Source_Name: (it.Source_Name || it.Source || sourceName || "").toString().trim(),
+      Source_URL: (it.Source_URL || it.Source_Link || it.Source_Website || "").toString().trim(),
     };
 
     // Always stage
     shStg.appendRow([
-      sourceName,
+      obj.Source_Name || sourceName,
       obj.Supplier_Name,
       obj.Country,
       obj.Website,
@@ -1435,6 +1437,8 @@ function zmsRowToSupplierObj_(row, map) {
     WhatsApp: get(["whatsapp", "mobile"], 4),
     Category: get(["category", "categories"], 5),
     Notes: get(["notes", "note"], 6),
+    Source_Name: get(["source_name", "source"], 7),
+    Source_URL: get(["source_url", "source_link", "source_website"], 8),
   };
 }
 

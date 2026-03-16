@@ -62,7 +62,7 @@ class SourceCfg:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
-    p.add_argument("xlsx", help="Workbook path, e.g. input/Zomorod_Supplier_Intelligence_3000_SYSTEM.xlsx")
+    p.add_argument("xlsx", help="Workbook path, e.g. automation/input/Zomorod_Supplier_Intelligence_LIVE.xlsx")
     p.add_argument("--country", default="", help="Only process Seed_URLs rows matching this Country (exact). Blank = all.")
     p.add_argument("--source", default="", help="Only process Seed_URLs rows matching this Source_Name (exact). Blank = all.")
     p.add_argument("--mode", default="append", choices=["append", "replace"], help="append (default) or replace")

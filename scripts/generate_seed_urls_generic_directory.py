@@ -18,7 +18,7 @@ Examples:
     --link-contains "/company/" \
     --next-contains "page=" \
     --max-pages 50 \
-    --out output/turkey_company_urls.txt
+    --out automation/output/turkey_company_urls.txt
 
 This does NOT log in or register accounts.
 """

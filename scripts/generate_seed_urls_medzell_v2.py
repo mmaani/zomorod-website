@@ -68,7 +68,7 @@ def discover_sitemaps(domain: str):
     return out
 
 def main():
-    out_file = sys.argv[1] if len(sys.argv) > 1 else "output/medzell_company_urls.txt"
+    out_file = sys.argv[1] if len(sys.argv) > 1 else "automation/output/medzell_company_urls.txt"
     domain = "https://www.medzell.net"
 
     sitemaps = discover_sitemaps(domain)

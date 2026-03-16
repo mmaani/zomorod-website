@@ -59,12 +59,17 @@ test-*.html
 test-*.pdf
 test-*.txt
 
-# Supplier automation outputs (local only)
-automation/output/
-automation/input/live/
+# Supplier automation (local-only artifacts)
+automation/input/*LIVE*.xlsx
+automation/output/*.txt
+automation/output/*.csv
+automation/runtime/**
+automation/tmp/**
+automation/**/*.log
 
-# Allow tracked templates
+# Allow tracked templates and samples
 !automation/input/
+!automation/samples/
 
 # Transient runtime artifacts
 tmp/
