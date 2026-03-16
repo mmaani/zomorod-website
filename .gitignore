@@ -51,9 +51,9 @@ service-account.json
 backup*/
 archive*/
 
-# Local data dumps / scratch
-input/
-output/
+# Local data dumps / scratch (root-only)
+/input/
+/output/
 project/
 test-*.html
 test-*.pdf
@@ -62,3 +62,6 @@ test-*.txt
 # Supplier automation outputs (local only)
 automation/output/
 automation/input/live/
+
+# Allow tracked templates
+!automation/input/
