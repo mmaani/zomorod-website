@@ -30,6 +30,8 @@
 │   ├── architecture.md
 │   ├── recruitment
 │   │   └── GOOGLE_SERVICE_ACCOUNT_PLAN.md
+│   ├── security-rotation.md
+│   ├── setup.md
 │   └── troubleshooting
 │       └── CRM_LOGIN_500_DIAGNOSIS.md
 ├── index.html
@@ -130,4 +132,4 @@
     ├── README.md
     └── appsscript.json
 
-16 directories, 115 files
+16 directories, 117 files
