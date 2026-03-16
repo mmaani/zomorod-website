@@ -683,11 +683,18 @@ export default function ProductsPage() {
                   <label>Supplier</label>
                   <select className="input" value={bForm.supplierId || ""} onChange={(e) => setBForm((s) => ({ ...s, supplierId: e.target.value }))}>
                     <option value="">Select supplier…</option>
-                    {suppliers.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
+                    {suppliers.map((s) => {
+                      const label =
+                        normalize(s.legalName) ||
+                        normalize(s.businessName) ||
+                        normalize(s.name) ||
+                        "—";
+                      return (
+                        <option key={s.id} value={s.id}>
+                          {label}
+                        </option>
+                      );
+                    })}
                   </select>
 
                   <input

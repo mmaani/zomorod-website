@@ -56,6 +56,10 @@ const COUNTRY_LIST = [
   "South Africa",
 ];
 
+const WORKFLOW_STATUSES = ["HARVESTED", "UNDER_REVIEW", "ENRICHED", "APPROVED", "BLOCKED", "INACTIVE"];
+const RISK_LEVELS = ["LOW", "MED", "HIGH"];
+const SUPPLIER_TYPES = ["Manufacturer", "Exporter", "Authorized Distributor", "Trading Company", "Agent", "Other"];
+
 function normalize(v) {
   return String(v ?? "").trim();
 }
@@ -374,14 +378,26 @@ export default function SuppliersPage() {
 
   const emptyForm = {
     id: null,
-    businessName: "",
+    legalName: "",
     contactName: "",
-    phone: "",
+    phoneWhatsapp: "",
     email: "",
     website: "",
     supplierCountry: "",
     supplierCity: "",
+    supplierType: "",
+    workflowStatus: "",
+    riskLevel: "",
+    primaryCategoryId: "",
     categoryIds: [],
+    certificationsIso13485: "",
+    certificationsCe: "",
+    certificationsOther: "",
+    evidenceUrl: "",
+    expectedPriceRangeUsd: "",
+    sourceName: "",
+    sourceUrl: "",
+    notes: "",
     supplierCountryOther: "",
   };
 
@@ -474,15 +490,27 @@ export default function SuppliersPage() {
 
     setForm({
       id: s.id,
-      businessName: s.businessName || "",
+      legalName: s.legalName || s.businessName || s.name || "",
       contactName: s.contactName || "",
-      phone: s.phone || "",
+      phoneWhatsapp: s.phoneWhatsapp || s.phone || "",
       email: s.email || "",
       website: s.website || "",
       supplierCountry: inList ? storedCountry : storedCountry ? "Other" : "",
       supplierCountryOther: inList ? "" : storedCountry,
       supplierCity: s.supplierCity || "",
+      supplierType: s.supplierType || "",
+      workflowStatus: s.workflowStatus || "",
+      riskLevel: s.riskLevel || "",
+      primaryCategoryId: s.primaryCategoryId ? String(s.primaryCategoryId) : "",
       categoryIds: uniqInts(s.categoryIds),
+      certificationsIso13485: s.certificationsIso13485 || "",
+      certificationsCe: s.certificationsCe || "",
+      certificationsOther: s.certificationsOther || "",
+      evidenceUrl: s.evidenceUrl || "",
+      expectedPriceRangeUsd: s.expectedPriceRangeUsd || "",
+      sourceName: s.sourceName || "",
+      sourceUrl: s.sourceUrl || "",
+      notes: s.notes || "",
     });
 
     try {
@@ -507,11 +535,11 @@ export default function SuppliersPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
 
-    const businessName = normalize(form.businessName);
+    const legalName = normalize(form.legalName);
     const contactName = normalize(form.contactName);
 
-    if (!businessName && !contactName) {
-      alert("Business Name or Contact Name is required");
+    if (!legalName) {
+      alert("Legal Name is required");
       return;
     }
 
@@ -520,17 +548,52 @@ export default function SuppliersPage() {
       return;
     }
 
+    if (!effectiveCountry) {
+      alert("Country is required");
+      return;
+    }
+
+    if (!normalize(form.workflowStatus)) {
+      alert("Workflow Status is required");
+      return;
+    }
+
+    if (!normalize(form.riskLevel)) {
+      alert("Risk Level is required");
+      return;
+    }
+
+    if (!normalize(form.primaryCategoryId)) {
+      alert("Primary Category is required");
+      return;
+    }
+
+    const secondaryCategoryIds = uniqInts(form.categoryIds).filter(
+      (id) => String(id) !== String(form.primaryCategoryId)
+    );
+
     const payload = {
       id: form.id,
-      // ✅ enforce the helper-text promise
-      businessName: businessName || contactName,
+      legalName,
       contactName,
-      phone: normalize(form.phone),
+      phoneWhatsapp: normalize(form.phoneWhatsapp),
       email: normalize(form.email),
       website: normalize(form.website),
       supplierCountry: effectiveCountry,
       supplierCity: normalize(form.supplierCity),
-      categoryIds: uniqInts(form.categoryIds),
+      supplierType: normalize(form.supplierType),
+      workflowStatus: normalize(form.workflowStatus),
+      riskLevel: normalize(form.riskLevel),
+      primaryCategoryId: toInt(form.primaryCategoryId),
+      secondaryCategoryIds,
+      certificationsIso13485: normalize(form.certificationsIso13485),
+      certificationsCe: normalize(form.certificationsCe),
+      certificationsOther: normalize(form.certificationsOther),
+      evidenceUrl: normalize(form.evidenceUrl),
+      expectedPriceRangeUsd: normalize(form.expectedPriceRangeUsd),
+      sourceName: normalize(form.sourceName),
+      sourceUrl: normalize(form.sourceUrl),
+      notes: normalize(form.notes),
     };
 
     const method = form.id ? "PATCH" : "POST";
@@ -564,12 +627,69 @@ export default function SuppliersPage() {
             <label>Search</label>
             <input
               className="input"
-              placeholder="Name, business, email, phone, country..."
+              placeholder="Legal name, email, phone, country..."
               value={searchQ}
               onChange={(e) => setSearchQ(e.target.value)}
             />
             <div className="muted" style={hintStyle}>
-              Searches across name/business/contact/email/phone/website/country/city.
+              Searches across legal/contact/email/phone/website/country/city.
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 12,
+              marginBottom: 12,
+            }}
+          >
+            <div className="field">
+              <label>Supplier Type</label>
+              <select
+                className="input"
+                value={form.supplierType}
+                onChange={(e) => setForm((s) => ({ ...s, supplierType: e.target.value }))}
+              >
+                <option value="">Select type…</option>
+                {SUPPLIER_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="field">
+              <label>Workflow Status</label>
+              <select
+                className="input"
+                value={form.workflowStatus}
+                onChange={(e) => setForm((s) => ({ ...s, workflowStatus: e.target.value }))}
+              >
+                <option value="">Select status…</option>
+                {WORKFLOW_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="field">
+              <label>Risk Level</label>
+              <select
+                className="input"
+                value={form.riskLevel}
+                onChange={(e) => setForm((s) => ({ ...s, riskLevel: e.target.value }))}
+              >
+                <option value="">Select risk…</option>
+                {RISK_LEVELS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -621,6 +741,9 @@ export default function SuppliersPage() {
       {hasRole("main") && (
         <form onSubmit={onSubmit} className="card" style={{ padding: 16, marginBottom: 16 }}>
           <h3 style={{ marginTop: 0 }}>{form.id ? "Edit Supplier" : "Add Supplier"}</h3>
+          <div className="muted" style={{ marginTop: 6, marginBottom: 12 }}>
+            Required: Legal Name, Country, Workflow Status, Risk Level, Primary Category.
+          </div>
 
           <div
             style={{
@@ -632,15 +755,15 @@ export default function SuppliersPage() {
             }}
           >
             <div className="field">
-              <label>Business Name</label>
+              <label>Legal Name</label>
               <input
                 className="input"
-                placeholder="Company / Business name"
-                value={form.businessName}
-                onChange={(e) => setForm((s) => ({ ...s, businessName: e.target.value }))}
+                placeholder="Legal supplier name"
+                value={form.legalName}
+                onChange={(e) => setForm((s) => ({ ...s, legalName: e.target.value }))}
               />
               <div className="muted" style={hintStyle}>
-                If empty, Business Name will be set to Contact Name automatically.
+                Canonical supplier identity (required).
               </div>
             </div>
 
@@ -665,12 +788,12 @@ export default function SuppliersPage() {
             }}
           >
             <div className="field">
-              <label>Phone</label>
+              <label>Phone / WhatsApp</label>
               <input
                 className="input"
                 placeholder="+962..."
-                value={form.phone}
-                onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))}
+                value={form.phoneWhatsapp}
+                onChange={(e) => setForm((s) => ({ ...s, phoneWhatsapp: e.target.value }))}
               />
             </div>
 
@@ -750,18 +873,143 @@ export default function SuppliersPage() {
           </div>
 
           <div className="field" style={{ marginBottom: 12 }}>
-            <label>Product Categories (supplier can provide)</label>
+            <label>Primary Category (required)</label>
             {categoriesSafe.length === 0 ? (
               <div className="muted" style={{ marginTop: 8 }}>
                 No categories found. Add categories via Products first.
               </div>
             ) : (
+              <select
+                className="input"
+                value={form.primaryCategoryId}
+                onChange={(e) => setForm((s) => ({ ...s, primaryCategoryId: e.target.value }))}
+              >
+                <option value="">Select primary category…</option>
+                {categoriesSafe.map((c) => (
+                  <option key={c.id} value={String(c.id)}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          <div className="field" style={{ marginBottom: 12 }}>
+            <label>Secondary Categories (optional)</label>
+            {categoriesSafe.length === 0 ? null : (
               <CategoryPicker
                 categories={categoriesSafe}
                 valueIds={form.categoryIds}
                 onChange={(ids) => setForm((s) => ({ ...s, categoryIds: uniqInts(ids) }))}
               />
             )}
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: 12,
+              marginBottom: 12,
+            }}
+          >
+            <div className="field">
+              <label>Cert ISO13485</label>
+              <input
+                className="input"
+                placeholder="Stated / Verified / blank"
+                value={form.certificationsIso13485}
+                onChange={(e) => setForm((s) => ({ ...s, certificationsIso13485: e.target.value }))}
+              />
+            </div>
+
+            <div className="field">
+              <label>Cert CE</label>
+              <input
+                className="input"
+                placeholder="Stated / Verified / blank"
+                value={form.certificationsCe}
+                onChange={(e) => setForm((s) => ({ ...s, certificationsCe: e.target.value }))}
+              />
+            </div>
+
+            <div className="field">
+              <label>Cert Other</label>
+              <input
+                className="input"
+                placeholder="FDA, UKCA, GMP..."
+                value={form.certificationsOther}
+                onChange={(e) => setForm((s) => ({ ...s, certificationsOther: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: 12,
+              marginBottom: 12,
+            }}
+          >
+            <div className="field">
+              <label>Evidence URL</label>
+              <input
+                className="input"
+                placeholder="https://..."
+                value={form.evidenceUrl}
+                onChange={(e) => setForm((s) => ({ ...s, evidenceUrl: e.target.value }))}
+              />
+            </div>
+
+            <div className="field">
+              <label>Expected Price Range (USD)</label>
+              <input
+                className="input"
+                placeholder="e.g., 0.12–0.25"
+                value={form.expectedPriceRangeUsd}
+                onChange={(e) => setForm((s) => ({ ...s, expectedPriceRangeUsd: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: 12,
+              marginBottom: 12,
+            }}
+          >
+            <div className="field">
+              <label>Source Name</label>
+              <input
+                className="input"
+                placeholder="Medzell / MARGMA / manual"
+                value={form.sourceName}
+                onChange={(e) => setForm((s) => ({ ...s, sourceName: e.target.value }))}
+              />
+            </div>
+
+            <div className="field">
+              <label>Source URL</label>
+              <input
+                className="input"
+                placeholder="https://..."
+                value={form.sourceUrl}
+                onChange={(e) => setForm((s) => ({ ...s, sourceUrl: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="field" style={{ marginBottom: 12 }}>
+            <label>Notes</label>
+            <textarea
+              className="input"
+              rows={3}
+              value={form.notes}
+              onChange={(e) => setForm((s) => ({ ...s, notes: e.target.value }))}
+            />
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -783,14 +1031,23 @@ export default function SuppliersPage() {
           <table>
             <thead>
               <tr>
-                <th>Business Name</th>
+                <th>Legal Name</th>
                 <th>Contact</th>
                 <th>Country</th>
                 <th>City</th>
-                <th>Phone</th>
+                <th>Phone/WhatsApp</th>
                 <th>Email</th>
                 <th>Website</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Risk</th>
+                <th>Primary Category</th>
                 <th>Categories</th>
+                <th>Certs</th>
+                <th>Evidence</th>
+                <th>Price (USD)</th>
+                <th>Source</th>
+                <th>Notes</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -798,7 +1055,7 @@ export default function SuppliersPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="muted">
+                  <td colSpan={18} className="muted">
                     Loading…
                   </td>
                 </tr>
@@ -806,7 +1063,7 @@ export default function SuppliersPage() {
 
               {!loading && suppliers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="muted">
+                  <td colSpan={18} className="muted">
                     No suppliers yet.
                   </td>
                 </tr>
@@ -817,7 +1074,8 @@ export default function SuppliersPage() {
                   .map((id) => categoriesById.get(id)?.name)
                   .filter(Boolean);
 
-                const business = normalize(s.businessName) || normalize(s.contactName) || normalize(s.name) || "—";
+                const legal = normalize(s.legalName) || normalize(s.businessName) || normalize(s.name) || "—";
+                const primaryCategoryName = categoriesById.get(toInt(s.primaryCategoryId))?.name || "—";
 
                 const website = normalize(s.website);
                 const websiteHref =
@@ -829,11 +1087,11 @@ export default function SuppliersPage() {
 
                 return (
                   <tr key={s.id}>
-                    <td style={{ fontWeight: 900 }}>{business}</td>
+                    <td style={{ fontWeight: 900 }}>{legal}</td>
                     <td>{s.contactName || <span className="muted">—</span>}</td>
                     <td>{s.supplierCountry || <span className="muted">—</span>}</td>
                     <td>{s.supplierCity || <span className="muted">—</span>}</td>
-                    <td>{s.phone || <span className="muted">—</span>}</td>
+                    <td>{s.phoneWhatsapp || s.phone || <span className="muted">—</span>}</td>
                     <td>{s.email || <span className="muted">—</span>}</td>
 
                     <td>
@@ -845,6 +1103,11 @@ export default function SuppliersPage() {
                         <span className="muted">—</span>
                       )}
                     </td>
+
+                    <td>{s.supplierType || <span className="muted">—</span>}</td>
+                    <td>{s.workflowStatus || <span className="muted">—</span>}</td>
+                    <td>{s.riskLevel || <span className="muted">—</span>}</td>
+                    <td>{primaryCategoryName}</td>
 
                     <td>
                       {catNames.length ? (
@@ -862,6 +1125,48 @@ export default function SuppliersPage() {
                         <span className="muted">—</span>
                       )}
                     </td>
+
+                    <td>
+                      {normalize(s.certificationsIso13485) || normalize(s.certificationsCe) || normalize(s.certificationsOther) ? (
+                        <span>
+                          {normalize(s.certificationsIso13485) || "—"} /{" "}
+                          {normalize(s.certificationsCe) || "—"} /{" "}
+                          {normalize(s.certificationsOther) || "—"}
+                        </span>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+
+                    <td>
+                      {normalize(s.evidenceUrl) ? (
+                        <a href={s.evidenceUrl} target="_blank" rel="noreferrer">
+                          Evidence
+                        </a>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+
+                    <td>{s.expectedPriceRangeUsd || <span className="muted">—</span>}</td>
+
+                    <td>
+                      {normalize(s.sourceName) || normalize(s.sourceUrl) ? (
+                        <span>
+                          {s.sourceName || "—"}
+                          {s.sourceUrl ? " • " : ""}
+                          {s.sourceUrl ? (
+                            <a href={s.sourceUrl} target="_blank" rel="noreferrer">
+                              Source
+                            </a>
+                          ) : null}
+                        </span>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+
+                    <td>{s.notes || <span className="muted">—</span>}</td>
 
                     <td style={{ whiteSpace: "nowrap" }}>
                       {hasRole("main") ? (

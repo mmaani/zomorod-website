@@ -46,6 +46,31 @@ function cleanUrl(v) {
   }
 }
 
+const WORKFLOW_STATUSES = new Set([
+  "HARVESTED",
+  "UNDER_REVIEW",
+  "ENRICHED",
+  "APPROVED",
+  "BLOCKED",
+  "INACTIVE",
+]);
+
+const RISK_LEVELS = new Set(["LOW", "MED", "HIGH"]);
+
+function cleanStatus(v) {
+  const s = cleanStr(v, 40);
+  if (!s) return null;
+  const up = s.toUpperCase();
+  return WORKFLOW_STATUSES.has(up) ? up : null;
+}
+
+function cleanRiskLevel(v) {
+  const s = cleanStr(v, 10);
+  if (!s) return null;
+  const up = s.toUpperCase();
+  return RISK_LEVELS.has(up) ? up : null;
+}
+
 function uniqPositiveInts(arr) {
   const out = [];
   const seen = new Set();
@@ -98,11 +123,21 @@ function getReqUrl(req) {
   return new URL(req.url || "/", `${proto}://${host}`);
 }
 
+function getPathId(url) {
+  const parts = (url.pathname || "").split("/").filter(Boolean);
+  if (parts.length >= 3 && parts[0] === "api" && parts[1] === "suppliers") {
+    const id = Number(parts[2]);
+    return Number.isFinite(id) && id > 0 ? id : 0;
+  }
+  return 0;
+}
+
 export default async function handler(req, res) {
   try {
     const method = req.method || "GET";
     const sql = getSql();
     const url = getReqUrl(req);
+    const pathId = getPathId(url);
 
     // -------------------------
     // GET /api/suppliers
@@ -128,12 +163,26 @@ export default async function handler(req, res) {
           s.id,
           s.name,
           s.business_name,
+          s.legal_name,
           s.contact_name,
           s.phone,
+          s.phone_whatsapp,
           s.email,
           s.website,
           s.supplier_country,
           s.supplier_city,
+          s.supplier_type,
+          s.workflow_status,
+          s.risk_level,
+          s.certifications_iso13485,
+          s.certifications_ce,
+          s.certifications_other,
+          s.evidence_url,
+          s.expected_price_range_usd,
+          s.source_name,
+          s.source_url,
+          s.notes,
+          s.primary_category_id,
           s.created_at,
           s.updated_at,
           COALESCE(
@@ -147,6 +196,7 @@ export default async function handler(req, res) {
           (
             ${q}::text IS NULL
             OR COALESCE(NULLIF(s.business_name, ''), '') ILIKE ${like}
+            OR COALESCE(NULLIF(s.legal_name, ''), '') ILIKE ${like}
             OR COALESCE(NULLIF(s.name, ''), '') ILIKE ${like}
             OR COALESCE(NULLIF(s.contact_name, ''), '') ILIKE ${like}
             OR COALESCE(NULLIF(s.email, ''), '') ILIKE ${like}
@@ -163,6 +213,7 @@ export default async function handler(req, res) {
               WHERE sc2.supplier_id = s.id
                 AND sc2.category_id = ${categoryId}
             )
+            OR s.primary_category_id = ${categoryId}
           )
         GROUP BY s.id
         ORDER BY COALESCE(NULLIF(s.business_name, ''), s.name) ASC, s.id ASC
@@ -177,12 +228,26 @@ export default async function handler(req, res) {
           id: r.id,
           name: r.name ?? "",
           businessName: r.business_name ?? "",
+          legalName: r.legal_name ?? "",
           contactName: r.contact_name ?? "",
           phone: r.phone ?? "",
+          phoneWhatsapp: r.phone_whatsapp ?? "",
           email: r.email ?? "",
           website: r.website ?? "",
           supplierCountry: r.supplier_country ?? "",
           supplierCity: r.supplier_city ?? "",
+          supplierType: r.supplier_type ?? "",
+          workflowStatus: r.workflow_status ?? "",
+          riskLevel: r.risk_level ?? "",
+          certificationsIso13485: r.certifications_iso13485 ?? "",
+          certificationsCe: r.certifications_ce ?? "",
+          certificationsOther: r.certifications_other ?? "",
+          evidenceUrl: r.evidence_url ?? "",
+          expectedPriceRangeUsd: r.expected_price_range_usd ?? "",
+          sourceName: r.source_name ?? "",
+          sourceUrl: r.source_url ?? "",
+          notes: r.notes ?? "",
+          primaryCategoryId: r.primary_category_id ?? null,
           categoryIds: Array.isArray(r.category_ids) ? r.category_ids : [],
         })),
         categories: categories.map((c) => ({ id: c.id, name: c.name })),
@@ -203,38 +268,83 @@ export default async function handler(req, res) {
         return send(res, 400, { ok: false, error: "Invalid JSON body" });
       }
 
+      const legalNameRaw = cleanStr(body?.legalName, 200);
       const businessNameRaw = cleanStr(body?.businessName, 200);
+      const nameRaw = cleanStr(body?.name, 200);
       const contactName = cleanStr(body?.contactName, 200);
       const phone = cleanStr(body?.phone, 50);
+      const phoneWhatsapp = cleanStr(body?.phoneWhatsapp, 50);
       const email = cleanEmail(body?.email);
       const website = cleanUrl(body?.website);
       const supplierCountry = cleanStr(body?.supplierCountry, 120);
       const supplierCity = cleanStr(body?.supplierCity, 120);
+      const supplierType = cleanStr(body?.supplierType, 80);
+      const workflowStatus = cleanStatus(body?.workflowStatus);
+      const riskLevel = cleanRiskLevel(body?.riskLevel);
+      const certificationsIso13485 = cleanStr(body?.certificationsIso13485, 120);
+      const certificationsCe = cleanStr(body?.certificationsCe, 120);
+      const certificationsOther = cleanStr(body?.certificationsOther, 255);
+      const evidenceUrl = cleanUrl(body?.evidenceUrl);
+      const expectedPriceRangeUsd = cleanStr(body?.expectedPriceRangeUsd, 120);
+      const sourceName = cleanStr(body?.sourceName, 200);
+      const sourceUrl = cleanUrl(body?.sourceUrl);
+      const notes = cleanStr(body?.notes, 2000);
+      const primaryCategoryId = n(body?.primaryCategoryId) || 0;
 
-      const businessName = businessNameRaw || contactName || null;
-      const name = cleanStr(body?.name, 200) || businessName || contactName;
+      const legalName = legalNameRaw || businessNameRaw || nameRaw || contactName || null;
+      const businessName = businessNameRaw || legalName;
+      const name = nameRaw || legalName;
 
-      if (!name) {
-        return send(res, 400, { ok: false, error: "Business Name (or Contact Name) is required" });
+      if (!legalName) {
+        return send(res, 400, { ok: false, error: "Legal Name is required" });
+      }
+      if (!supplierCountry) {
+        return send(res, 400, { ok: false, error: "Country is required" });
+      }
+      if (!workflowStatus) {
+        return send(res, 400, { ok: false, error: "Workflow Status is required" });
+      }
+      if (!riskLevel) {
+        return send(res, 400, { ok: false, error: "Risk Level is required" });
+      }
+      if (!primaryCategoryId) {
+        return send(res, 400, { ok: false, error: "Primary Category is required" });
       }
 
-      const categoryIds = uniqPositiveInts(body?.categoryIds);
+      const categoryIds = uniqPositiveInts(body?.secondaryCategoryIds || body?.categoryIds);
 
       const supplierId = await sql.begin(async (tx) => {
         const rows = await tx`
           INSERT INTO suppliers (
-            name, business_name, contact_name, phone, email, website,
-            supplier_country, supplier_city
+            name, business_name, legal_name, contact_name, phone, phone_whatsapp, email, website,
+            supplier_country, supplier_city, supplier_type, workflow_status, risk_level,
+            certifications_iso13485, certifications_ce, certifications_other,
+            evidence_url, expected_price_range_usd, source_name, source_url, notes,
+            primary_category_id
           )
           VALUES (
             ${name},
             ${businessName},
+            ${legalName},
             ${contactName},
             ${phone},
+            ${phoneWhatsapp},
             ${email},
             ${website},
             ${supplierCountry},
-            ${supplierCity}
+            ${supplierCity},
+            ${supplierType},
+            ${workflowStatus},
+            ${riskLevel},
+            ${certificationsIso13485},
+            ${certificationsCe},
+            ${certificationsOther},
+            ${evidenceUrl},
+            ${expectedPriceRangeUsd},
+            ${sourceName},
+            ${sourceUrl},
+            ${notes},
+            ${primaryCategoryId}
           )
           RETURNING id
         `;
@@ -269,25 +379,53 @@ export default async function handler(req, res) {
         return send(res, 400, { ok: false, error: "Invalid JSON body" });
       }
 
-      const id = n(body?.id);
+      const id = n(body?.id) || pathId;
       if (!id) return send(res, 400, { ok: false, error: "id is required" });
 
+      const legalNameRaw = cleanStr(body?.legalName, 200);
       const businessNameRaw = cleanStr(body?.businessName, 200);
+      const nameRaw = cleanStr(body?.name, 200);
       const contactName = cleanStr(body?.contactName, 200);
       const phone = cleanStr(body?.phone, 50);
+      const phoneWhatsapp = cleanStr(body?.phoneWhatsapp, 50);
       const email = cleanEmail(body?.email);
       const website = cleanUrl(body?.website);
       const supplierCountry = cleanStr(body?.supplierCountry, 120);
       const supplierCity = cleanStr(body?.supplierCity, 120);
+      const supplierType = cleanStr(body?.supplierType, 80);
+      const workflowStatus = cleanStatus(body?.workflowStatus);
+      const riskLevel = cleanRiskLevel(body?.riskLevel);
+      const certificationsIso13485 = cleanStr(body?.certificationsIso13485, 120);
+      const certificationsCe = cleanStr(body?.certificationsCe, 120);
+      const certificationsOther = cleanStr(body?.certificationsOther, 255);
+      const evidenceUrl = cleanUrl(body?.evidenceUrl);
+      const expectedPriceRangeUsd = cleanStr(body?.expectedPriceRangeUsd, 120);
+      const sourceName = cleanStr(body?.sourceName, 200);
+      const sourceUrl = cleanUrl(body?.sourceUrl);
+      const notes = cleanStr(body?.notes, 2000);
+      const primaryCategoryId = n(body?.primaryCategoryId) || 0;
 
-      const businessName = businessNameRaw || contactName || null;
-      const name = cleanStr(body?.name, 200) || businessName || contactName;
+      const legalName = legalNameRaw || businessNameRaw || nameRaw || contactName || null;
+      const businessName = businessNameRaw || legalName;
+      const name = nameRaw || legalName;
 
-      if (!name) {
-        return send(res, 400, { ok: false, error: "Business Name (or Contact Name) is required" });
+      if (!legalName) {
+        return send(res, 400, { ok: false, error: "Legal Name is required" });
+      }
+      if (!supplierCountry) {
+        return send(res, 400, { ok: false, error: "Country is required" });
+      }
+      if (!workflowStatus) {
+        return send(res, 400, { ok: false, error: "Workflow Status is required" });
+      }
+      if (!riskLevel) {
+        return send(res, 400, { ok: false, error: "Risk Level is required" });
+      }
+      if (!primaryCategoryId) {
+        return send(res, 400, { ok: false, error: "Primary Category is required" });
       }
 
-      const categoryIds = uniqPositiveInts(body?.categoryIds);
+      const categoryIds = uniqPositiveInts(body?.secondaryCategoryIds || body?.categoryIds);
 
       await sql.begin(async (tx) => {
         await tx`
@@ -295,12 +433,26 @@ export default async function handler(req, res) {
           SET
             name = ${name},
             business_name = ${businessName},
+            legal_name = ${legalName},
             contact_name = ${contactName},
             phone = ${phone},
+            phone_whatsapp = ${phoneWhatsapp},
             email = ${email},
             website = ${website},
             supplier_country = ${supplierCountry},
             supplier_city = ${supplierCity},
+            supplier_type = ${supplierType},
+            workflow_status = ${workflowStatus},
+            risk_level = ${riskLevel},
+            certifications_iso13485 = ${certificationsIso13485},
+            certifications_ce = ${certificationsCe},
+            certifications_other = ${certificationsOther},
+            evidence_url = ${evidenceUrl},
+            expected_price_range_usd = ${expectedPriceRangeUsd},
+            source_name = ${sourceName},
+            source_url = ${sourceUrl},
+            notes = ${notes},
+            primary_category_id = ${primaryCategoryId},
             updated_at = NOW()
           WHERE id = ${id}
         `;
