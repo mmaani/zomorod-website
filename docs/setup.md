@@ -26,3 +26,6 @@ npm run build
 ## Environment Variables
 Copy `.env.example` to your local environment manager or CI and fill in values.
 Do not commit `.env` files.
+
+## Governance
+See `docs/PROJECT_SCOPE.md`, `docs/AGENT_RULES.md`, and `docs/SECURITY_POLICY.md` for repo governance and security rules.

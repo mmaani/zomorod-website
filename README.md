@@ -12,6 +12,7 @@ npm run dev
 The CRM frontend uses `/api` by default; override with `VITE_API_BASE` if you are proxying to a different backend. 
 See `.env.example` for local environment placeholders.
 See `docs/setup.md` for a quickstart and `docs/security-rotation.md` for secret rotation steps.
+See `docs/PROJECT_SCOPE.md`, `docs/AGENT_RULES.md`, and `docs/SUPPLIER_PIPELINE.md` for repo governance and supplier pipeline guidance.
 
 ### API / Serverless
 The `/api` directory contains Vercel-style serverless handlers used by the CRM and recruitment flows. These rely on:

@@ -27,3 +27,4 @@
 ## Ongoing Hygiene
 - Use `.env.example` as the only committed env reference.
 - Add secrets via CI/CD or Vercel environment variables only.
+- Follow `docs/SECURITY_POLICY.md` for the authoritative security posture.

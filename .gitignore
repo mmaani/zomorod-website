@@ -65,3 +65,8 @@ automation/input/live/
 
 # Allow tracked templates
 !automation/input/
+
+# Transient runtime artifacts
+tmp/
+runtime/
+logs/

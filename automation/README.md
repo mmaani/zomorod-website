@@ -7,8 +7,11 @@ This folder formalizes the supplier automation pipeline while keeping live opera
 - `automation/input/` — tracked templates/examples (safe to commit)
 - `automation/output/` — generated artifacts (keep local / gitignored)
 
-## Canonical Live Data (Local Only)
-- `input/` — operational workbook used by scripts (local, gitignored)
+## Canonical Source of Truth
+- Google Sheet is the canonical supplier intake source.
+
+## Local Operational Data (Local Only)
+- `input/` — local workbook copy if needed (local, gitignored)
 - `output/` — generated URL lists and logs (local, gitignored)
 
 ## Core Scripts
@@ -21,7 +24,6 @@ This folder formalizes the supplier automation pipeline while keeping live opera
 - `automation/input/Zomorod_Supplier_Intelligence_TEMPLATE.xlsx`
 
 ## Recommended Ops Flow
-1. Copy the template workbook into `input/` as the live workbook.
+1. Update the Google Sheet (canonical input).
 2. Run `scripts/run_harvest_waves.sh` (or individual scripts).
-3. Review `Supplier_Intelligence` and `Run_Log` tabs in the workbook.
-4. Sync to Google Sheets / Apps Script if the Sheet becomes canonical.
+3. Save results to the database and review in CRM/admin.
