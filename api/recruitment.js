@@ -1,1 +1,1 @@
-export { default } from "../server/recruitment.js";
+export { default } from "../lib/recruitment.js";

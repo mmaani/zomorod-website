@@ -1,6 +1,6 @@
 # Recruitment via Google Service Account: implementation guide
 
-This project already includes service-account parsing (`GOOGLE_SA_B64`) and a reference recruitment flow in `server/recruitment.js`.
+This project already includes service-account parsing (`GOOGLE_SA_B64`) and a reference recruitment flow in `lib/recruitment.js` (exposed via `/api/recruitment`).
 
 ## 1) Environment variables (Vercel / production)
 
@@ -43,9 +43,9 @@ This creates:
 - `jobs` table for posting and publishing positions.
 - `job_applications` table for incoming candidates + Drive links.
 
-## 4) API endpoints now implemented (`server/recruitment.js` served at `/api/recruitment`)
+## 4) API endpoints now implemented (`lib/recruitment.js` served at `/api/recruitment`)
 
-The following resources are available via `server/recruitment.js` at `/api/recruitment`:
+The following resources are available via `lib/recruitment.js` at `/api/recruitment`:
 
 - `GET /api/recruitment?resource=jobs` (public published jobs)
 - `GET /api/recruitment?resource=jobs_admin` (main-role only)
@@ -72,12 +72,7 @@ Implementation notes:
 
 ## 6) If Vercel API function count is a concern
 
-If you are close to function-count limits on Vercel Hobby, place recruitment in one of these alternatives:
+If you are close to function-count limits on Vercel Hobby, consider these alternatives:
 
-1. **Use the existing Express backend in `server/`** and expose `/api/recruitment` there.
-   - Point frontend to that backend using `VITE_API_BASE`.
-2. **Consolidate handlers** into fewer serverless files (resource routing in one file).
-3. **Use a separate backend project** for recruitment only (recommended when file uploads are heavy).
-
-The repository already contains server-side recruitment logic references in `server/recruitment.js` and upload flow in `server/server.js`, so moving recruitment there is straightforward.
-
+1. **Consolidate handlers** into fewer serverless files (resource routing in one file).
+2. **Use a separate backend project** for recruitment only (recommended when file uploads are heavy).

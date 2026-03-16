@@ -1,0 +1,133 @@
+.
+├── README.md
+├── api
+│   ├── batches.js
+│   ├── clients.js
+│   ├── db-check.js
+│   ├── login.js
+│   ├── me.js
+│   ├── migrations
+│   │   ├── 2026-01-21_product_pricing.sql
+│   │   ├── 2026-01-22_align_products_batches.sql
+│   │   ├── 2026-01-22_archive_void.sql
+│   │   ├── 2026-01-24_drop_quantity_received.sql
+│   │   ├── 2026-01-24_fix_batches_qty.sql
+│   │   ├── 2026-01-24_rename_quantity_received.sql
+│   │   ├── 2026-01-27_add_suppliers.sq
+│   │   ├── 2026-01-27_create_suppliers_clients_sales.sql
+│   │   ├── 2026-02-06_add_recruitment.sql
+│   │   ├── 2026-02-06_batches_enhancements.sql
+│   │   └── 2026-02-07_recruitment_add_phone.sql
+│   ├── ping.js
+│   ├── products.js
+│   ├── recruitment.js
+│   ├── sales.js
+│   ├── salespersons.js
+│   ├── schema.sql
+│   ├── setup.js
+│   └── suppliers.js
+├── docs
+│   ├── architecture.md
+│   ├── recruitment
+│   │   └── GOOGLE_SERVICE_ACCOUNT_PLAN.md
+│   └── troubleshooting
+│       └── CRM_LOGIN_500_DIAGNOSIS.md
+├── index.html
+├── lib
+│   ├── auth.js
+│   ├── db.js
+│   ├── google-sa.js
+│   ├── googleServiceAccount.js
+│   ├── http.js
+│   ├── jwt.js
+│   ├── rbac.js
+│   ├── recruitment.js
+│   └── requireAuth.js
+├── neon_workflow.yml
+├── package-lock.json
+├── package.json
+├── public
+│   ├── favicon.ico
+│   ├── logo.png
+│   ├── manifest.webmanifest
+│   ├── ping.html
+│   ├── products
+│   │   ├── advanced-wound-care.png
+│   │   ├── advanced-wound-care.svg
+│   │   ├── advanced-wound-care@1x.png
+│   │   ├── advanced-wound-care@2x.png
+│   │   ├── basic-wound-care.png
+│   │   ├── basic-wound-care.svg
+│   │   ├── basic-wound-care@1x.png
+│   │   ├── basic-wound-care@2x.png
+│   │   ├── hero-illustration.png
+│   │   ├── hero-illustration.svg
+│   │   ├── hero-illustration@1x.png
+│   │   ├── hero-illustration@2x.png
+│   │   ├── nitrile-gloves.png
+│   │   ├── nitrile-gloves.svg
+│   │   ├── nitrile-gloves@1x.png
+│   │   ├── nitrile-gloves@2x.png
+│   │   ├── silicone-baby-bottle.png
+│   │   ├── silicone-baby-bottle.svg
+│   │   ├── silicone-baby-bottle@1x.png
+│   │   ├── silicone-baby-bottle@2x.png
+│   │   ├── silicone-pacifier.png
+│   │   ├── silicone-pacifier.svg
+│   │   ├── silicone-pacifier@1x.png
+│   │   ├── silicone-pacifier@2x.png
+│   │   ├── surgical-masks.png
+│   │   ├── surgical-masks.svg
+│   │   ├── surgical-masks@1x.png
+│   │   └── surgical-masks@2x.png
+│   ├── robots.txt
+│   └── sitemap.xml
+├── repo_tree.txt
+├── scripts
+│   ├── generate_seed_urls_generic_directory.py
+│   ├── generate_seed_urls_medzell_v2.py
+│   ├── run-sql.mjs
+│   ├── run_harvest_waves.sh
+│   ├── setup.mjs
+│   └── zomorod_autofill_supplier_intelligence_v2.py
+├── src
+│   ├── App.jsx
+│   ├── components
+│   │   ├── SiteFooter.jsx
+│   │   └── SiteHeader.jsx
+│   ├── crm
+│   │   ├── CRMLayout.jsx
+│   │   ├── LoginPage.jsx
+│   │   ├── ProtectedRoute.jsx
+│   │   ├── api.js
+│   │   ├── auth.js
+│   │   ├── crm.css
+│   │   └── pages
+│   │       ├── ClientsPage.jsx
+│   │       ├── DashboardPage.jsx
+│   │       ├── ProductsPage.jsx
+│   │       ├── RecruitmentPage.jsx
+│   │       ├── SalesPage.jsx
+│   │       ├── SalespersonsPage.jsx
+│   │       ├── SuppliersPage.jsx
+│   │       └── UsersPage.jsx
+│   ├── main
+│   │   ├── Careers.jsx
+│   │   ├── Contact.jsx
+│   │   ├── Home.jsx
+│   │   ├── MainLayout.jsx
+│   │   ├── Privacy.jsx
+│   │   ├── Products.jsx
+│   │   ├── Quality.jsx
+│   │   └── Terms.jsx
+│   ├── main.jsx
+│   ├── mobileErrorOverlay.js
+│   └── styles.css
+├── vercel.json
+├── vite.config.js
+└── zomorod-appscript
+    ├── Code.js
+    ├── README.md
+    └── appsscript.json
+
+16 directories, 115 files

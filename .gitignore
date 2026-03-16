@@ -4,6 +4,11 @@ node_modules/
 # build output
 dist/
 .vite/
+build/
+coverage/
+
+# Python / virtual envs
+.venv/
 
 # OS
 .DS_Store
@@ -32,3 +37,18 @@ dist/
 *.sql
 neon_schema.mjs
 service-account.json
+
+# Backups / archives
+*.zip
+*.bak
+*.bak.*
+backup*/
+archive*/
+
+# Local data dumps / scratch
+input/
+output/
+project/
+test-*.html
+test-*.pdf
+test-*.txt

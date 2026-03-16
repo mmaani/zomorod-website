@@ -10,15 +10,18 @@ npm run dev
 ```
 
 The CRM frontend uses `/api` by default; override with `VITE_API_BASE` if you are proxying to a different backend. 
+See `.env.example` for local environment placeholders.
 
 ### API / Serverless
-The `/api` directory contains Vercel-style serverless handlers used by the CRM. These rely on:
+The `/api` directory contains Vercel-style serverless handlers used by the CRM and recruitment flows. These rely on:
 - `DATABASE_URL` (Postgres connection string)
 - `JWT_SECRET` (JWT signing/verification for CRM auth)
-- `GOOGLE_SA_B64` (base64-encoded service account JSON for Google Drive/Sheets integrations)
+- `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_REFRESH_TOKEN` (Google Drive/Sheets access for recruitment uploads)
+- `GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_SHEET_ID`, `GOOGLE_SHEET_RANGE` (recruitment storage targets)
 - `RESEND_API_KEY` and `CRM_FROM_EMAIL` (optional, used by `/api/forgot-password` to email temporary CRM passwords)
 
-If you need to run the legacy Express server in `server/` for recruitment/Google integrations, see the environment variables referenced in `server/server.js` (OAuth + Drive/Sheets IDs).
+Recruitment is implemented in `lib/recruitment.js` and is exposed via `/api/recruitment`.
+Service-account-based flows are documented under `docs/recruitment/GOOGLE_SERVICE_ACCOUNT_PLAN.md` for future use.
 
 ## Notes
 - Legacy `lib/crmAuth.js` has been removed; use `src/crm/auth.js` for CRM client auth helpers.
