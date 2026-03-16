@@ -70,3 +70,8 @@ automation/input/live/
 tmp/
 runtime/
 logs/
+
+# Local python artifacts
+__pycache__/
+wheels/
+wh/

@@ -11,6 +11,7 @@ Zomorod Supplier Intelligence Autofill (v2)
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import time
 from dataclasses import dataclass
@@ -73,6 +74,8 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 def http_get(url: str, *, timeout: int, retries: int) -> Optional[str]:
+    if timeout <= 0:
+        timeout = 30
     for attempt in range(retries + 1):
         try:
             r = requests.get(url, headers=UA, timeout=timeout)
@@ -112,6 +115,8 @@ def best_website_from_page(soup: BeautifulSoup, fallback_url: str) -> str:
         href = (a.get("href") or "").strip()
         if href.startswith("http"):
             lh = href.lower()
+            if lh.startswith("mailto:") or lh.startswith("tel:"):
+                continue
             if any(d in lh for d in SOCIAL_DOMAINS):
                 continue
             return href
@@ -138,7 +143,11 @@ def read_seed_urls(ws, *, country: str, source: str) -> List[Dict[str, str]]:
     seeds: List[Dict[str, str]] = []
     for row in ws.iter_rows(min_row=3, values_only=True):
         url = str(row[2] or "").strip()
-        use = str(row[5] or "").strip().upper()
+        use_raw = row[5]
+        if isinstance(use_raw, bool):
+            use = "TRUE" if use_raw else "FALSE"
+        else:
+            use = str(use_raw or "").strip().upper()
         if use not in {"TRUE", "YES", "Y", "1"} or not url:
             continue
         src = str(row[0] or "").strip()
@@ -358,6 +367,10 @@ def crawl_urls(
     return rows
 
 def load_seed_file_urls(path: str) -> List[str]:
+    if not path:
+        return []
+    if not os.path.exists(path):
+        raise SystemExit(f"Seed file not found: {path}")
     with open(path, "r", encoding="utf-8") as f:
         out = []
         for ln in f:
@@ -366,15 +379,25 @@ def load_seed_file_urls(path: str) -> List[str]:
                 out.append(u)
         return out
 
+def require_sheet(wb, name: str):
+    if name in wb.sheetnames:
+        return wb[name]
+    raise SystemExit(f"Missing required sheet: {name}")
+
 def main():
     args = parse_args()
 
+    if not os.path.exists(args.xlsx):
+        raise SystemExit(f"Workbook not found: {args.xlsx}")
+
     wb = load_workbook(args.xlsx)
-    ws_cfg = wb["Source_Config"]
-    ws_seed = wb["Seed_URLs"]
-    ws_kw = wb["Category_Keywords"]
-    ws_out = wb["Supplier_Intelligence"]
-    ws_log = wb["Run_Log"]
+    ws_cfg = require_sheet(wb, "Source_Config")
+    ws_seed = require_sheet(wb, "Seed_URLs")
+    ws_kw = require_sheet(wb, "Category_Keywords")
+    ws_out = require_sheet(wb, "Supplier_Intelligence")
+    ws_log = wb["Run_Log"] if "Run_Log" in wb.sheetnames else wb.create_sheet("Run_Log")
+    if ws_log.max_row == 1 and not any(ws_log.iter_rows(min_row=1, max_row=1, values_only=True)):
+        ws_log.append(["timestamp", "written", "mode", "notes"])
 
     cfg = read_source_config(ws_cfg)
     keywords = read_keywords(ws_kw)
