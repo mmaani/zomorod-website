@@ -13,9 +13,11 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import shutil
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 from urllib.parse import urlparse
 
@@ -51,6 +53,9 @@ COLUMNS = [
     "Status","Last_Checked","Notes"
 ]
 
+WORKBOOK_TEMPLATE_NAME = "Zomorod_Supplier_Intelligence_TEMPLATE.xlsx"
+WORKBOOK_LIVE_NAME = "Zomorod_Supplier_Intelligence_LIVE.xlsx"
+
 @dataclass
 class SourceCfg:
     name: str
@@ -62,7 +67,7 @@ class SourceCfg:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
-    p.add_argument("xlsx", help="Workbook path, e.g. automation/input/Zomorod_Supplier_Intelligence_LIVE.xlsx")
+    p.add_argument("xlsx", nargs="?", default="", help="Workbook path. LIVE workbook is enforced by default.")
     p.add_argument("--country", default="", help="Only process Seed_URLs rows matching this Country (exact). Blank = all.")
     p.add_argument("--source", default="", help="Only process Seed_URLs rows matching this Source_Name (exact). Blank = all.")
     p.add_argument("--mode", default="append", choices=["append", "replace"], help="append (default) or replace")
@@ -72,6 +77,29 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--timeout", type=int, default=30, help="HTTP timeout seconds.")
     p.add_argument("--retries", type=int, default=2, help="HTTP retries per URL.")
     return p.parse_args()
+
+def resolve_live_workbook_path(requested_path: str) -> str:
+    requested = Path(requested_path).expanduser().resolve() if requested_path else None
+
+    if requested and requested.name == WORKBOOK_LIVE_NAME:
+        live_path = requested
+    elif requested and requested.name == WORKBOOK_TEMPLATE_NAME:
+        live_path = requested.with_name(WORKBOOK_LIVE_NAME)
+    elif requested:
+        return str(requested)
+    else:
+        live_path = Path(__file__).resolve().parent.parent / "automation" / "input" / WORKBOOK_LIVE_NAME
+
+    template_path = live_path.with_name(WORKBOOK_TEMPLATE_NAME)
+    if not live_path.exists():
+        if not template_path.exists():
+            raise SystemExit(
+                f"LIVE workbook not found: {live_path}; TEMPLATE not found: {template_path}"
+            )
+        shutil.copyfile(template_path, live_path)
+        print(f"[init] Copied TEMPLATE workbook to LIVE workbook: {live_path}")
+
+    return str(live_path)
 
 def http_get(url: str, *, timeout: int, retries: int) -> Optional[str]:
     if timeout <= 0:
@@ -386,11 +414,12 @@ def require_sheet(wb, name: str):
 
 def main():
     args = parse_args()
+    workbook_path = resolve_live_workbook_path(args.xlsx)
 
-    if not os.path.exists(args.xlsx):
-        raise SystemExit(f"Workbook not found: {args.xlsx}")
+    if not os.path.exists(workbook_path):
+        raise SystemExit(f"Workbook not found: {workbook_path}")
 
-    wb = load_workbook(args.xlsx)
+    wb = load_workbook(workbook_path)
     ws_cfg = require_sheet(wb, "Source_Config")
     ws_seed = require_sheet(wb, "Seed_URLs")
     ws_kw = require_sheet(wb, "Category_Keywords")
@@ -469,8 +498,8 @@ def main():
         f"Visited {len(seeds)} seeds; wrote {written} NEW suppliers. limit={args.limit or 'none'} delay={effective_delay}s"
     ])
 
-    wb.save(args.xlsx)
-    print(f"✅ Saved: {args.xlsx}")
+    wb.save(workbook_path)
+    print(f"✅ Saved: {workbook_path}")
     print(f"✅ Wrote NEW suppliers: {written}")
 
 if __name__ == "__main__":
