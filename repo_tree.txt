@@ -17,7 +17,9 @@
 │   │   ├── 2026-01-27_create_suppliers_clients_sales.sql
 │   │   ├── 2026-02-06_add_recruitment.sql
 │   │   ├── 2026-02-06_batches_enhancements.sql
-│   │   └── 2026-02-07_recruitment_add_phone.sql
+│   │   ├── 2026-02-07_recruitment_add_phone.sql
+│   │   ├── 2026-03-16_product_categories_and_supplier_categories.sql
+│   │   └── 2026-03-16_suppliers_v1_schema.sql
 │   ├── ping.js
 │   ├── products.js
 │   ├── recruitment.js
@@ -26,18 +28,50 @@
 │   ├── schema.sql
 │   ├── setup.js
 │   └── suppliers.js
+├── archive
+│   ├── legacy-api
+│   │   └── api
+│   │       └── forgot-password.js
+│   ├── legacy-express
+│   │   ├── server
+│   │   │   ├── googleClient.js
+│   │   │   ├── googleSa.js
+│   │   │   ├── recruitment.js
+│   │   │   ├── routesDrive.js
+│   │   │   ├── routesGoogleOAuth.js
+│   │   │   ├── routesGoogleOAuthManual.js
+│   │   │   ├── routesSheets.js
+│   │   │   └── server.js
+│   │   └── test-upload.html
+│   ├── legacy-marketing
+│   │   └── src
+│   │       └── marketing
+│   │           └── MarketingPage.jsx
+│   └── legacy-next-app
+│       └── src
+│           └── app
+│               └── api
+│                   ├── health
+│                   │   └── route.js
+│                   └── test-sa
+│                       └── route.js
 ├── automation
 │   ├── README.md
 │   ├── input
+│   │   ├── Zomorod_Supplier_Intelligence_LIVE.xlsx
 │   │   └── Zomorod_Supplier_Intelligence_TEMPLATE.xlsx
-│   └── output
-│       └── medzell_company_urls.txt
+│   ├── output
+│   ├── runtime
+│   ├── samples
+│   │   └── medzell_company_urls.sample.txt
+│   └── tmp
 ├── docs
 │   ├── AGENT_RULES.md
 │   ├── PROJECT_ISOLATION.md
 │   ├── PROJECT_SCOPE.md
 │   ├── SECURITY_POLICY.md
 │   ├── SUPPLIER_PIPELINE.md
+│   ├── SUPPLIER_V1_QA_CHECKLIST.md
 │   ├── architecture.md
 │   ├── recruitment
 │   │   └── GOOGLE_SERVICE_ACCOUNT_PLAN.md
@@ -95,6 +129,7 @@
 │   │   └── surgical-masks@2x.png
 │   ├── robots.txt
 │   └── sitemap.xml
+├── repo-files.zip
 ├── repo_tree.txt
 ├── scripts
 │   ├── generate_seed_urls_generic_directory.py
@@ -103,6 +138,8 @@
 │   ├── run-sql.mjs
 │   ├── run_harvest_waves.sh
 │   ├── setup.mjs
+│   ├── supplier_v1_staging_pack.sql
+│   ├── test_suppliers_api.mjs
 │   └── zomorod_autofill_supplier_intelligence_v2.py
 ├── src
 │   ├── App.jsx
@@ -144,4 +181,4 @@
     ├── README.md
     └── appsscript.json
 
-19 directories, 126 files
+36 directories, 146 files

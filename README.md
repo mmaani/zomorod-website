@@ -20,7 +20,7 @@ The `/api` directory contains Vercel-style serverless handlers used by the CRM a
 - `JWT_SECRET` (JWT signing/verification for CRM auth)
 - `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_REFRESH_TOKEN` (Google Drive/Sheets access for recruitment uploads)
 - `GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_SHEET_ID`, `GOOGLE_SHEET_RANGE` (recruitment storage targets)
-- `RESEND_API_KEY` and `CRM_FROM_EMAIL` (optional, used by `/api/forgot-password` to email temporary CRM passwords)
+- `RESEND_API_KEY` and `CRM_FROM_EMAIL` (optional, used by `/api/login?action=forgot-password` to email temporary CRM passwords)
 
 Recruitment is implemented in `lib/recruitment.js` and is exposed via `/api/recruitment`.
 Service-account-based flows are documented under `docs/recruitment/GOOGLE_SERVICE_ACCOUNT_PLAN.md` for future use.
