@@ -1,32 +1,50 @@
 # Supplier Pipeline — Canonical Architecture (Zomorod Only)
 
 ## Canonical Source of Truth
-- **Input:** Google Sheet / Apps Script (canonical supplier intake + ops layer)
+- **Input of record:** Google Sheet + Apps Script intake process.
+- Local workbook automation is a sidecar pre-processing layer.
 
-## Processing Layer
-- `scripts/` for batch processing and harvesting (sidecar)
-- `lib/` for shared server utilities
+## Workbook Safety Policy
+- `automation/input/Zomorod_Supplier_Intelligence_TEMPLATE.xlsx` is static and must never be used for operations.
+- `automation/input/Zomorod_Supplier_Intelligence_LIVE.xlsx` is operational and writable.
+- If LIVE does not exist, automation may create it from TEMPLATE.
 
-## Output Sink
-- **Database** (serverless API + CRM interface)
+## Enforcement Layer (v1)
+The automation script applies a controlled pre-ingestion flow:
 
-## Local / Transient Artifacts
-- Use `automation/runtime/`, `automation/tmp/`, or other ignored local folders for transient artifacts.
-- Do **not** treat any local workbook or `automation/output/` as canonical.
+1. **Normalize**
+   - Standardize country values (common aliases mapped to canonical country names).
+   - Standardize website/source URLs to normalized HTTPS domain format.
+   - Normalize email lists (lowercase + valid format only).
+   - Normalize phone format (digits/leading plus only).
+   - Trim whitespace and normalize boolean-like cert fields.
+   - Normalize source metadata fields (`Source_Name`, `Source_URL`).
 
-## Operator Workflow (Sidecar Harvest + Sheet Canonical)
-1. Update the Google Sheet (canonical).
-2. Export the Sheet to `automation/input/Zomorod_Supplier_Intelligence_LIVE.xlsx`.
-3. Run harvesting scripts (`scripts/run_harvest_waves.sh` or individual scripts).
-4. Export `Supplier_Intelligence` from the workbook to CSV.
-5. Import CSV into the Google Sheet via Apps Script (Import Suppliers → CSV).
-6. Write results to the database and review in CRM/admin.
+2. **Validate**
+   - Required: company, country, primary category, and at least one contact point (`Website` or `Email(s)`).
+   - Invalid email formatting is flagged.
+   - Invalid rows are never silently promoted forward; they are marked with reasons.
 
-## Notes
-- Keep Google Sheets / Apps Script as the business‑layer canonical view.
-- Batch scripts may use local files for intermediate artifacts, but these remain ignored.
-- Path conventions for harvesting:
-  - `automation/input/` (templates + live workbook)
-  - `automation/output/` (seed URL lists, exports)
-  - `automation/runtime/` (logs, temp)
-  - `automation/samples/` (small committed samples)
+3. **Dedupe**
+   - Duplicate signals computed from combinations of:
+     - supplier name + domain
+     - supplier name + email list
+     - domain + email list
+     - phone
+     - source URL
+   - Rows are not auto-deleted; suspected duplicates are routed to review status.
+
+4. **Insert/Export Ready**
+   - `Insert_Ready`: valid rows without duplicate signals.
+   - `Review_Duplicate`: valid rows with duplicate signals.
+   - `Rejected_Invalid`: failed validation rows with explicit reasons.
+
+## Runtime Usage Notes
+- This enforcement layer is automation-side only and does not mutate CRM/API runtime behavior.
+- It prepares safer rows for future API/database insertion workflows.
+
+## Path Conventions
+- `automation/input/` (template + live workbook)
+- `automation/output/` (seed URL lists, exports)
+- `automation/runtime/` (logs, temp)
+- `automation/samples/` (small committed samples)
