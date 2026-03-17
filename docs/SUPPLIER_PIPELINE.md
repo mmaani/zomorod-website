@@ -43,6 +43,50 @@ The automation script applies a controlled pre-ingestion flow:
 - This enforcement layer is automation-side only and does not mutate CRM/API runtime behavior.
 - It prepares safer rows for future API/database insertion workflows.
 
+## Supplier Import Contract (Automation → API, v1)
+
+### Importable statuses
+- `Insert_Ready`
+
+### Blocked statuses
+- `Review_Duplicate`
+- `Rejected_Invalid`
+- Any unknown/empty status
+
+### Field mapping (workbook → `/api/suppliers` payload)
+- `Company` → `legalName`, `businessName`, `name`
+- `Country` → `supplierCountry`
+- `Supplier_Type` → `supplierType`
+- `Website` → `website`
+- `Email(s)` (first valid email) → `email`
+- `Phone/WhatsApp` → `phone`, `phoneWhatsapp`
+- `Primary_Category` (name) → `primaryCategoryId` (resolved via API categories)
+- `Secondary_Categories` (names) → `secondaryCategoryIds` (resolved IDs)
+- `Risk_Level` → `riskLevel` (`LOW|MED|HIGH`, fallback `MED`)
+- `Cert_ISO13485_Claim` → `certificationsIso13485`
+- `Cert_CE_Claim` → `certificationsCe`
+- `Cert_Other` → `certificationsOther`
+- `Evidence_URL` → `evidenceUrl`, `sourceUrl`
+- `Expected_Price_Range_USD` → `expectedPriceRangeUsd`
+- `Notes` (+ row index) → `notes`
+- `Notes` `Seed=...` (when present) → `sourceName`
+
+### Import-time validation
+- Must satisfy API-required fields: legal/company name, country, risk level, workflow status, and mapped primary category.
+- Primary category must resolve to a valid `product_categories.id`.
+- Rows failing import-time checks are skipped with explicit reason counters.
+
+### Duplicate safeguards before POST
+- Block if same supplier name + country already exists.
+- Block if email already exists.
+- Block if supplier name + website domain already exists.
+
+### Import utility
+- Script: `scripts/import_suppliers_from_live_workbook.py`
+- Default mode: **dry-run** (no writes).
+- Apply mode: `--apply` to execute POST requests.
+- Requires authenticated API token with supplier write permission.
+
 ## Path Conventions
 - `automation/input/` (template + live workbook)
 - `automation/output/` (seed URL lists, exports)

@@ -23,6 +23,7 @@ This folder formalizes the supplier automation workflow while keeping runtime da
 - `scripts/generate_seed_urls_medzell_v2.py` → outputs URL seeds
 - `scripts/generate_seed_urls_generic_directory.py` → outputs custom seed lists
 - `scripts/zomorod_autofill_supplier_intelligence_v2.py` → harvest + enforce pipeline statuses
+- `scripts/import_suppliers_from_live_workbook.py` → dry-run/apply importer from LIVE workbook to `/api/suppliers`
 - `scripts/run_harvest_waves.sh` → orchestrates wave execution
 
 ## Python Dependencies
@@ -35,4 +36,7 @@ pip install -r scripts/requirements.txt
 2. Export Sheet data to `automation/input/Zomorod_Supplier_Intelligence_LIVE.xlsx`.
 3. Run `scripts/run_harvest_waves.sh` (or run scripts individually).
 4. Review pipeline statuses in `Supplier_Intelligence` (`Insert_Ready`, `Review_Duplicate`, `Rejected_Invalid`).
-5. Export review-approved rows to CSV and import through Apps Script / CRM flow.
+5. Run importer dry-run:
+   - `python3 scripts/import_suppliers_from_live_workbook.py --base-url <api> --auth-token <token>`
+6. If summary is clean, run apply mode:
+   - `python3 scripts/import_suppliers_from_live_workbook.py --base-url <api> --auth-token <token> --apply`
