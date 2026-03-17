@@ -43,6 +43,10 @@ export default function DashboardPage() {
     applicants: 0,
   });
 
+  const [envStatus, setEnvStatus] = useState(null);
+  const [envErr, setEnvErr] = useState("");
+  const [emailTestState, setEmailTestState] = useState("");
+
   useEffect(() => {
     let alive = true;
 
@@ -130,6 +134,53 @@ export default function DashboardPage() {
     }
 
     load();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function sendTestEmail() {
+    setEmailTestState("Sending test email...");
+    try {
+      const res = await apiFetch("/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: "Test User",
+          email: "test@email.com",
+          message: "Hello from Zomorod CRM",
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
+      setEmailTestState("Test email sent. Check inbox: info@zomorodmedical.com");
+    } catch (e) {
+      setEmailTestState(`Test failed: ${e?.message || "Unknown error"}`);
+    }
+  }
+
+  useEffect(() => {
+    let alive = true;
+
+    async function loadEnvStatus() {
+      setEnvErr("");
+      try {
+        const res = await apiFetch("/secure-env");
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || `Env check HTTP ${res.status}`);
+        }
+        if (alive) setEnvStatus(data.env || null);
+      } catch (e) {
+        if (alive) setEnvErr(e?.message || "Failed to load system status");
+      }
+    }
+
+    loadEnvStatus();
     return () => {
       alive = false;
     };
@@ -225,6 +276,46 @@ export default function DashboardPage() {
           />
         ) : null}
       </div>
+
+      <div className="crm-card">
+        <div className="stat-label">System Status</div>
+        {envErr ? <div className="banner">{envErr}</div> : null}
+        {!envErr && !envStatus ? (
+          <div className="muted" style={{ marginTop: 8 }}>
+            Checking server environment…
+          </div>
+        ) : null}
+        {envStatus ? (
+          <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+            <div>
+              Database: <b>{envStatus.database ? "OK" : "Missing"}</b>
+            </div>
+            <div>
+              JWT Secret: <b>{envStatus.jwtSecret ? "OK" : "Missing"}</b>
+            </div>
+            <div>
+              Google Service Account: <b>{envStatus.googleServiceAccount ? "OK" : "Missing"}</b>
+            </div>
+            <div>
+              Google OAuth: <b>{envStatus.googleOauth ? "OK" : "Missing"}</b>
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {isMain ? (
+        <div className="crm-card">
+          <div className="stat-label">Email Test</div>
+          <button className="crm-btn crm-btn-primary" type="button" onClick={sendTestEmail}>
+            Send Test Email
+          </button>
+          {emailTestState ? (
+            <div className="muted" style={{ marginTop: 8 }}>
+              {emailTestState}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -172,6 +172,7 @@ export default function Contact() {
             <p className="p" style={{ margin: 0 }}>
               {copy.note}
             </p>
+
           </div>
 
           <div className="card-soft contact-map-card">
