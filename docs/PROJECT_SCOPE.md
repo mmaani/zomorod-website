@@ -13,6 +13,7 @@
 - Quotation workflows
 - Google Drive / Sheets / Apps Script integrations
 - API/serverless logic and deployment/runtime configuration
+- Canonical auth flow: `/api/login` and `/api/login?action=forgot-password` (no standalone reset endpoint)
 
 ## What Does NOT Belong Here
 - Nivran (perfume brand operations)
@@ -23,6 +24,7 @@
 - product matching AI unrelated to Zomorod
 - inventory monitoring unrelated to Zomorod
 - dropshipping logic
+- Legacy architectures that reintroduce duplicate auth/reset, recruitment, or Google integration flows
 
 ## Project Mismatch Rule
 If any task, file, or request references a non‑Zomorod project, **STOP** and report:

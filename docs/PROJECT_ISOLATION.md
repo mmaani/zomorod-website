@@ -17,6 +17,8 @@ The following projects are **not** part of this repo and must remain isolated:
 
 ## Enforcement
 Agents must never mix tasks, terminology, code, or architecture across projects.
+Do not reintroduce duplicate auth/reset, recruitment, or Google integration flows.
+Canonical password reset is `/api/login?action=forgot-password`.
 If any task references another project, **STOP** and report:
 
 **PROJECT MISMATCH DETECTED**
