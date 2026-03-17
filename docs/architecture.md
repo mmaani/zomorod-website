@@ -18,6 +18,7 @@
 - The SPA is served from Vercel/static hosting.
 - API requests are routed to `/api/*` serverless functions.
 - Recruitment uploads and CRM admin actions are handled via `/api/recruitment`.
+- CRM password reset uses `/api/login?action=forgot-password` (do not reintroduce a standalone `/api/forgot-password` endpoint).
 
 ## Local Development
 1. Frontend:
