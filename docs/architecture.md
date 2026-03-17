@@ -20,6 +20,10 @@
 - Recruitment uploads and CRM admin actions are handled via `/api/recruitment`.
 - CRM password reset uses `/api/login?action=forgot-password` (do not reintroduce a standalone `/api/forgot-password` endpoint).
 
+## Auth Flows
+- Login: `POST /api/login` with `{ email, password }`.
+- Forgot password: `POST /api/login?action=forgot-password` with `{ email }`.
+
 ## Local Development
 1. Frontend:
    - `npm install`
