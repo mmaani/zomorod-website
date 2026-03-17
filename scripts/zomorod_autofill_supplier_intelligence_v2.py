@@ -56,6 +56,27 @@ COLUMNS = [
 WORKBOOK_TEMPLATE_NAME = "Zomorod_Supplier_Intelligence_TEMPLATE.xlsx"
 WORKBOOK_LIVE_NAME = "Zomorod_Supplier_Intelligence_LIVE.xlsx"
 
+COUNTRY_ALIASES = {
+    "uae": "United Arab Emirates",
+    "u.a.e": "United Arab Emirates",
+    "united arab emirates": "United Arab Emirates",
+    "ksa": "Saudi Arabia",
+    "saudi": "Saudi Arabia",
+    "saudi arabia": "Saudi Arabia",
+    "jordan": "Jordan",
+    "turkey": "Turkey",
+    "turkiye": "Turkey",
+    "china": "China",
+    "india": "India",
+}
+
+TRUE_LIKE = {"1", "true", "yes", "y", "stated"}
+FALSE_LIKE = {"0", "false", "no", "n", "none", "not stated"}
+
+STATUS_INSERT_READY = "Insert_Ready"
+STATUS_REVIEW_DUPLICATE = "Review_Duplicate"
+STATUS_REJECTED_INVALID = "Rejected_Invalid"
+
 @dataclass
 class SourceCfg:
     name: str
@@ -128,6 +149,57 @@ def extract_emails(html: str) -> List[str]:
     emails = sorted(set(EMAIL_RE.findall(html2)))
     emails = [e for e in emails if e.lower() not in EMAIL_BLOCKLIST]
     return emails
+
+def normalize_text(v: object) -> str:
+    return re.sub(r"\s+", " ", str(v or "")).strip()
+
+def normalize_country(country: str) -> str:
+    raw = normalize_text(country)
+    if not raw:
+        return ""
+    key = raw.lower().replace(".", "")
+    return COUNTRY_ALIASES.get(key, raw)
+
+def normalize_email_list(value: str) -> str:
+    raw = normalize_text(value)
+    if not raw:
+        return ""
+    parts = [p.strip().lower() for p in re.split(r"[,;\s]+", raw) if p.strip()]
+    valid = sorted({e for e in parts if EMAIL_RE.fullmatch(e) and e not in EMAIL_BLOCKLIST})
+    return ", ".join(valid[:5])
+
+def normalize_phone(value: str) -> str:
+    raw = normalize_text(value)
+    if not raw:
+        return ""
+    digits = re.sub(r"[^\d+]", "", raw)
+    digits = re.sub(r"(?!^)\+", "", digits)
+    return digits[:40]
+
+def normalize_bool_like(value: str) -> str:
+    raw = normalize_text(value).lower()
+    if not raw:
+        return ""
+    if raw in TRUE_LIKE:
+        return "Stated"
+    if raw in FALSE_LIKE:
+        return ""
+    return normalize_text(value)
+
+def normalize_url(value: str) -> str:
+    raw = normalize_text(value)
+    if not raw:
+        return ""
+    candidate = raw if raw.startswith(("http://", "https://")) else f"https://{raw}"
+    try:
+        u = urlparse(candidate)
+        host = (u.netloc or "").lower().replace("www.", "")
+        if not host:
+            return ""
+        path = u.path or "/"
+        return f"https://{host}{path}"
+    except Exception:
+        return ""
 
 def extract_title(soup: BeautifulSoup) -> str:
     for tag in ["h1", "h2"]:
@@ -307,11 +379,13 @@ def write_row(ws_out, r: int, row: Dict[str, object]):
     ws_out.cell(r, 7).value = row.get("Product_Focus (free text)", "")
     ws_out.cell(r, 8).value = row.get("Website", "")
     ws_out.cell(r, 9).value = row.get("Email(s)", "")
+    ws_out.cell(r, 10).value = row.get("Phone/WhatsApp", "")
     ws_out.cell(r, 12).value = row.get("Cert_ISO13485_Claim", "")
     ws_out.cell(r, 13).value = row.get("Cert_CE_Claim", "")
     ws_out.cell(r, 14).value = row.get("Cert_Other (FDA/UKCA/etc.)", "")
     ws_out.cell(r, 15).value = row.get("Evidence_URL (email or cert claim page)", "")
     ws_out.cell(r, 17).value = row.get("Risk_Score (0=low,100=high)", "")
+    ws_out.cell(r, 18).value = row.get("Risk_Level", "")
     ws_out.cell(r, 19).value = row.get("Status", "New")
     ws_out.cell(r, 20).value = row.get("Last_Checked", "")
     ws_out.cell(r, 21).value = row.get("Notes", "")
@@ -361,6 +435,7 @@ def crawl_urls(
             continue
         existing_keys.add(key)
 
+        risk_score = calc_risk(ems, iso, ce, url, stype)
         row = {
             "Company": company,
             "Country": s.get("Country","").strip(),
@@ -369,11 +444,15 @@ def crawl_urls(
             "Secondary_Categories": secondary,
             "Website": website,
             "Email(s)": emails_str,
+            "Phone/WhatsApp": "",
             "Cert_ISO13485_Claim": iso,
             "Cert_CE_Claim": ce,
             "Cert_Other (FDA/UKCA/etc.)": other,
             "Evidence_URL (email or cert claim page)": url,
-            "Risk_Score (0=low,100=high)": calc_risk(ems, iso, ce, url, stype),
+            "Risk_Score (0=low,100=high)": risk_score,
+            "Risk_Level": "HIGH" if risk_score >= 60 else "MED" if risk_score >= 30 else "LOW",
+            "Source_Name": s.get("Source_Name", ""),
+            "Source_URL": url,
             "Status": "New",
             "Last_Checked": datetime.now(timezone.utc).date().isoformat(),
             "Notes": f"Seed={s.get('Source_Name','')}; {s.get('Seed_Notes','')}".strip(),
@@ -393,6 +472,88 @@ def crawl_urls(
             src_delay = cfg.get(src_name).delay_s if src_name in cfg else default_delay_s
             time.sleep(src_delay)
     return rows
+
+def normalize_row(row: Dict[str, object]) -> Dict[str, object]:
+    norm = dict(row)
+    norm["Company"] = normalize_text(norm.get("Company", ""))
+    norm["Country"] = normalize_country(str(norm.get("Country", "")))
+    norm["Website"] = normalize_url(str(norm.get("Website", "")))
+    norm["Email(s)"] = normalize_email_list(str(norm.get("Email(s)", "")))
+    norm["Phone/WhatsApp"] = normalize_phone(str(norm.get("Phone/WhatsApp", "")))
+    norm["Source_Name"] = normalize_text(norm.get("Source_Name", "")).title()
+    norm["Source_URL"] = normalize_url(str(norm.get("Source_URL", "")))
+    norm["Cert_ISO13485_Claim"] = normalize_bool_like(str(norm.get("Cert_ISO13485_Claim", "")))
+    norm["Cert_CE_Claim"] = normalize_bool_like(str(norm.get("Cert_CE_Claim", "")))
+    norm["Primary_Category"] = normalize_text(norm.get("Primary_Category", ""))
+    norm["Secondary_Categories"] = normalize_text(norm.get("Secondary_Categories", ""))
+    norm["Notes"] = normalize_text(norm.get("Notes", ""))
+    return norm
+
+def validate_row(row: Dict[str, object]) -> List[str]:
+    reasons: List[str] = []
+    if not row.get("Company"):
+        reasons.append("missing_company")
+    if not row.get("Country"):
+        reasons.append("missing_country")
+    if not row.get("Primary_Category"):
+        reasons.append("missing_primary_category")
+    if not row.get("Website") and not row.get("Email(s)"):
+        reasons.append("missing_contact_point")
+    if row.get("Email(s)") and not normalize_email_list(str(row.get("Email(s)"))):
+        reasons.append("invalid_email_format")
+    return reasons
+
+def duplicate_flags(row: Dict[str, object], seen: Dict[str, set]) -> List[str]:
+    company = str(row.get("Company", "")).lower()
+    domain = normalize_domain(str(row.get("Website", "")))
+    emails = str(row.get("Email(s)", "")).lower()
+    phone = str(row.get("Phone/WhatsApp", ""))
+    source_url = str(row.get("Source_URL", "")).lower()
+
+    keys = {
+        "name_domain": f"{company}|{domain}" if company and domain else "",
+        "name_email": f"{company}|{emails}" if company and emails else "",
+        "domain_email": f"{domain}|{emails}" if domain and emails else "",
+        "phone": phone,
+        "source_url": source_url,
+    }
+
+    hits: List[str] = []
+    for k, v in keys.items():
+        if v and v in seen[k]:
+            hits.append(k)
+    for k, v in keys.items():
+        if v:
+            seen[k].add(v)
+    return hits
+
+def enforce_supplier_pipeline(rows: List[Dict[str, object]]) -> Tuple[List[Dict[str, object]], Dict[str, int]]:
+    seen = {"name_domain": set(), "name_email": set(), "domain_email": set(), "phone": set(), "source_url": set()}
+    out: List[Dict[str, object]] = []
+    stats = {STATUS_INSERT_READY: 0, STATUS_REVIEW_DUPLICATE: 0, STATUS_REJECTED_INVALID: 0}
+
+    for row in rows:
+        norm = normalize_row(row)
+        reasons = validate_row(norm)
+        if reasons:
+            norm["Status"] = STATUS_REJECTED_INVALID
+            norm["Notes"] = f"{norm.get('Notes','')} | Validation={','.join(reasons)}".strip(" |")
+            stats[STATUS_REJECTED_INVALID] += 1
+            out.append(norm)
+            continue
+
+        hits = duplicate_flags(norm, seen)
+        if len(hits) >= 2 or any(h in {"domain_email", "name_email", "name_domain"} for h in hits):
+            norm["Status"] = STATUS_REVIEW_DUPLICATE
+            norm["Notes"] = f"{norm.get('Notes','')} | DuplicateSignals={','.join(hits)}".strip(" |")
+            stats[STATUS_REVIEW_DUPLICATE] += 1
+        else:
+            norm["Status"] = STATUS_INSERT_READY
+            stats[STATUS_INSERT_READY] += 1
+
+        out.append(norm)
+
+    return out, stats
 
 def load_seed_file_urls(path: str) -> List[str]:
     if not path:
@@ -471,10 +632,12 @@ def main():
         delay_override=args.delay,
     )
 
+    pipeline_rows, pipeline_stats = enforce_supplier_pipeline(new_rows)
+
     written = 0
     if args.mode == "replace":
         r = 2
-        for row in new_rows:
+        for row in pipeline_rows:
             if r > target + 1:
                 break
             write_row(ws_out, r, row)
@@ -482,7 +645,7 @@ def main():
             r += 1
     else:
         r = find_first_empty_row(ws_out, target)
-        for row in new_rows:
+        for row in pipeline_rows:
             if r > target + 1:
                 break
             write_row(ws_out, r, row)
@@ -495,12 +658,24 @@ def main():
         datetime.now(timezone.utc).isoformat(),
         written,
         f"{args.source or 'MULTI'}|{args.country or 'ALL'}|{args.mode}",
-        f"Visited {len(seeds)} seeds; wrote {written} NEW suppliers. limit={args.limit or 'none'} delay={effective_delay}s"
+        (
+            f"Visited {len(seeds)} seeds; wrote {written} rows. "
+            f"insert_ready={pipeline_stats[STATUS_INSERT_READY]} "
+            f"review_duplicate={pipeline_stats[STATUS_REVIEW_DUPLICATE]} "
+            f"rejected_invalid={pipeline_stats[STATUS_REJECTED_INVALID]}. "
+            f"limit={args.limit or 'none'} delay={effective_delay}s"
+        )
     ])
 
     wb.save(workbook_path)
     print(f"✅ Saved: {workbook_path}")
-    print(f"✅ Wrote NEW suppliers: {written}")
+    print(
+        "✅ Pipeline summary: "
+        f"insert_ready={pipeline_stats[STATUS_INSERT_READY]}, "
+        f"review_duplicate={pipeline_stats[STATUS_REVIEW_DUPLICATE]}, "
+        f"rejected_invalid={pipeline_stats[STATUS_REJECTED_INVALID]}"
+    )
+    print(f"✅ Wrote suppliers: {written}")
 
 if __name__ == "__main__":
     main()
