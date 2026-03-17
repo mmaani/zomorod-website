@@ -40,6 +40,7 @@ The following must be rotated (treat as compromised):
 ## Sensitive Endpoints
 - `/api/recruitment?resource=apply` is intentionally public.
 - Follow‑up required: abuse protection via rate limiting / CAPTCHA.
+- Password reset uses `/api/login?action=forgot-password` only; do not reintroduce a standalone reset endpoint.
 
 ## Logging
 - Never log secret values.
