@@ -17,6 +17,7 @@ npm run dev
 ## API Dev
 - Use `vercel dev` to run serverless functions locally, or
 - Set `VITE_API_BASE` to a deployed API URL.
+- CRM password reset uses `/api/login?action=forgot-password` (no standalone reset endpoint).
 
 ## Build
 ```bash
