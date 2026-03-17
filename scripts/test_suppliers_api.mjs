@@ -2,6 +2,11 @@
 // Lightweight supplier API smoke test
 // Usage: BASE_URL=http://localhost:3000 node scripts/test_suppliers_api.mjs
 
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env.local" });
+dotenv.config();
+
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 
 const authToken = process.env.AUTH_TOKEN || "";
@@ -16,12 +21,84 @@ async function req(path, opts = {}) {
     ...opts,
   });
   const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const errText = [
+      data?.error,
+      data?.detail,
+      data?.message,
+      typeof data === "string" ? data : "",
+    ]
+      .filter(Boolean)
+      .join(" | ");
+    if (errText) console.log(`  ↳ error: ${errText}`);
+  }
   return { res, data };
 }
 
 function logStep(name, ok, extra = "") {
   const status = ok ? "PASS" : "FAIL";
   console.log(`[${status}] ${name}${extra ? " — " + extra : ""}`);
+}
+
+function getArgValue(flag) {
+  const idx = process.argv.indexOf(flag);
+  if (idx === -1) return "";
+  return process.argv[idx + 1] || "";
+}
+
+const seedEnabled = !process.argv.includes("--no-seed");
+const seedName = getArgValue("--seed-name") || "General";
+
+async function seedCategoryViaProducts(name = "General") {
+  try {
+    const url = baseUrl.replace(/\/$/, "");
+    const res = await fetch(`${url}/api/products`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
+      body: JSON.stringify({
+        productCode: `SEED-${Date.now()}`,
+        officialName: "Seed Product",
+        marketName: "Seed Product",
+        category: name,
+        defaultSellPriceJod: 0,
+        priceTiers: [],
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { res, data };
+  } catch (e) {
+    return { res: { ok: false, status: 0 }, data: { error: e?.message || "Seed failed" } };
+  }
+}
+
+async function seedCategoryDirectDb(name = "General") {
+  const url = process.env.DATABASE_URL;
+  if (!url) return { ok: false, error: "DATABASE_URL not set" };
+  try {
+    const { default: postgres } = await import("postgres");
+    const sql = postgres(url, {
+      ssl: "require",
+      max: 1,
+      idle_timeout: 10,
+      connect_timeout: 10,
+    });
+    const existing = await sql`
+      SELECT id, name
+      FROM product_categories
+      WHERE lower(name) = lower(${name})
+      LIMIT 1
+    `;
+    if (!existing?.length) {
+      await sql`INSERT INTO product_categories (name) VALUES (${name})`;
+    }
+    await sql.end({ timeout: 5 });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e?.message || String(e) };
+  }
 }
 
 (async () => {
@@ -35,9 +112,41 @@ function logStep(name, ok, extra = "") {
   const primaryCategoryId = categories[0]?.id || null;
 
   if (!primaryCategoryId) {
-    console.log("No categories found. Create a product category before POST tests.");
-    process.exit(1);
+    console.log("No categories found. Attempting to seed a default category...");
+    if (!seedEnabled) {
+      console.log("Seeding disabled (--no-seed). Create a product category before POST tests.");
+      process.exit(1);
+    }
+    const seed = await seedCategoryViaProducts(seedName);
+    if (!seed.res.ok || !seed.data?.ok) {
+      console.log(
+        `Seed via /api/products failed (status=${seed.res.status || "?"}). Trying direct DB seed...`
+      );
+      const dbSeed = await seedCategoryDirectDb(seedName);
+      if (!dbSeed.ok) {
+        console.log(
+          `Direct DB seed failed: ${dbSeed.error || "unknown error"}. Create a product category before POST tests.`
+        );
+        process.exit(1);
+      }
+    }
+    const g1b = await req("/api/suppliers");
+    const categories2 = Array.isArray(g1b.data?.categories) ? g1b.data.categories : [];
+    if (!categories2.length) {
+      console.log("No categories found after seeding. Cannot continue.");
+      process.exit(1);
+    }
+    console.log("Seeded category successfully.");
+    const primaryCategoryId2 = categories2[0]?.id || null;
+    if (!primaryCategoryId2) {
+      console.log("No categories found after seeding. Cannot continue.");
+      process.exit(1);
+    }
+    // Use the seeded category for tests
+    globalThis.__primaryCategoryId = primaryCategoryId2;
   }
+
+  const catId = globalThis.__primaryCategoryId || primaryCategoryId;
 
   // 2) POST supplier (required fields)
   const payload = {
@@ -51,7 +160,7 @@ function logStep(name, ok, extra = "") {
     supplierType: "Manufacturer",
     workflowStatus: "UNDER_REVIEW",
     riskLevel: "MED",
-    primaryCategoryId,
+    primaryCategoryId: catId,
     secondaryCategoryIds: [],
     certificationsIso13485: "Stated",
     certificationsCe: "Stated",
@@ -79,7 +188,7 @@ function logStep(name, ok, extra = "") {
     supplierCountry: "Jordan",
     workflowStatus: "ENRICHED",
     riskLevel: "LOW",
-    primaryCategoryId,
+    primaryCategoryId: catId,
     secondaryCategoryIds: [],
   };
   const p2 = await req("/api/suppliers", { method: "PATCH", body: JSON.stringify(patchPayload) });
@@ -90,7 +199,7 @@ function logStep(name, ok, extra = "") {
   logStep("GET /api/suppliers?q=...", g2.res.ok && g2.data?.ok, `status=${g2.res.status}`);
 
   // 5) category filter
-  const g3 = await req(`/api/suppliers?categoryId=${primaryCategoryId}`);
+  const g3 = await req(`/api/suppliers?categoryId=${catId}`);
   logStep("GET /api/suppliers?categoryId=", g3.res.ok && g3.data?.ok, `status=${g3.res.status}`);
 
   console.log("Done.");

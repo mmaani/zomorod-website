@@ -3,6 +3,25 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY || "");
 
+const LIMITS = {
+  perSecond: 2, // Resend default API rate limit
+  daily: 100, // Free plan daily quota
+  monthly: 3000, // Free plan monthly quota
+};
+
+function getLimiterState() {
+  if (!globalThis.__zms_email_limit) {
+    globalThis.__zms_email_limit = {
+      dailyCount: 0,
+      dailyStart: Date.now(),
+      monthKey: new Date().toISOString().slice(0, 7), // YYYY-MM
+      monthlyCount: 0,
+      perSecond: new Map(),
+    };
+  }
+  return globalThis.__zms_email_limit;
+}
+
 function send(res, status, payload) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -49,12 +68,85 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 }
 
+function getClientIp(req) {
+  const xf = req.headers?.["x-forwarded-for"];
+  if (xf) return String(xf).split(",")[0].trim();
+  return req.socket?.remoteAddress || "unknown";
+}
+
+function checkRateLimits(req) {
+  const now = Date.now();
+  const state = getLimiterState();
+
+  // Reset daily window (24h rolling from first use)
+  if (now - state.dailyStart >= 24 * 60 * 60 * 1000) {
+    state.dailyStart = now;
+    state.dailyCount = 0;
+  }
+
+  // Reset monthly window on month change
+  const monthKey = new Date().toISOString().slice(0, 7);
+  if (state.monthKey !== monthKey) {
+    state.monthKey = monthKey;
+    state.monthlyCount = 0;
+  }
+
+  // Per-second per-IP limit
+  const ip = getClientIp(req);
+  const entry = state.perSecond.get(ip) || { ts: now, count: 0 };
+  if (now - entry.ts >= 1000) {
+    entry.ts = now;
+    entry.count = 0;
+  }
+  if (entry.count >= LIMITS.perSecond) {
+    return {
+      ok: false,
+      status: 429,
+      error: "Rate limit exceeded (per-second)",
+      retryAfter: 1,
+    };
+  }
+
+  if (state.dailyCount >= LIMITS.daily) {
+    const retryAfter = Math.ceil((state.dailyStart + 24 * 60 * 60 * 1000 - now) / 1000);
+    return {
+      ok: false,
+      status: 429,
+      error: "Daily email quota exceeded",
+      retryAfter: Math.max(retryAfter, 1),
+    };
+  }
+
+  if (state.monthlyCount >= LIMITS.monthly) {
+    return {
+      ok: false,
+      status: 429,
+      error: "Monthly email quota exceeded",
+      retryAfter: 3600,
+    };
+  }
+
+  // Consume
+  entry.count += 1;
+  state.perSecond.set(ip, entry);
+  state.dailyCount += 1;
+  state.monthlyCount += 1;
+
+  return { ok: true };
+}
+
 export default async function handler(req, res) {
   if ((req.method || "").toUpperCase() !== "POST") {
     return send(res, 405, { ok: false, error: "Method not allowed" });
   }
 
   try {
+    const rl = checkRateLimits(req);
+    if (!rl.ok) {
+      if (rl.retryAfter) res.setHeader("Retry-After", String(rl.retryAfter));
+      return send(res, rl.status, { ok: false, error: rl.error });
+    }
+
     const fromEmail = String(process.env.CRM_FROM_EMAIL || "").trim();
     if (!process.env.RESEND_API_KEY || !fromEmail) {
       return send(res, 500, {

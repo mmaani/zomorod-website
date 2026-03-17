@@ -127,6 +127,22 @@ function buildEnvFile(keys, existingMap, vercelMap, secretsMap) {
     ["VITE_BUILD_ID", "local"],
   ]);
 
+  function getBaseUrl() {
+    const fromSecrets = secretsMap.get("BASE_URL");
+    const fromVercel = vercelMap.get("BASE_URL");
+    const fromExisting = existingMap.get("BASE_URL");
+    const fromDefault = defaults.get("BASE_URL");
+    return (
+      (fromSecrets && String(fromSecrets)) ||
+      (fromVercel && String(fromVercel)) ||
+      (fromExisting && String(fromExisting)) ||
+      (fromDefault && String(fromDefault)) ||
+      ""
+    );
+  }
+
+  const baseUrl = getBaseUrl().replace(/\/$/, "");
+
   for (const key of keys) {
     const fromSecrets = secretsMap.get(key);
     const fromVercel = vercelMap.get(key);
@@ -138,6 +154,8 @@ function buildEnvFile(keys, existingMap, vercelMap, secretsMap) {
       lines.push(`${key}=${fromVercel}`);
     } else if (preserveExisting && typeof existing === "string" && existing !== "") {
       lines.push(`${key}=${existing}`);
+    } else if (key === "VITE_API_BASE" && baseUrl) {
+      lines.push(`${key}=${baseUrl}/api`);
     } else if (defaults.has(key)) {
       lines.push(`${key}=${defaults.get(key)}`);
     } else {
